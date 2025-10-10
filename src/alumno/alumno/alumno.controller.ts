@@ -1,13 +1,14 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Post } from '@nestjs/common';
 import { AlumnoService } from './alumno.service';
 
-@Controller()
+@Controller({})
 export class AlumnoController 
 {
     constructor(private alumno: AlumnoService) {}
-    @Get('/login')
-    getData(email: string, contraseña: string)
+
+    @Post('/login')
+    getData()
     {
-        return this.alumno.getAlumno(email, contraseña);
+        return this.alumno.getAlumno("pedro@example.com", "qwerty");
     }
 }
