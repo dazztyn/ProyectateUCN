@@ -1,13 +1,9 @@
 import { NestFactory } from '@nestjs/core';
-import { AlumnoModule } from './alumno/alumno/alumno.module';
-import { MallaModule} from './mallacurricular/malla/malla.module';
-import { AuthModule } from './auth//auth/auth.module';
-import { AvanceModule } from './avance/avance/avance.module';
-import { HomeModule } from './homepage/home/home.module';
+import { AppModule } from './app.module';
 
 async function bootstrap() 
 {
-    const app = await NestFactory.create(HomeModule);
+    const app = await NestFactory.create(AppModule);
     await app.listen(3000);
     
 }
