@@ -47,9 +47,9 @@ export class AuthService
         }
     }
 
-    async login(email: string, contraseña: string)
+    login(email: string, contraseña: string)
     {
-        const alumno = await this.fetchloginData(email, contraseña);
+        const alumno = this.fetchloginData(email, contraseña);
         return alumno;
     }
 }

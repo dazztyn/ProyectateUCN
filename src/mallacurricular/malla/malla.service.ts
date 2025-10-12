@@ -1,30 +1,69 @@
 import { Injectable } from '@nestjs/common';
 
+export interface Asignatura
+{
+    codigo:string;
+    asignatura:string;
+    creditos:number;
+    nivel:number;
+    prereq:string;
+}
+
 @Injectable()
-export class MallaService {
-
-    private readonly HAWAII_API = 'https://losvilos.ucn.cl/hawaii/api/mallas';
-    private readonly API_KEY = 'jf400fejof13f'; // clave de autenticación
-
-    async getMalla(codigoCarrera: string, catalogo: string): Promise<any> 
+export class MallaService 
+{
+    async fetchMallaCarrera(codigoCarrera: string, catalogo: string): Promise<Asignatura[]>
     {
-        const url = `${this.HAWAII_API}?${codigoCarrera}-${catalogo}`;
-        const headers = {'X-HAWAII-AUTH': this.API_KEY};
+        const url = `https://losvilos.ucn.cl/hawaii/api/mallas?${codigoCarrera}-${catalogo}`;
 
-        const response = await fetch(url, { headers });
-        if (!response.ok) 
+        try 
         {
-            throw new Error(`Error obteniendo malla: ${response.statusText}`);
+            const response = await fetch(url, {headers: {'X-HAWAII-AUTH': 'jf400fejof13f'},});
+
+            if (!response.ok) 
+            {
+                throw new Error(`Error de red o servidor: ${response.status} ${response.statusText}`);
+            }
+
+            const data: Asignatura[] = await response.json();
+
+            if (data.length == 0) 
+            {
+                throw new Error('Malla no encontrada o Catalogo/Codigo de carrera incorrecto');
+            }
+
+            return data;
+        } 
+        catch (error) 
+        {
+            console.error(`[fetchMallaCarrera] Falló la petición: ${error.message}`);
+            throw error;
         }
+    }
 
-        const data = await response.json();
+    mallaSeparadaEnSemestres(malla: Asignatura[])
+    {
+        let hashmap = new Map<number, Asignatura[]>();
 
-        return data.map((item: any) => ({      
-            codigo: item.codigo,
-            nombre: item.asignatura,
-            creditos: item.creditos,
-            nivel: item.nivel,
-            prerequisitos: item.prereq?.split(',') ?? [],
-        }));
+        malla.forEach((asignatura) => 
+        {
+            let nivel = asignatura.nivel;
+            if(!hashmap.has(nivel))
+            {
+                hashmap.set(nivel, []);
+            }
+            hashmap.get(nivel)?.push(asignatura);
+        });
+
+        return hashmap;
+    }
+
+    async getMalla(codigoCarrera: string, catalogo: string)
+    {
+        const malla = await this.fetchMallaCarrera(codigoCarrera, catalogo);
+        
+        let mallaSeparada = this.mallaSeparadaEnSemestres(malla);
+    
+        return Object.fromEntries(mallaSeparada);
     }
 }

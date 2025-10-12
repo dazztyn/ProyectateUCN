@@ -1,15 +1,18 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import { MallaService } from './malla.service';
 
 @Controller('malla')
-export class MallaController {
-  constructor(private readonly mallaService: MallaService) {}
+export class MallaController 
+{
+    constructor(private malla: MallaService){}
 
-  @Get()
-  async obtenerMalla(
-    @Query('codigoCarrera') codigoCarrera: string,
-    @Query('catalogo') catalogo: string,
-  ) {
-    return this.mallaService.getMalla(codigoCarrera, catalogo);
-  }
+    @Get(':codigoCarrera/:catalogo')
+    getMalla
+    (
+        @Param('codigoCarrera') codigoCarrera: string,
+        @Param('catalogo') catalogo: string,
+    )
+    {
+        return this.malla.getMalla(codigoCarrera, catalogo);
+    }
 }
