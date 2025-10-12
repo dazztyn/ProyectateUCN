@@ -1,5 +1,5 @@
 import { Controller, Get, Param } from '@nestjs/common';
-import { MallaService } from './malla.service';
+import { MallaService } from './malla.service.js';
 
 @Controller('malla')
 export class MallaController 

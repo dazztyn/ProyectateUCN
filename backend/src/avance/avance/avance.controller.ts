@@ -1,5 +1,5 @@
 import { Controller, Get, Param } from '@nestjs/common';
-import { AvanceService } from './avance.service';
+import { AvanceService } from './avance.service.js';
 
 @Controller('avance')
 export class AvanceController 

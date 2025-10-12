@@ -1,5 +1,5 @@
 import { Body, Controller, Post } from '@nestjs/common';
-import { AuthService } from './auth.service';
+import { AuthService } from './auth.service.js';
 
 class LoginDto
 {
@@ -15,6 +15,7 @@ export class AuthController
     @Post('/login')
     login(@Body() loginDto: LoginDto)
     {
+        console.log("correo",loginDto.email, "contraseña",loginDto.password);
         return this.auth.login(loginDto.email, loginDto.password);
     }
     

@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { AlumnoController } from './alumno.controller';
-import { AlumnoService } from './alumno.service';
+import { AlumnoController } from './alumno.controller.js';
+import { AlumnoService } from './alumno.service.js';
 
 @Module({
   controllers: [AlumnoController],

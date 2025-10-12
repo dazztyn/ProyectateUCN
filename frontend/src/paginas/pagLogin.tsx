@@ -6,7 +6,7 @@ import ErrorMessage from '../componentes/mensajeError';
 
 const Login: React.FC = () => {
   // Datos Usuario
-  const [correo, setCorreo] = React.useState('');
+  const [email, setCorreo] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [error, setError] = React.useState<string | null>(null);
   const navigate = useNavigate();
@@ -16,13 +16,13 @@ const Login: React.FC = () => {
     e.preventDefault();
     setError('');
 
-    const url = "https://tuservidor.com/api/login";
+    const url = "http://localhost:3000/auth/login";
 
     try {
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ correo, password })
+        body: JSON.stringify({ email, password })
       });
 
       if (!response.ok) {
@@ -49,7 +49,7 @@ const Login: React.FC = () => {
           <input
             type="email"
             placeholder="Correo"
-            value={correo}
+            value={email}
             onChange={(e) => setCorreo(e.target.value)}
             required
           />

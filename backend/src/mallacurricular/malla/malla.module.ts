@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { MallaService } from './malla.service';
-import { MallaController } from './malla.controller';
+import { MallaService } from './malla.service.js';
+import { MallaController } from './malla.controller.js';
 
 @Module({
   providers: [MallaService],

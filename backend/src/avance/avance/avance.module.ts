@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { AvanceController } from './avance.controller';
-import { AvanceService } from './avance.service';
+import { AvanceController } from './avance.controller.js';
+import { AvanceService } from './avance.service.js';
 
 @Module({
   controllers: [AvanceController],
