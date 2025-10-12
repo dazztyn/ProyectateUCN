@@ -1,0 +1,27 @@
+.body {
+    background-color: #065d6d;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    color: white;
+}
+
+.botonLogin {
+    background-color: #aa6d33;
+    color: white;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    font-size: 1.2rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+.botonLogin:hover {
+    background-color: #d9822b;
+    font-weight: lighter;
+}
+.botonLogin:active {
+    background-color: #2D8191;
+    font-weight: bold;
+}
