@@ -1,7 +1,9 @@
 .malla-container {
   display: flex;      
-  height : 81vh;
-  width: 80vw;
+  height : 82vh;
+  width: 82vw;
+  overflow-x: auto;
+  overflow-y: auto;
   border-radius: 8px;
   gap: 0.5rem;                    
   padding: 0.5rem;
@@ -11,8 +13,7 @@
 .semestre-card {
     display: flex;
     flex-direction: column;
-    align-items: center;
-  min-width: 4rem;   
+    align-items: center;  
   height:max-content;     
   flex-shrink: 1;          
   background: #065d6d;
