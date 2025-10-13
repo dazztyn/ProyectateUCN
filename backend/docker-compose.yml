@@ -1,0 +1,13 @@
+services:
+  db:
+    image: postgres:14-alpine
+    container_name: proyectateucn_db
+    restart: always
+    environment:
+      POSTGRES_USER: UsuarioGenerico
+      POSTGRES_PASSWORD: 12331
+      POSTGRES_DB: proyecciones_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
