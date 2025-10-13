@@ -1,20 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-
-export interface LoginResponse
-{
-    rut: string;
-    carreras: 
-    {
-        codigo:string;
-        nombre:string;
-        catalogo:string;
-    }[];
-}
-export interface ErrorResponse 
-{
-  error: string;
-}
+import { LoginResponse } from './LoginResponse.js';
+import { ErrorResponse } from '../../ArchivosComunes/ErrorResponse.js';
 
 @Injectable()
 export class AuthService 

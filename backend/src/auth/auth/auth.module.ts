@@ -8,7 +8,8 @@ import { JwtStrategy } from './jwt.strategy.js';
 
 @Module({
   imports: [
-   PassportModule,
+    ConfigModule,
+    PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -21,7 +22,7 @@ import { JwtStrategy } from './jwt.strategy.js';
   controllers: [AuthController],
   providers: [
     AuthService,
-    JwtStrategy, // 👈 2. Añade la estrategia a los providers
+    JwtStrategy,
   ],
 })
 export class AuthModule {}

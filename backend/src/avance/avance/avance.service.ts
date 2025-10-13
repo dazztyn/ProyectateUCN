@@ -1,20 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { MallaService } from '../../mallacurricular/malla/malla.service.js';
-
-export interface RamoTomado
-{
-    nrc: string,
-    period: string,
-    student: string,
-    course: string,
-    excluded: boolean,
-    inscriptionType: string,
-    status: string
-}
-export interface ErrorResponse 
-{
-  error: string;
-}
+import { RamoTomado } from './RamoTomado.js';
+import { ErrorResponse } from 'src/ArchivosComunes/ErrorResponse.js';
 
 @Injectable()
 export class AvanceService 
