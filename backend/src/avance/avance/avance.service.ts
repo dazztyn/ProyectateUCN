@@ -49,6 +49,7 @@ export class AvanceService
             throw error;
         }
     }
+
     getAvance(rutAlumno:string, codigoCarrera:string)
     {
         return this.fetchAvanceData(rutAlumno,codigoCarrera);
