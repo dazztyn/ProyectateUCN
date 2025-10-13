@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Routes, Route } from "react-router-dom";
 import './style/App.css'
 import Malla from './paginas/pagMalla';
-import Avance from './paginas/carreraAvance';
+import Avance from './paginas/pagAvance';
 import Proyeccion from './paginas/pagProyeccion';
 import Login from './paginas/pagLogin';
 function App() {

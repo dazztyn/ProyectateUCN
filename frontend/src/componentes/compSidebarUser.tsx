@@ -5,14 +5,14 @@ import iconoMalla from "../assets/menu.png";
 import iconoProyeccion from "../assets/magic-ball.png";
 import iconoAvance from "../assets/globe.png";
 import React from 'react';
-import '../style/sidebarStyle.css';
+import '../style/styleSidebar.css';
 import { NavLink } from 'react-router-dom';
 
 interface SidebarUserProps {
     nombreUser: string;
-    carreraUser?: string;
+    carreraUser: string;
 }
-const Sidebar: React.FC<SidebarUserProps> = ({ nombreUser }) => {
+const Sidebar: React.FC<SidebarUserProps> = ({ nombreUser, carreraUser }) => {
   return (
     <div className="sidebar">
       
@@ -22,7 +22,9 @@ const Sidebar: React.FC<SidebarUserProps> = ({ nombreUser }) => {
       </div>
 
       
-      <div className="sidebar-username">{nombreUser}</div>
+      <div className="sidebar-username">Bienvenid@ {nombreUser}</div>
+
+      <div className="sidebar-career">Actualmente visualizando: {carreraUser}</div>
 
       {/* Links */}
       <nav className="sidebar-nav">

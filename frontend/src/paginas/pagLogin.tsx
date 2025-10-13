@@ -1,8 +1,8 @@
 import React from 'react';
-import '../style/loginStyle.css';
+import '../style/styleLogin.css';
 import logo from '../assets/logoUCN.png';
 import { useNavigate } from 'react-router-dom';
-import ErrorMessage from '../componentes/mensajeError';
+import ErrorMessage from '../componentes/compMensajeError';
 
 const Login: React.FC = () => {
   // Datos Usuario
