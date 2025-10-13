@@ -15,7 +15,6 @@ export class AuthController
     @Post('/login')
     login(@Body() loginDto: LoginDto)
     {
-        console.log("correo",loginDto.email, "contraseña",loginDto.password);
         return this.auth.login(loginDto.email, loginDto.password);
     }
     

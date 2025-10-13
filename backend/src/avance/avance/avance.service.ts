@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { MallaService } from '../../mallacurricular/malla/malla.service.js';
 
 export interface RamoTomado
 {
@@ -18,6 +19,9 @@ export interface ErrorResponse
 @Injectable()
 export class AvanceService 
 {
+    
+    constructor(private readonly mallaService: MallaService) {}
+
     async fetchAvanceData(rut:string, codigoCarrera:string): Promise<RamoTomado[]>
     {
         const url = `https://puclaro.ucn.cl/eross/avance/avance.php?rut=${rut}&codcarrera=${codigoCarrera}`;

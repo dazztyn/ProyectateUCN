@@ -1,13 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { Asignatura } from 'src/ArchivosComunes/Asignatura.js';
 
-export interface Asignatura
-{
-    codigo:string;
-    asignatura:string;
-    creditos:number;
-    nivel:number;
-    prereq:string;
-}
 
 @Injectable()
 export class MallaService 

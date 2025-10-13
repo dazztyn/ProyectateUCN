@@ -4,6 +4,7 @@ import { MallaController } from './malla.controller.js';
 
 @Module({
   providers: [MallaService],
-  controllers: [MallaController]
+  controllers: [MallaController],
+  exports: [MallaService],
 })
 export class MallaModule {}
