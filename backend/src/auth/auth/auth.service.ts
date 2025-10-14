@@ -1,6 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { LoginResponse } from './LoginResponse.js';
+import { Usuario } from '../../ArchivosComunes/Usuario.js';
 import { ErrorResponse } from '../../ArchivosComunes/ErrorResponse.js';
 
 @Injectable()
@@ -8,7 +8,7 @@ export class AuthService
 {
     constructor(private readonly jwtService: JwtService) {}
 
-    async fetchloginData(email: string, password: string): Promise<LoginResponse> 
+    async fetchloginData(email: string, password: string): Promise<Usuario> 
     {
         const url = `https://puclaro.ucn.cl/eross/avance/login.php?email=${email}&password=${password}`;
 
@@ -21,7 +21,7 @@ export class AuthService
                 throw new Error(`Error de red o servidor: ${response.status} ${response.statusText}`);
             }
 
-            const data: LoginResponse | ErrorResponse = await response.json();
+            const data: Usuario | ErrorResponse = await response.json();
 
             if ('error' in data) 
             {
