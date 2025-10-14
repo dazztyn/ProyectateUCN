@@ -22,4 +22,8 @@ export class AvanceConAsignatura
         this.status = status;
     }
 
+    getPeriod(): string
+    {
+        return this.period;
+    }
 }

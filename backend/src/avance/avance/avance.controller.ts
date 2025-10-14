@@ -17,6 +17,6 @@ export class AvanceController
     )
     {
         const usuario = request.user as { rut: string; carreras: Carrera[] };
-        return this.avance.getAvance(usuario.rut, usuario.carreras[indiceCarrera].codigo);
+        return this.avance.getAvance(usuario.rut, usuario.carreras[indiceCarrera].codigo, usuario.carreras[indiceCarrera].catalogo);
     }
 }

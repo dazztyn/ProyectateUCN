@@ -34,6 +34,11 @@ export class MallaService
         }
     }
 
+    buscarAsignaturaEnMalla(codigo: string, malla: Asignatura[]): Asignatura | undefined
+    {
+        return malla.find((asignatura) => asignatura.codigo === codigo);
+    }
+
     mallaSeparadaEnSemestres(malla: Asignatura[])
     {
         let hashmap = new Map<number, Asignatura[]>();
