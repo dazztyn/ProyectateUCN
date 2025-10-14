@@ -16,11 +16,11 @@ type Semestre = {
 };
 
 type Props = {
-  codigoCarrera: string;
-  catalogo: string;
+  indice: number;
+  token: string;
 };
 
-const MallaCarrera: React.FC<Props> = ({ codigoCarrera, catalogo }) => {
+const MallaCarrera: React.FC<Props> = ({ indice, token}) => {
   const [semestres, setSemestres] = useState<Semestre[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
@@ -31,10 +31,11 @@ const MallaCarrera: React.FC<Props> = ({ codigoCarrera, catalogo }) => {
         setCargando(true);
         setError("");
 
-        const res = await fetch(
-          `http://localhost:3000/malla/${codigoCarrera}/${catalogo}`
-        );
-
+        const res = await fetch(`http://localhost:3000/malla/${indice}`, {
+  headers: {
+    Authorization: `Bearer ${token}`,  
+  },
+});
         if (!res.ok) throw new Error("No se pudo obtener la malla curricular.");
         const data: Record<string, Asignatura[]> = await res.json();
 
@@ -62,7 +63,7 @@ const MallaCarrera: React.FC<Props> = ({ codigoCarrera, catalogo }) => {
     };
 
     obtenerMalla();
-  }, [codigoCarrera, catalogo]);
+  }, [ indice, token ]);
 
  
   if (cargando) return <p className="loading">Cargando malla...</p>;
