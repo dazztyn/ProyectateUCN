@@ -24,7 +24,7 @@ const Sidebar: React.FC<SidebarUserProps> = ({ nombreUser, carreraUser }) => {
       
       <div className="sidebar-username">Bienvenid@ {nombreUser}</div>
 
-      <div className="sidebar-career">Actualmente visualizando: {carreraUser}</div>
+      <div className="sidebar-career">Visualizando:<div className="sidebar-username">{carreraUser}</div></div>
 
       {/* Links */}
       <nav className="sidebar-nav">
