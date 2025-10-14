@@ -111,7 +111,6 @@ export class AvanceService
                 ramo.inscriptionType,
                 ramo.status
             ));
-            console.log(this.mallaService.buscarAsignaturaEnMalla(ramo.course, malla));
         });
         return this.heapSort(listaDeAvance);
     }
