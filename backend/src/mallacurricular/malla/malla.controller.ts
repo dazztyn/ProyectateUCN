@@ -1,18 +1,23 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
 import { MallaService } from './malla.service.js';
+import { AuthGuard } from '@nestjs/passport';
+import type { Request } from 'express';
+import { Carrera } from 'src/ArchivosComunes/Carrera.js';
 
 @Controller('malla')
+@UseGuards(AuthGuard('jwt'))
 export class MallaController 
 {
     constructor(private malla: MallaService){}
 
-    @Get(':codigoCarrera/:catalogo')
+    @Get(':indiceCarrera')
     getMalla
     (
-        @Param('codigoCarrera') codigoCarrera: string,
-        @Param('catalogo') catalogo: string,
+        @Req() request: Request,
+        @Param('indiceCarrera') indice: string,
     )
     {
-        return this.malla.getMalla(codigoCarrera, catalogo);
+        const usuario = request.user as { rut: string; carreras: Carrera[] };
+        return this.malla.getMalla(usuario.carreras[indice].codigo, usuario.carreras[indice].catalogo);
     }
 }

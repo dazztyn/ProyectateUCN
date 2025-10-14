@@ -1,17 +1,22 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
 import { AvanceService } from './avance.service.js';
+import { AuthGuard } from '@nestjs/passport';
+import type { Request } from 'express';
+import { Carrera } from 'src/ArchivosComunes/Carrera.js';
 
 @Controller('avance')
+@UseGuards(AuthGuard('jwt'))
 export class AvanceController 
 {
     constructor(private avance: AvanceService){}
-    @Get(':rutAlumno/:codigoCarrera')
+    @Get(':indiceCarrera')
     getAvance
     (
-        @Param('rutAlumno') rutAlumno:string,
-        @Param('codigoCarrera') codigoCarrera:string,
+        @Req() request: Request,
+        @Param('indiceCarrera') indiceCarrera: string
     )
     {
-        return this.avance.getAvance(rutAlumno,codigoCarrera);
+        const usuario = request.user as { rut: string; carreras: Carrera[] };
+        return this.avance.getAvance(usuario.rut, usuario.carreras[indiceCarrera].codigo);
     }
 }

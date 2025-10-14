@@ -1,23 +1,13 @@
-import { Injectable } from '@nestjs/common';
-
-export interface LoginResponse
-{
-    rut: string;
-    carreras: 
-    {
-        codigo:string;
-        nombre:string;
-        catalogo:string;
-    }[];
-}
-export interface ErrorResponse 
-{
-  error: string;
-}
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { LoginResponse } from './LoginResponse.js';
+import { ErrorResponse } from '../../ArchivosComunes/ErrorResponse.js';
 
 @Injectable()
 export class AuthService 
 {
+    constructor(private readonly jwtService: JwtService) {}
+
     async fetchloginData(email: string, password: string): Promise<LoginResponse> 
     {
         const url = `https://puclaro.ucn.cl/eross/avance/login.php?email=${email}&password=${password}`;
@@ -47,9 +37,24 @@ export class AuthService
         }
     }
 
-    login(email: string, contraseña: string)
+    async login(email: string, contraseña: string)
     {
-        const alumno = this.fetchloginData(email, contraseña);
-        return alumno;
+        try {
+
+            const alumno = await this.fetchloginData(email, contraseña);
+
+            const payload = {rut: alumno.rut, carreras: alumno.carreras};
+
+            const accessToken = this.jwtService.sign(payload);
+
+            return {access_token: accessToken, usuario: alumno};
+            
+        } catch (error) {
+            if (error instanceof UnauthorizedException) {
+                throw error;
+            }
+            throw new Error('Ocurrió un error inesperado durante el login.');
+        }
+  
     }
 }
