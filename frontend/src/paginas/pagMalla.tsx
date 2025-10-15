@@ -5,13 +5,17 @@ import MallaCarrera from '../componentes/compMallaDisplay';
 
 const Malla: React.FC = () => {
   const location = useLocation();
-  const { indice, token } = location.state as { indice: number; token: string };
+  const { indice, access_token } = location.state as { indice: number; access_token: string };
+  const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
+  const indiceCarrera = localStorage.getItem("indiceCarrera");
+  const carreraActual =
+    usuario?.carreras?.[Number(indiceCarrera)]?.nombre || "Ninguna seleccionada";
 
   return (
-    <Layout nombreUser="Usuario" carreraUser="Carrera">
+    <Layout>
       <div>
-        <h2>Malla Curricular - {}</h2>
-        <MallaCarrera indice = {indice} token={token}/>
+        <h2>Malla Curricular - {carreraActual}</h2>
+        <MallaCarrera indice = {indice} access_token={access_token}/>
       </div>
     </Layout>
   );

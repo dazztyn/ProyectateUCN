@@ -17,10 +17,10 @@ type Semestre = {
 
 type Props = {
   indice: number;
-  token: string;
+  access_token: string;
 };
 
-const MallaCarrera: React.FC<Props> = ({ indice, token}) => {
+const MallaCarrera: React.FC<Props> = ({ indice, access_token}) => {
   const [semestres, setSemestres] = useState<Semestre[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
@@ -33,7 +33,7 @@ const MallaCarrera: React.FC<Props> = ({ indice, token}) => {
 
         const res = await fetch(`http://localhost:3000/malla/${indice}`, {
   headers: {
-    Authorization: `Bearer ${token}`,  
+    Authorization: `Bearer ${access_token}`,  
   },
 });
         if (!res.ok) throw new Error("No se pudo obtener la malla curricular.");
@@ -63,7 +63,7 @@ const MallaCarrera: React.FC<Props> = ({ indice, token}) => {
     };
 
     obtenerMalla();
-  }, [ indice, token ]);
+  }, [ indice, access_token ]);
 
  
   if (cargando) return <p className="loading">Cargando malla...</p>;
