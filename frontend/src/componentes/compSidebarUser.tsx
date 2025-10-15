@@ -45,15 +45,19 @@ const Sidebar: React.FC = () => {
       </div>
 
       <nav className="sidebar-nav">
-        <button onClick={() => handleNav("/malla")} className="sidebar-link">
+        <button onClick={() => handleNav("/seleccion")} className="sidebar-link">
+          <img src={iconoHome} alt="icono Malla" className="icon" />
+          Selección
+        </button>
+        <button onClick={() => handleNav("/malla")} className={`sidebar-link ${location.pathname === "/malla" ? "active" : ""}`}>
           <img src={iconoMalla} alt="icono Malla" className="icon" />
           Malla
         </button>
-        <button onClick={() => handleNav("/avance")} className="sidebar-link">
+        <button onClick={() => handleNav("/avance")} className={`sidebar-link ${location.pathname === "/avance" ? "active" : ""}`}>
           <img src={iconoAvance} alt="icono Avance" className="icon" />
           Avance
         </button>
-        <button onClick={() => handleNav("/proyeccion")} className="sidebar-link">
+        <button onClick={() => handleNav("/proyeccion")} className={`sidebar-link ${location.pathname === "/proyeccion" ? "active" : ""}`}>
           <img src={iconoProyeccion} alt="icono Proyección" className="icon" />
           Proyección
         </button>

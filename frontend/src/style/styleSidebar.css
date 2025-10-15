@@ -70,7 +70,20 @@
   text-decoration: none;
   transition: font-weight 0.2s, transform 0.2s;
 }
-
+.sidebar-link-casita {
+  background-color: transparent; 
+  border: none;                  
+  padding: 0;     
+  display: flex;
+  flex-direction: column;               
+  font-family: inherit;          
+  text-align: inherit;
+  justify-content: center;
+  color: white;
+  font-size: medium;
+  text-decoration: none;
+  transition: font-weight 0.2s, transform 0.2s;
+}
 .sidebar-link:hover {
   cursor: pointer;
   transform: scale(1.05);
