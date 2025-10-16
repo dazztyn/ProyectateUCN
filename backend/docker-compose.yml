@@ -4,10 +4,10 @@ services:
     container_name: proyectateucn_db
     restart: always
     environment:
-      POSTGRES_USER: UsuarioGenerico
-      POSTGRES_PASSWORD: 12331
+      POSTGRES_USER: UsuarioDesintegrador
+      POSTGRES_PASSWORD: ericRoss
       POSTGRES_DB: proyecciones_db
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
       - ./pgdata:/var/lib/postgresql/data
