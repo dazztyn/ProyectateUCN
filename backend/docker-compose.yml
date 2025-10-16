@@ -8,6 +8,6 @@ services:
       POSTGRES_PASSWORD: ericRoss
       POSTGRES_DB: proyecciones_db
     ports:
-      - "5434:5432"
+      - "5435:5432"
     volumes:
       - ./pgdata:/var/lib/postgresql/data
