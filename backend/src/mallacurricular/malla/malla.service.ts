@@ -25,7 +25,7 @@ export class MallaService
                 throw new Error('Malla no encontrada o Catalogo/Codigo de carrera incorrecto');
             }
 
-            return data;
+            return this.limpiarPrerrequisitosInvalidos(data);
         } 
         catch (error) 
         {
@@ -122,10 +122,8 @@ export class MallaService
     async getMalla(codigoCarrera: string, catalogo: string)
     {
         const malla = await this.fetchMallaCarrera(codigoCarrera, catalogo);
-        
-        let mallaLimpia = this.limpiarPrerrequisitosInvalidos(malla);
 
-        let mallaSeparada = this.mallaSeparadaEnSemestres(mallaLimpia);
+        let mallaSeparada = this.mallaSeparadaEnSemestres(malla);
     
         return Object.fromEntries(mallaSeparada);
     }

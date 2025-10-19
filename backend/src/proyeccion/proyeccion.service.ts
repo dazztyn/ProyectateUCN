@@ -3,7 +3,7 @@ import { AvanceService } from '../avance/avance/avance.service.js';
 import { MallaService } from '../mallacurricular/malla/malla.service.js';
 import { ProyeccionFutura } from './ProyeccionFutura.js';
 import { AvanceConAsignatura } from '../avance/avance/AvanceConAsignatura.js';
-import { Asignatura } from 'src/ArchivosComunes/Asignatura.js';
+import { Asignatura } from '../ArchivosComunes/Asignatura.js';
 
 
 @Injectable()
@@ -14,7 +14,7 @@ export class ProyeccionService
     asignaturasAprobadas(avance: AvanceConAsignatura[]): string[]
     {
         return avance
-        .filter(item => item.getStatus() === 'APROBADO' || item.getStatus() === 'INSCRITO')
+        .filter(item => item != null && item.getCourse() != null && (item.getStatus() === 'APROBADO' || item.getStatus() === 'INSCRITO'))
             .map(item => item.getCourse().codigo);
     }
 
@@ -35,5 +35,8 @@ export class ProyeccionService
 
         const proyeccion = new ProyeccionFutura(mallaSeparada, aparicionesPrerrequisitos, asignaturasAprobadas, ultimoPeriodo);
 
+        let proyeccionOptima: Map<string, Asignatura[]> = proyeccion.generarProyeccionOptima();
+
+        return Object.fromEntries(proyeccionOptima);
     }
 }

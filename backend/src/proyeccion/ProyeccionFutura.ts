@@ -1,142 +1,134 @@
-import { Asignatura } from "src/ArchivosComunes/Asignatura.js";
+import { Asignatura } from "../ArchivosComunes/Asignatura.js";
 
-
-export class ProyeccionFutura
+export class ProyeccionFutura 
 {
     private malla: Map<number, Asignatura[]>;
     private aparicionesPrerrequisitos: Map<string, number>;
-    private asignaturasAprobadas: string[];
-    private periodo: string;
-    private creditosTotales: number;
-    private semestreMasBajo: number;
+    private asignaturasAprobadas: Set<string>; 
+    private periodoActual: string;
 
-    constructor(malla: Map<number, Asignatura[]>, aparicionesPrerrequisitos: Map<string, number>, 
-        asignaturasAprobadas: string[], periodo: string)
+    constructor(malla: Map<number, Asignatura[]>, aparicionesPrerrequisitos: Map<string, number>,
+        asignaturasAprobadas: string[], periodoInicial: string) 
     {
-        this.malla = malla;
+        
+        this.asignaturasAprobadas = new Set(asignaturasAprobadas);
         this.aparicionesPrerrequisitos = aparicionesPrerrequisitos;
-        this.asignaturasAprobadas = asignaturasAprobadas;
-        this.periodo = periodo;
-        this.creditosTotales = 0;
-        this.semestreMasBajo = 0;
+        this.periodoActual = periodoInicial;
+        this.malla = this.eliminarAsignaturasAprobadasDeMalla(malla);
     }
 
-    eliminarAsignaturasAprobadasDeMalla(mallaMap: Map<number, Asignatura[]>,codigosAprobados: string[]): Map<number, Asignatura[]> 
-    {
-        const aprobadosSet = new Set(codigosAprobados);
+    public generarProyeccionOptima(): Map<string, Asignatura[]> {
+        const proyeccionOptima = new Map<string, Asignatura[]>();
 
-        for (const [nivel, asignaturasDelSemestre] of mallaMap.entries()) 
+        while (this.malla.size > 0) 
         {
-            const asignaturasPendientes = asignaturasDelSemestre.filter((asignatura) => !aprobadosSet.has(asignatura.codigo));
+            this.actualizarPeriodo();
+            const asignaturasDelSemestre = this.planificarSiguienteSemestre();
 
-            if (asignaturasPendientes.length === 0) 
+            if (asignaturasDelSemestre.length > 0) 
             {
-                mallaMap.delete(nivel);
+                proyeccionOptima.set(this.periodoActual, asignaturasDelSemestre);
             } 
             else 
             {
-                mallaMap.set(nivel, asignaturasPendientes);
+                console.error("No se pudieron planificar más asignaturas. Posible bloqueo de prerrequisitos.");
+                break;
+            }
+
+            const codigosRecienAprobados = asignaturasDelSemestre.map(a => a.codigo);
+            codigosRecienAprobados.forEach(codigo => this.asignaturasAprobadas.add(codigo));
+            
+            this.malla = this.eliminarAsignaturasAprobadasDeMalla(this.malla);
+        }
+
+        return proyeccionOptima;
+    }
+
+    private planificarSiguienteSemestre(): Asignatura[] 
+{
+        let creditosInscritos = 0;
+        const semestrePlanificado: Asignatura[] = [];
+        
+        const semestresPendientes = Array.from(this.malla.keys());
+        if (semestresPendientes.length === 0) return [];
+
+        const semestreMasAtrasado = semestresPendientes[0];
+        const limiteSemestre = semestreMasAtrasado + 2;
+
+        let asignaturasElegibles: Asignatura[] = [];
+        for (const [nivel, asignaturas] of this.malla.entries())
+        {
+            if (nivel <= limiteSemestre) 
+            {
+                const disponiblesEnNivel = asignaturas.filter(asignatura => 
+                    this.verificarPrerrequisitosCumplidos(asignatura)
+                );
+                asignaturasElegibles.push(...disponiblesEnNivel);
             }
         }
-
-        return mallaMap;
-    }
-
-    actualizarSemestreMasBajo(semestre: number)
-    {
-        this.semestreMasBajo = semestre;
-    }
-
-    actualizarCreditosTotales(creditos: number)
-    {
-        this.creditosTotales += creditos;
-    }
-
-    actualizarRamosAprobados(asignaturas: string[])
-    {
-        this.asignaturasAprobadas.push(...asignaturas);
-    }
-
-    actualizarMalla()
-    {
-        this.malla = this.eliminarAsignaturasAprobadasDeMalla(this.malla, this.asignaturasAprobadas);
-    }
-
-    actualizarPeriodo()
-    {
-        let semestre: string = this.periodo.slice(-2);
-        let anho: string = this.periodo.slice(0, 4);
-        if(semestre === '10')
-        {
-            this.periodo = this.periodo.slice(0, -2) + '20';
-        }
-        else if(semestre === '15')
-        {
-            this.periodo = this.periodo.slice(0, -2) + '20';
-        }
-        else
-        {
-            let nuevoAnho:string = (parseInt(anho) + 1).toString();
-            this.periodo = nuevoAnho + semestre;
-        }
-    }
-
-    calcularCantidadDeCreditos(asignaturas: Asignatura[]): number
-    {
-        return asignaturas.reduce((total, asignatura) => total + asignatura.creditos, 0);
-    }
-
-    verificarPrerrequisitosCumplidos(asignatura: Asignatura): boolean
-    {
-        const prerrequisitosConcatenado = asignatura.prereq;
-        let prerrequisitos: string[] = prerrequisitosConcatenado.split(',');
-        return prerrequisitos.every((prerrequisito) => this.asignaturasAprobadas.includes(prerrequisito));
-    }
-
-    rellenarConLoMasCritico(proyeccionOptima: Map<string, Asignatura[]>)
-    {
-        this.actualizarPeriodo();
-        proyeccionOptima.set(this.periodo, []);
-        let asignaturasCriticas: Asignatura[] = this.malla.values().next().value;
-        let semestreMasBajo = this.malla.keys().next().value;
-        let creditosTotales = this.calcularCantidadDeCreditos(asignaturasCriticas);
-        if(creditosTotales <= 31)
-        {
-            proyeccionOptima.set(this.periodo, asignaturasCriticas);
-            this.actualizarRamosAprobados(asignaturasCriticas.map((asignatura) => asignatura.codigo));
-            this.actualizarCreditosTotales(creditosTotales);
-            this.actualizarSemestreMasBajo(semestreMasBajo);
-        }
-        // else
-        // {
-        //     let creditos = 0;
-        //     for(let asignatura of asignaturasCriticas)
-        //     {
-        //         creditos += asignatura.creditos;
-        //         if(creditos <= 31)
-        //         {
-        //             proyeccionOptima.get(this.periodo)?.push(asignatura);
-        //             this.actualizarRamosAprobados([asignatura.codigo]);
-        //             this.actualizarCreditosTotales(asignatura.creditos);
-        //         }
-        //     }
-        // }
-    }
-
-    rellenarPeriodo(proyeccionOptima: Map<string, Asignatura[]>)
-    {
         
+
+        const asignaturasPriorizadas = this.ordenarPorPrioridad(asignaturasElegibles);
+
+        for (const asignatura of asignaturasPriorizadas) 
+        {
+            if (creditosInscritos + asignatura.creditos <= 31)
+            {
+                semestrePlanificado.push(asignatura);
+                creditosInscritos += asignatura.creditos;
+            }
+        }
+        
+        return semestrePlanificado;
     }
 
-    proyeccionMasOptima(proyeccionOptima: Map<string, Asignatura[]>)
+    private ordenarPorPrioridad(asignaturas: Asignatura[]): Asignatura[] 
     {
-        this.actualizarMalla(); 
-        this.rellenarConLoMasCritico(proyeccionOptima);
-        if(this.creditosTotales < 30)
+        return asignaturas.sort((a, b) => 
         {
-            this.actualizarMalla();
-            this.rellenarPeriodo(proyeccionOptima);
+            if (a.nivel !== b.nivel) 
+            {
+                return a.nivel - b.nivel;
+            }
+
+            const importanciaA = this.aparicionesPrerrequisitos.get(a.codigo) || 0;
+            const importanciaB = this.aparicionesPrerrequisitos.get(b.codigo) || 0;
+            return importanciaB - importanciaA;
+        });
+    }
+
+    private verificarPrerrequisitosCumplidos(asignatura: Asignatura): boolean 
+    {
+        if (!asignatura.prereq) return true;
+        return asignatura.prereq.split(',').every(prereq => this.asignaturasAprobadas.has(prereq));
+    }
+
+    private eliminarAsignaturasAprobadasDeMalla(mallaMap: Map<number, Asignatura[]>): Map<number, Asignatura[]> 
+    {
+        const nuevaMalla = new Map<number, Asignatura[]>();
+        for (const [nivel, asignaturas] of mallaMap.entries()) 
+        {
+            const pendientes = asignaturas.filter(a => !this.asignaturasAprobadas.has(a.codigo));
+            if (pendientes.length > 0) 
+            {
+                nuevaMalla.set(nivel, pendientes);
+            }
+        }
+        return nuevaMalla;
+    }
+
+    private actualizarPeriodo() 
+    {
+        const anho = parseInt(this.periodoActual.slice(0, 4));
+        const semestre = this.periodoActual.slice(4, 6);
+
+        if (semestre === '10' || semestre === '15') 
+        {
+            this.periodoActual = `${anho}20`;
+        } 
+        else 
+        { 
+            this.periodoActual = `${anho + 1}10`;
         }
     }
-
 }
