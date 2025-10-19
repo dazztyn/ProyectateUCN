@@ -142,4 +142,10 @@ export class AvanceService
 
         return Object.fromEntries(avanceSeparado);
     }
+
+    sacarUltimoPeriodo(avancePorPeriodo: Map<string, AvanceConAsignatura[]>)
+    {
+        let keys = Array.from(avancePorPeriodo.keys());
+        return keys[keys.length - 1];
+    }
 }

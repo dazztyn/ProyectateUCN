@@ -34,6 +34,69 @@ export class MallaService
         }
     }
 
+    asignaturasCantidadAparicionesPrerrequisitos(malla: Asignatura[])
+    {
+        const hasmap = new Map<string, number>();
+
+        malla.forEach((asignatura) => 
+        {
+            const codigo = asignatura.codigo;
+
+            if(!hasmap.has(codigo))
+            {
+                hasmap.set(codigo, 0);
+            }
+        });
+
+        malla.forEach((asignatura) => 
+        {
+            const prereq = asignatura.prereq;
+            let codigos: string[] = [];
+            if(prereq != '')
+            {
+                codigos = prereq.split(",");
+                codigos.forEach((codigo) => 
+                {
+                    if(hasmap.has(codigo))
+                    {
+                        let codigoActual = hasmap.get(codigo) as number;
+                        codigoActual += 1;
+                        hasmap.set(codigo, codigoActual);
+                    }
+                });
+            }
+        });
+        return hasmap;
+    }
+
+    limpiarPrerrequisitosInvalidos(malla: Asignatura[]): Asignatura[] {
+    
+    // 1. Crea una "lista VIP" (un Set) con todos los códigos de asignatura que SÍ existen.
+    // Las búsquedas en un Set son extremadamente rápidas.
+        const codigosValidos = new Set(malla.map(asignatura => asignatura.codigo));
+
+        // 2. Usa .map() para recorrer cada asignatura y devolver una versión "limpia".
+        return malla.map((asignatura) => {
+            
+            // Si la asignatura no tiene prerrequisitos, devuélvela tal cual.
+            if (!asignatura.prereq) 
+            {
+                return asignatura;
+            }
+            
+            // 3. Procesa los prerrequisitos de la asignatura actual.
+            const prerequisitosLimpios = asignatura.prereq
+            .split(',') // a. Divide el string en un array de códigos.
+            .filter(codigo => codigosValidos.has(codigo)); // b. Quédate solo con los que están en la "lista VIP".
+
+            // 4. Crea un nuevo objeto de asignatura con los prerrequisitos actualizados.
+            return {
+            ...asignatura, // Copia todas las propiedades originales de la asignatura.
+            prereq: prerequisitosLimpios.join(','), // Une los códigos válidos de vuelta en un string.
+            };
+        });
+    }
+
     buscarAsignaturaEnMalla(codigo: string, malla: Asignatura[]): Asignatura | undefined
     {
         return malla.find((asignatura) => asignatura.codigo === codigo);
@@ -60,7 +123,9 @@ export class MallaService
     {
         const malla = await this.fetchMallaCarrera(codigoCarrera, catalogo);
         
-        let mallaSeparada = this.mallaSeparadaEnSemestres(malla);
+        let mallaLimpia = this.limpiarPrerrequisitosInvalidos(malla);
+
+        let mallaSeparada = this.mallaSeparadaEnSemestres(mallaLimpia);
     
         return Object.fromEntries(mallaSeparada);
     }

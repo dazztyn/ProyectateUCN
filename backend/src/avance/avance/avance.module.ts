@@ -8,5 +8,6 @@ import { MallaModule } from '../../mallacurricular/malla/malla.module.js';
   imports: [MallaModule],
   controllers: [AvanceController],
   providers: [AvanceService],
+  exports: [AvanceService]
 })
 export class AvanceModule {}

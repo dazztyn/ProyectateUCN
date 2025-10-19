@@ -26,4 +26,12 @@ export class AvanceConAsignatura
     {
         return this.period;
     }
+    getStatus(): string
+    {
+        return this.status;
+    }
+    getCourse(): Asignatura
+    {
+        return this.course;
+    }
 }

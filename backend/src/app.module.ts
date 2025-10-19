@@ -7,7 +7,7 @@ import { AvanceModule } from './avance/avance/avance.module.js';
 import { HomeModule } from './homepage/home/home.module.js';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ProyeccionModule } from './proyeccion/proyeccion.module';
+import { ProyeccionModule } from './proyeccion/proyeccion.module.js';
 
 @Module({
   imports: [
