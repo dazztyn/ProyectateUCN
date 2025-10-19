@@ -126,7 +126,7 @@ export class ProyeccionFutura
         {
             this.periodoActual = `${anho}20`;
         } 
-        else 
+        else if (semestre === '20' || semestre === '25') 
         { 
             this.periodoActual = `${anho + 1}10`;
         }
