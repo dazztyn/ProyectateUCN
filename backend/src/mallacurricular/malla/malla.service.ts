@@ -70,29 +70,22 @@ export class MallaService
     }
 
     limpiarPrerrequisitosInvalidos(malla: Asignatura[]): Asignatura[] {
-    
-    // 1. Crea una "lista VIP" (un Set) con todos los códigos de asignatura que SÍ existen.
-    // Las búsquedas en un Set son extremadamente rápidas.
+
         const codigosValidos = new Set(malla.map(asignatura => asignatura.codigo));
 
-        // 2. Usa .map() para recorrer cada asignatura y devolver una versión "limpia".
         return malla.map((asignatura) => {
-            
-            // Si la asignatura no tiene prerrequisitos, devuélvela tal cual.
+
             if (!asignatura.prereq) 
             {
                 return asignatura;
             }
-            
-            // 3. Procesa los prerrequisitos de la asignatura actual.
-            const prerequisitosLimpios = asignatura.prereq
-            .split(',') // a. Divide el string en un array de códigos.
-            .filter(codigo => codigosValidos.has(codigo)); // b. Quédate solo con los que están en la "lista VIP".
 
-            // 4. Crea un nuevo objeto de asignatura con los prerrequisitos actualizados.
+            const prerequisitosLimpios = asignatura.prereq
+            .split(',') 
+            .filter(codigo => codigosValidos.has(codigo));
             return {
-            ...asignatura, // Copia todas las propiedades originales de la asignatura.
-            prereq: prerequisitosLimpios.join(','), // Une los códigos válidos de vuelta en un string.
+            ...asignatura, 
+            prereq: prerequisitosLimpios.join(','), 
             };
         });
     }
