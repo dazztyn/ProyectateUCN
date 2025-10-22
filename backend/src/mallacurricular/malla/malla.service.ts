@@ -37,7 +37,7 @@ export class MallaService
 
     asignaturasCantidadAparicionesPrerrequisitos(malla: Asignatura[])
     {
-        const hasmap = new Map<string, number>();
+        const hasmap = new Map<string, Asignatura[]>();
 
         malla.forEach((asignatura) => 
         {
@@ -45,7 +45,7 @@ export class MallaService
 
             if(!hasmap.has(codigo))
             {
-                hasmap.set(codigo, 0);
+                hasmap.set(codigo, []);
             }
         });
 
@@ -58,13 +58,41 @@ export class MallaService
                 codigos = prereq.split(",");
                 codigos.forEach((codigo) => 
                 {
-                    if(hasmap.has(codigo))
-                    {
-                        let codigoActual = hasmap.get(codigo) as number;
-                        codigoActual += 1;
-                        hasmap.set(codigo, codigoActual);
-                    }
+                    hasmap.get(codigo)?.push(asignatura);
                 });
+            }
+        });
+        return hasmap;
+    }
+    listaDePrerrequisitosPorAsignatura(malla: Asignatura[])
+    {
+        const hasmap = new Map<string, Asignatura[]>();
+
+        malla.forEach((asignatura) => 
+        {
+            const codigo = asignatura.codigo;
+
+            if(!hasmap.has(codigo))
+            {
+                hasmap.set(codigo, []);
+            }
+        });
+
+        malla.forEach((asignatura) => 
+        {
+            const prereq = asignatura.prereq;
+            let codigos: string[] = [];
+            let listaAsignaturas: Asignatura[] = [] 
+            if(prereq != '')
+            {
+                codigos = prereq.split(",");
+                codigos.forEach((codigo) => 
+                {
+                    const asignaturaEncontrada: Asignatura = malla.find(asig => asig.codigo === codigo) as Asignatura;
+                    listaAsignaturas.push(asignaturaEncontrada);
+                });
+                hasmap.set(asignatura.codigo, listaAsignaturas);
+                listaAsignaturas = [];
             }
         });
         return hasmap;
@@ -116,16 +144,30 @@ export class MallaService
     agregarListaDeAsignaturasQueAbre(malla: Map<number, Asignatura[]>)
     {
         let nuevaMalla: Map<number, RamoInfo[]> = new Map<number, RamoInfo[]>();
+
         const listaDeAsignaturas: Asignatura[] = Array.from(malla.values()).flat();
-        const listaAparicionesPrerrequisito = this.asignaturasCantidadAparicionesPrerrequisitos(listaDeAsignaturas);
-        const nuevaListaRamos: RamoInfo[] = [];
+
+        const listaAparicionesPrerrequisito:Map<string, Asignatura[]> = this.asignaturasCantidadAparicionesPrerrequisitos(listaDeAsignaturas);
+
+        const listaDePrerrequisitos:Map<string, Asignatura[]> = this.listaDePrerrequisitosPorAsignatura(listaDeAsignaturas); 
+
+        let nuevaListaRamos: RamoInfo[] = [];
+
         for (const [nivel, asignaturas] of malla.entries())
         {
             for(let asig of asignaturas)
             {
                 const nuevoRamo = new RamoInfo(asig.codigo, asig.asignatura, asig.creditos, asig.nivel);
+                const listaDeAsignaturasQueAbre: Asignatura[] = listaAparicionesPrerrequisito.get(asig.codigo) as Asignatura[];
+                const listaPrerrequisitos: Asignatura[] = listaDePrerrequisitos.get(asig.codigo) as Asignatura[];
+                nuevoRamo.rellenarAsignaturasQueAbre(listaDeAsignaturasQueAbre);
+                nuevoRamo.rellenarPrerrequisitos(listaPrerrequisitos);
+                nuevaListaRamos.push(nuevoRamo);
             }
+            nuevaMalla.set(nivel, nuevaListaRamos);
+            nuevaListaRamos = [];
         }
+        return nuevaMalla;
     }
 
     async getMalla(codigoCarrera: string, catalogo: string)
@@ -134,6 +176,8 @@ export class MallaService
 
         let mallaSeparada = this.mallaSeparadaEnSemestres(malla);
     
-        return Object.fromEntries(mallaSeparada);
+        const mallaInfo = this.agregarListaDeAsignaturasQueAbre(mallaSeparada);
+
+        return Object.fromEntries(mallaInfo);
     }
 }

@@ -3,11 +3,11 @@ import { Asignatura } from "../ArchivosComunes/Asignatura.js";
 export class ProyeccionFutura 
 {
     private malla: Map<number, Asignatura[]>;
-    private aparicionesPrerrequisitos: Map<string, number>;
+    private aparicionesPrerrequisitos: Map<string, Asignatura[]>;
     private asignaturasAprobadas: Set<string>; 
     private periodoActual: string;
 
-    constructor(malla: Map<number, Asignatura[]>, aparicionesPrerrequisitos: Map<string, number>,
+    constructor(malla: Map<number, Asignatura[]>, aparicionesPrerrequisitos: Map<string, Asignatura[]>,
         asignaturasAprobadas: string[], periodoInicial: string) 
     {
         
@@ -91,8 +91,8 @@ export class ProyeccionFutura
                 return a.nivel - b.nivel;
             }
 
-            const importanciaA = this.aparicionesPrerrequisitos.get(a.codigo) || 0;
-            const importanciaB = this.aparicionesPrerrequisitos.get(b.codigo) || 0;
+            const importanciaA = this.aparicionesPrerrequisitos.get(a.codigo)?.length || 0;
+            const importanciaB = this.aparicionesPrerrequisitos.get(b.codigo)?.length || 0;
             return importanciaB - importanciaA;
         });
     }

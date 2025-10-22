@@ -19,14 +19,14 @@ export class RamoInfo
         this.asignaturasQueAbre = [];
     }
 
-    rellenarAsignaturasQueAbre(asignatura: Asignatura)
+    rellenarAsignaturasQueAbre(asignatura: Asignatura[])
     {
-        this.asignaturasQueAbre.push(asignatura);
+        this.asignaturasQueAbre.push(...asignatura);
     }
 
-    rellenarPrerrequisitos(asignatura: Asignatura)
+    rellenarPrerrequisitos(asignatura: Asignatura[])
     {
-        this.prereq.push(asignatura);
+        this.prereq.push(...asignatura);
     }
 
 }
