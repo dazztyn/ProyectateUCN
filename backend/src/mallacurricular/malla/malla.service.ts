@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Asignatura } from 'src/ArchivosComunes/Asignatura.js';
+import { RamoInfo } from 'src/ArchivosComunes/RamoInfo';
 
 
 @Injectable()
@@ -112,14 +113,19 @@ export class MallaService
         return hashmap;
     }
 
-    hashMapALista(malla: Map<number, Asignatura[]>)
+    agregarListaDeAsignaturasQueAbre(malla: Map<number, Asignatura[]>)
     {
-
-    }
-
-    agregarListaDeAsignaturasQueAbre()
-    {
-
+        let nuevaMalla: Map<number, RamoInfo[]> = new Map<number, RamoInfo[]>();
+        const listaDeAsignaturas: Asignatura[] = Array.from(malla.values()).flat();
+        const listaAparicionesPrerrequisito = this.asignaturasCantidadAparicionesPrerrequisitos(listaDeAsignaturas);
+        const nuevaListaRamos: RamoInfo[] = [];
+        for (const [nivel, asignaturas] of malla.entries())
+        {
+            for(let asig of asignaturas)
+            {
+                const nuevoRamo = new RamoInfo(asig.codigo, asig.asignatura, asig.creditos, asig.nivel);
+            }
+        }
     }
 
     async getMalla(codigoCarrera: string, catalogo: string)
