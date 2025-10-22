@@ -2,7 +2,7 @@ import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
 import { MallaService } from './malla.service.js';
 import { AuthGuard } from '@nestjs/passport';
 import type { Request } from 'express';
-import { Usuario } from 'src/ArchivosComunes/Usuario.js';
+import { Usuario } from '../../ArchivosComunes/Usuario.js';
 
 @Controller('malla')
 @UseGuards(AuthGuard('jwt'))

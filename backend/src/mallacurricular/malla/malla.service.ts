@@ -112,6 +112,16 @@ export class MallaService
         return hashmap;
     }
 
+    hashMapALista(malla: Map<number, Asignatura[]>)
+    {
+
+    }
+
+    agregarListaDeAsignaturasQueAbre()
+    {
+
+    }
+
     async getMalla(codigoCarrera: string, catalogo: string)
     {
         const malla = await this.fetchMallaCarrera(codigoCarrera, catalogo);
