@@ -1,5 +1,5 @@
 import React from "react"; 
-import {useState} from "react"; 
+import {useState, useEffect} from "react"; 
 import { useNavigate } from 'react-router-dom'; 
 import logo from '../assets/logoUCN.png';
 import '../style/styleLogin.css'; 
@@ -11,14 +11,42 @@ type Carrera = {
 
 
 const SeleccionCarrera: React.FC = () => {
-  const navigate = useNavigate();
-  const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
-  const access_token = localStorage.getItem("access_token");
-  const carreras: Carrera[] = usuario?.carreras || [];
 
+  const navigate = useNavigate();
+  
+  const access_token = localStorage.getItem("access_token");
+  const [carreras, setCarreras] = useState<Carrera[]>([]);
   const [selectedCarrera, setSelectedCarrera] = useState<Carrera | null>(null);
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+  if (!access_token) {
+  navigate("/login");
+  return null;
+  
+}
+  useEffect(() => {
+  const fetchUsuario = async () => {
+    if (!access_token) return;
+
+    try {
+      const res = await fetch("http://localhost:3000/alumno", {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+        },
+      });
+
+      if (!res.ok) throw new Error("Error al obtener usuario");
+
+      const data = await res.json();
+      setCarreras(data.carreras || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  fetchUsuario();
+}, [access_token]);
 
   const handleGo = () => {
     if (!selectedCarrera || !selectedSection) {

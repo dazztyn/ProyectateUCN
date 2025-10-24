@@ -62,3 +62,35 @@ line-height: 0.5rem;
   margin: 0;
   font-size: xx-small;
 }
+.status.aprobado {
+  font-weight: lighter;
+  margin: 0;
+  font-size: xx-small;
+  color:rgb(0, 0, 117);
+}
+.status.reprobado {
+    font-weight: lighter;
+  margin: 0;
+  font-size: xx-small;
+  color:rgb(98, 0, 0);
+}
+.status.cursando {
+    font-weight: lighter;
+  margin: 0;
+  font-size: xx-small;
+  color:rgb(59, 60, 0);
+}
+.asignatura-card.aprobado {
+  background-color: #e5e7eb;
+  border: 3px solid #4a6aea;
+}
+
+.asignatura-card.reprobado {
+  background-color: #e5e7eb;
+  border: 3px solid #aa6d33;
+}
+
+.asignatura-card.cursando {
+  background-color: #e5e7eb;
+  border: 3px solid #ffe278;
+}

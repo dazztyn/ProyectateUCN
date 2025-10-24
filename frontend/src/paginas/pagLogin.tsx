@@ -31,8 +31,8 @@ const Login: React.FC = () => {
       }
 
       const data = await response.json();
+
       localStorage.setItem('access_token', data.access_token);
-      localStorage.setItem('usuario', JSON.stringify(data.usuario));
       console.log('Login exitoso:', data);
       navigate('/seleccion');
     } catch (err) {
