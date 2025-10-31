@@ -85,7 +85,7 @@ export class AvanceService
     verificarAsignatura(codigoAsignatura: string, malla: Asignatura[])
     {
         let asignatura = this.mallaService.buscarAsignaturaEnMalla(codigoAsignatura, malla)
-        if(asignatura=== undefined)
+        if(asignatura === undefined)
         {
             return null;
         }
@@ -101,16 +101,19 @@ export class AvanceService
         const listaDeAvance: AvanceConAsignatura[] = [];
         avance.forEach((ramo) =>
         {
-            
-            listaDeAvance.push(new AvanceConAsignatura(
-                ramo.nrc,
-                ramo.period,
-                ramo.student,
-                this.verificarAsignatura(ramo.course, malla) as Asignatura,
-                ramo.excluded,
-                ramo.inscriptionType,
-                ramo.status
-            ));
+            const asignatura = this.verificarAsignatura(ramo.course, malla) as Asignatura;
+            if(asignatura != null)
+            {
+                listaDeAvance.push(new AvanceConAsignatura(
+                    ramo.nrc,
+                    ramo.period,
+                    ramo.student,
+                    asignatura,
+                    ramo.excluded,
+                    ramo.inscriptionType,
+                    ramo.status
+                ));
+            }
         });
         return this.heapSort(listaDeAvance);
     }
