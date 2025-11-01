@@ -18,7 +18,7 @@ export class ProyeccionService
             .map(item => item.getCourse().codigo);
     }
 
-    async proyeccionFutura(rutAlumno:string, codigoCarrera:string, catalogo:string)
+    async proyeccionFutura(rutAlumno:string, codigoCarrera:string, catalogo:string,  idProyeccion: string)
     {
         const avance =  await this.avanceService.fetchAvanceData(rutAlumno,codigoCarrera);
         const malla = await this.mallaService.fetchMallaCarrera(codigoCarrera,catalogo);

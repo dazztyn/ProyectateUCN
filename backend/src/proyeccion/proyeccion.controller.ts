@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Patch, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ProyeccionService } from './proyeccion.service';
 import type { Request } from 'express';
@@ -17,7 +17,11 @@ export class ProyeccionController
     )
     {
         const usuario = request.user as Usuario;
-        return this.proyeccion.proyeccionFutura(usuario.rut, usuario.carreras[indiceCarrera].codigo, usuario.carreras[indiceCarrera].catalogo);
+        return this.proyeccion.proyeccionFutura(usuario.rut, usuario.carreras[indiceCarrera].codigo, usuario.carreras[indiceCarrera].catalogo, "");
     }
-    
+    @Patch()
+    patchCrearProyeccion()
+    {
+        
+    }
 }

@@ -45,7 +45,7 @@ export class ProyeccionFutura
     }
 
     private planificarSiguienteSemestre(): Asignatura[] 
-{
+    {
         let creditosInscritos = 0;
         const semestrePlanificado: Asignatura[] = [];
         
