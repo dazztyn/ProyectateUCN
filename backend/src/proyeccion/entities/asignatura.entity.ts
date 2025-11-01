@@ -2,7 +2,7 @@ import { Entity, PrimaryColumn, Column, ManyToOne } from 'typeorm';
 import { Semestre } from './semestre.entity'; // Importa la entidad padre
 
 @Entity('asignaturas')
-export class Asignatura {
+export class Asignaturas {
   @PrimaryColumn({ type: 'text', nullable: false })
   codigoAsignatura: string;
 

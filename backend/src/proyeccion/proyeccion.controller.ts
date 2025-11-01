@@ -1,14 +1,16 @@
-import { Controller, Get, Param, Patch, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ProyeccionService } from './proyeccion.service';
 import type { Request } from 'express';
 import { Usuario } from '../ArchivosComunes/Usuario.js';
+import { CreacionProyeccion } from './DtoProyeccion/CreacionProyeccion';
 
 @Controller('proyeccion')
 @UseGuards(AuthGuard('jwt'))
 export class ProyeccionController 
 {
     constructor(private proyeccion: ProyeccionService){}
+    
     @Get(':indiceCarrera')
     getProyeccion
     (
@@ -19,9 +21,29 @@ export class ProyeccionController
         const usuario = request.user as Usuario;
         return this.proyeccion.proyeccionFutura(usuario.rut, usuario.carreras[indiceCarrera].codigo, usuario.carreras[indiceCarrera].catalogo, "");
     }
-    @Patch()
-    patchCrearProyeccion()
+
+    @Post('/Proyeccion')
+    patchCrearProyeccion
+    (
+        @Req() request: Request,
+        @Body() proyeccion: CreacionProyeccion
+    )
     {
-        
+        const usuario = request.user as Usuario;
+        return this.proyeccion.crearProyeccionConAvance(usuario.rut, usuario.carreras[0].catalogo, usuario.carreras[0].codigo, proyeccion);
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
