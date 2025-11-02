@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from 'typeorm';
 import { Proyeccion } from './proyeccion.entity'; // Importa la entidad padre
-import { Asignaturas } from './asignatura.entity'; // Importa la entidad hija
+import { InstanciaAsignatura } from './InstanciaAsignatura.entity';
 
 @Entity('semestres')
 export class Semestre {
@@ -22,8 +22,10 @@ export class Semestre {
   @ManyToOne(() => Proyeccion, (proyeccion) => proyeccion.semestres)
   proyeccion: Proyeccion;
 
-  // --- RELACIÓN CON ASIGNATURA ---
-  // Un Semestre tiene muchas Asignaturas.
-  @OneToMany(() => Asignaturas, (asignatura) => asignatura.semestre, {cascade: true,})
-  asignaturas: Asignaturas[];
+// --- RELACIÓN MODIFICADA ---
+  // Un Semestre ahora tiene muchas "Instancias" de asignaturas
+  @OneToMany(() => InstanciaAsignatura, (instancia) => instancia.semestre, {
+    cascade: true, // 👈 Mantenemos la cascada aquí
+  })
+  instancias: InstanciaAsignatura[];
 }

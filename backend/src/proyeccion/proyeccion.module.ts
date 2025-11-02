@@ -7,12 +7,13 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Proyeccion } from './entities/proyeccion.entity.js';
 import { Semestre } from './entities/semestre.entity.js';
 import { Asignaturas } from './entities/asignatura.entity.js';
+import { InstanciaAsignatura } from './entities/InstanciaAsignatura.entity.js';
 
 @Module({
   imports: [
     MallaModule,
     AvanceModule,
-    TypeOrmModule.forFeature([Proyeccion, Semestre, Asignaturas])
+    TypeOrmModule.forFeature([Proyeccion, Semestre, Asignaturas, InstanciaAsignatura])
   ],
   controllers: [ProyeccionController],
   providers: [ProyeccionService]

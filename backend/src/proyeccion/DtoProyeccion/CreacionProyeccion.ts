@@ -1,4 +1,3 @@
-import { CreacionSemestre } from "./CreacionSemestre";
 
 export class CreacionProyeccion 
 {

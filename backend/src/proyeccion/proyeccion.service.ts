@@ -11,6 +11,7 @@ import { Asignaturas } from './entities/asignatura.entity.js';
 import { Repository } from 'typeorm';
 import { CreacionSemestre } from './DtoProyeccion/CreacionSemestre.js';
 import { CreacionProyeccion } from './DtoProyeccion/CreacionProyeccion.js';
+import { CreacionInstanciaAsignatura } from './DtoProyeccion/CreacionInstanciaAsignatura.js';
 
 
 @Injectable()
@@ -59,14 +60,15 @@ export class ProyeccionService
         return Object.fromEntries(proyeccionOptima);
     }
 
-    cantidadCreditosSemestre(asignaturas: Asignatura[]): number
-    {
-        if(asignaturas != null)
-        {
-            return asignaturas.reduce((totalCreditos, credito) => {return totalCreditos + credito.creditos}, 0);
-        }
-        return 0;
-    }
+    //POSIBLEMENTE SE BORRE ESTA COSA
+    // cantidadCreditosSemestre(asignaturas: Asignatura[]): number
+    // {
+    //     if(asignaturas != null)
+    //     {
+    //         return asignaturas.reduce((totalCreditos, credito) => {return totalCreditos + credito.creditos}, 0);
+    //     }
+    //     return 0;
+    // }
 
     crearArrayDeSemestres(avance: Map<string, AvanceConAsignatura[]>): CreacionSemestre[]
     {
@@ -74,27 +76,36 @@ export class ProyeccionService
         const arraySemestres: CreacionSemestre[] = [];
         for(const[periodo, asignaturas] of avance)
         {
-            
-            let listaDeAsignaturasDelPeriodo: Asignatura[] = asignaturas.map(asignatura => asignatura.getCourse());
-            let creditosTotales: number = this.cantidadCreditosSemestre(listaDeAsignaturasDelPeriodo);
-            let asignaturasSemestre: CreacionAsignatura[] = listaDeAsignaturasDelPeriodo.map(asignatura => 
-            ({
-                codigoAsignatura: asignatura.codigo,
-                nombreAsignatura: asignatura.asignatura,
-                creditos: asignatura.creditos,
-                nivel: asignatura.nivel,
-                prerrequisitos: asignatura.prereq
-            }));
+            let creditosTotales = 0;
+            let instanciaAsignatura: CreacionInstanciaAsignatura[] = asignaturas.map(instance => {
+                
+                const asignaturaOriginal = instance.getCourse();
+
+                creditosTotales += asignaturaOriginal.creditos;
+
+                return {
+                    aprobada: (instance.getStatus() === 'APROBADO'),
+                    asignatura: {
+                        codigoAsignatura: asignaturaOriginal.codigo,
+                    }
+                };
+            });
             
             const semestre: CreacionSemestre = {
                 numero: numeroSemestre,
                 periodo: periodo,
                 totalCreditos: creditosTotales,
-                asignaturas: asignaturasSemestre 
+                instancias: instanciaAsignatura
             };
 
             arraySemestres.push(semestre);
-            numeroSemestre++;
+
+            const tipoSemestre = periodo.slice(4, 6);
+            
+            if (tipoSemestre !== '15' && tipoSemestre !== '25') {
+                numeroSemestre++;
+            }
+            
         }
         return arraySemestres;
     }
@@ -107,6 +118,25 @@ export class ProyeccionService
         const avanceRelleno: AvanceConAsignatura[] = this.avanceService.rellenarListaDeAvance(avance, malla);
         const avanceSeparado: Map<string, AvanceConAsignatura[]> = this.avanceService.avanceSeparadoPorPeriodo(avanceRelleno);
         
+        const mallaRefactorizada: CreacionAsignatura[] = malla.map(asig =>
+        ({
+            codigoAsignatura: asig.codigo,
+            nombreAsignatura: asig.asignatura,
+            creditos: asig.creditos,
+            nivel: asig.nivel,
+            prerrequisitos: asig.prereq
+        }));
+
+        const asignaturasEntidades = this.asignaturaRepository.create(mallaRefactorizada);
+
+        await this.asignaturaRepository
+            .createQueryBuilder()
+            .insert()
+            .into(Asignaturas)
+            .values(asignaturasEntidades)
+            .orIgnore()
+            .execute();
+
         const arraySemestres = this.crearArrayDeSemestres(avanceSeparado);
         
         const nuevaProyeccion = this.proyeccionRepository.create( 
