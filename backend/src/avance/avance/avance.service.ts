@@ -96,7 +96,7 @@ export class AvanceService
 
     }
 
-    rellenarListaDeAvance(avance: RamoTomado[], malla: Asignatura[])
+    rellenarListaDeAvance(avance: RamoTomado[], malla: Asignatura[]): AvanceConAsignatura[]
     {
         const listaDeAvance: AvanceConAsignatura[] = [];
         avance.forEach((ramo) =>

@@ -19,6 +19,6 @@ export class Proyeccion {
   // Una Proyeccion tiene muchos Semestres.
   // El segundo argumento '(semestre) => semestre.proyeccion' le indica a TypeORM
   // que en la entidad 'Semestre' hay una propiedad 'proyeccion' que nos conecta de vuelta.
-  @OneToMany(() => Semestre, (semestre) => semestre.proyeccion)
+  @OneToMany(() => Semestre, (semestre) => semestre.proyeccion, {cascade: true,})
   semestres: Semestre[];
 }
