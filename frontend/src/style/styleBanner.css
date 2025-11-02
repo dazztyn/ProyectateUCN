@@ -1,0 +1,44 @@
+.banner {        
+  width: 97.9vw;
+  background-color: #065d6d;
+  color: white;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+
+}
+.banner-left {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 1rem;            
+}
+.logo {
+  padding-top: 1.7rem;
+  width: 80px;
+  height: 80px;
+}
+.wawa {
+  font-family: 'Arial', sans-serif;
+  font-size: 2rem;
+  font-weight: bold;
+  align-items: center;
+}
+.banner-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.back-button {
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+}
+.icon-banner {
+  width: 80px;
+  height: 80px;
+  filter: invert(1);
+}

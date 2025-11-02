@@ -1,5 +1,6 @@
 .cuerpoLogin {
-    background-color: #065d6d;
+    background: #2D8191;
+background: linear-gradient(180deg, rgba(45, 129, 145, 1) 0%, rgba(6, 93, 109, 1) 49%, rgba(1, 52, 62, 1) 100%);
     display: flex;
     flex-direction: column;
     justify-content: center;
