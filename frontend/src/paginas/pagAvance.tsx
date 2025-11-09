@@ -13,6 +13,7 @@ const Avance: React.FC = () => {
   const [access_token, setAccessToken] = useState<string | null>(null);
 
   useEffect(() => {
+    
     const state = location.state as { indice: number; access_token: string } | undefined;
 
     if (state && state.access_token !== undefined) {

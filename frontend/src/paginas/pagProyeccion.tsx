@@ -1,6 +1,8 @@
 import React from 'react';
 import Layout from '../componentes/layoutWithSidebar';
 import SelectProy from '../componentes/compSelectProyeccion';
+import Warning from '../assets/warning.png'
+import '../style/stylePagBlanca.css';
 import { useNavigate, useLocation  } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 const Proyeccion: React.FC = () => {
@@ -64,9 +66,10 @@ const Proyeccion: React.FC = () => {
   return (
     <Layout>
     <div>
-      <h2>Proyeccion Curricular - {carreraActual}</h2>
-      <SelectProy />
-      <button onClick={() => navigate('/editor')}>Ir al Editor de Proyecciones</button>
+      <h2>Proyeccion Curricular - {carreraActual} - Selección de proyección</h2>
+      <div className="warningMensaje"><img src={Warning} className='iconoWarning'></img>
+      Atención: Antes de acceder al editor es necesario establecer la proyección a la cual accederá.</div>
+      <SelectProy/>
     </div>
     </Layout>
   );

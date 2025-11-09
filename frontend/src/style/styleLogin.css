@@ -13,6 +13,8 @@ background: linear-gradient(180deg, rgba(45, 129, 145, 1) 0%, rgba(6, 93, 109, 1
     width: 100px;
     height: auto;
     margin-bottom: 2rem;
+   filter: drop-shadow(3px 5px 5px #03353e);
+    
 }
 
 .login-box {
@@ -35,6 +37,7 @@ align-items: center;
   background-color: #263538;
   border: 1px solid #e5e7eb;
 }
+
 
 .login-box button {
     background-color: #aa6d33;

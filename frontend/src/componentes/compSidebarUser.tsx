@@ -45,8 +45,8 @@ const Sidebar: React.FC = () => {
       </div>
 
       <nav className="sidebar-nav">
-        <button onClick={() => handleNav("/seleccion")} className="sidebar-link">
-          <img src={iconoHome} alt="icono Malla" className="icon" />
+        <button onClick={() => handleNav("/seleccion")} className={`sidebar-link${location.pathname === "/seleccion" ? "active" : ""}`}>
+          <img src={iconoHome} alt="icono Seleccion" className="icon" />
           Selección
         </button>
         <button onClick={() => handleNav("/malla")} className={`sidebar-link ${location.pathname === "/malla" ? "active" : ""}`}>

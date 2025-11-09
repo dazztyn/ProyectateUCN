@@ -1,6 +1,7 @@
 import React from "react"; 
 import {useState, useEffect} from "react"; 
 import { useNavigate } from 'react-router-dom'; 
+import ErrorMessage from '../componentes/compMensajeError';
 import logo from '../assets/logoUCN.png';
 import '../style/styleLogin.css'; 
 
@@ -18,6 +19,7 @@ const SeleccionCarrera: React.FC = () => {
   const [carreras, setCarreras] = useState<Carrera[]>([]);
   const [selectedCarrera, setSelectedCarrera] = useState<Carrera | null>(null);
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
   const [open, setOpen] = useState(false);
   if (!access_token) {
   navigate("/login");
@@ -25,6 +27,7 @@ const SeleccionCarrera: React.FC = () => {
   
 }
   useEffect(() => {
+  document.title = "Selección — Proyéctate UCN";
   const fetchUsuario = async () => {
     if (!access_token) return;
 
@@ -36,12 +39,16 @@ const SeleccionCarrera: React.FC = () => {
         },
       });
 
-      if (!res.ok) throw new Error("Error al obtener usuario");
+      if (!res.ok) {
+         setError("No se pudo obtener la información del usuario.");
+      return;
+}
 
       const data = await res.json();
       setCarreras(data.carreras || []);
     } catch (err) {
       console.error(err);
+      setError("Error de conexión con el servidor.");
     }
   };
 
@@ -50,7 +57,7 @@ const SeleccionCarrera: React.FC = () => {
 
   const handleGo = () => {
     if (!selectedCarrera || !selectedSection) {
-      alert("Debe seleccionar una sección y una carrera.");
+      setError("Debe seleccionar una sección y una carrera.");
       return;
     }
 
@@ -70,7 +77,7 @@ const SeleccionCarrera: React.FC = () => {
     <div className="seleccion-container">
       <h2>Selecciona tu sección y carrera</h2>
 
-      
+      {error && <ErrorMessage message={error} onClose={() => setError(null)}/>}
       <div className="botones-seccion">
         {["malla", "avance", "proyeccion"].map((sec) => (
           <button

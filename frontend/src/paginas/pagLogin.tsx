@@ -2,6 +2,7 @@ import React from 'react';
 import '../style/styleLogin.css';
 import logo from '../assets/logoUCN.png';
 import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import ErrorMessage from '../componentes/compMensajeError';
 
 const Login: React.FC = () => {
@@ -10,6 +11,9 @@ const Login: React.FC = () => {
   const [password, setPassword] = React.useState('');
   const [error, setError] = React.useState<string | null>(null);
   const navigate = useNavigate();
+  useEffect(() => {
+    document.title = "Inicio — Proyéctate UCN";
+  }, []);
 
   // Manejo de formulario
   const handleSubmit = async (e: React.FormEvent) => {
@@ -65,7 +69,7 @@ const Login: React.FC = () => {
           <button type="submit">Ingresar Datos</button>
         </form>
 
-        {error && <ErrorMessage message={error} />}
+        {error && <ErrorMessage message={error} onClose={() => setError(null)}/>}
       </div>
     </div>
   );

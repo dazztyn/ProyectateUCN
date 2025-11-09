@@ -1,0 +1,19 @@
+.iconoWarning{
+  width: 1.2rem;
+  height: 1.4rem;
+  margin-right: 0.5rem;
+  filter: invert(1);
+}
+.warningMensaje {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    font-weight: bold;
+    border: 2px solid #065d6d;
+    border-radius: 6px;
+    color: #e5e7eb;
+    font-size: 1.2rem;
+    background-color: #065d6d;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+}

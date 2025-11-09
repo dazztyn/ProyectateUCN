@@ -81,6 +81,7 @@ background: linear-gradient(180deg, rgba(45, 129, 145, 1) 0%, rgba(6, 93, 109, 1
 .sidebar-link.active {
   font-weight: bold;
   
+  
 }
 .icon {
   width: 0.9rem;

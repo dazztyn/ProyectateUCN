@@ -1,18 +1,42 @@
 .main-container{
     display: flex;
-    flex-direction: column;
-    height : 82vh;
+    height : 72vh;
     width: 82vw;
+}
+.container-seleccion-general{
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    position: relative;
+    justify-content:flex-start;
+    height: 90%;
+    width: 100%;
+    text-align: center;
+    padding: 2rem;
+    border: 2px solid #065d6d;
+    border-radius: 6px;
+    background-color: #91a0c3;
+    border-color: #065d6d;
+    margin: auto;
+    position:relative;
+}
+.titulo-seleccion-proy{
+    font-size: 1.5rem;
+    text-decoration: underline;
+    text-underline-offset: 8px;
+    text-decoration-thickness: 3px;
+    color: #e5e7eb;
+    margin-bottom: 1rem;
+    font-family: inherit;
+    font-weight: bold;
 }
 .bloque-existentes{
-    background-color: #B15906;
+    position: relative;
+    background-color: #065d6d;
     display: flex;
   padding: 0.8rem;
   height: 2rem;
   width: 90%;
-  color: white;
+  color: rgba(255, 255, 255, 0.807);
   font-weight: bold;
   font-style: italic;
   border-radius: 6px;
@@ -27,19 +51,21 @@
     height: 32px;
     margin-left: 8px;
     filter: invert(1);
+    transition: transform 0.3s ease;
     
 }
 .iconoArrow.open {
   transform: rotate(180deg);
 }
 .lista-proyecciones {
-  position: absolute;
-  top: 4rem;       
-  width: 92%;
-
+  position: absolute;       
+  background-color: #0a3d46;
+  border-radius: 6px;
   list-style: none;
-  margin: 0;
-  padding: 0;
+  margin-top: 6.8rem;
+  width:85.5%;
+
+  padding: 0.8rem;
   
   max-height: 80vh;
   overflow-y: auto;
@@ -55,6 +81,7 @@
   padding: 0.5rem;
   cursor: pointer;
   border:#065d6d solid 2px;
+  margin-top: 6px;
   border-radius: 6px;
   background-color: #91a0c3;
   transition: background-color 0.2s;
@@ -64,18 +91,51 @@
   background-color: #e5e7eb;
   color:#065d6d;
 }
+.botones-seccion {
+  display: flex;
+  background-color: #5b74d9;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-radius: 8px ;
+  margin-bottom: 1rem;
+  height: 2rem;
+  width: 90%;
+}
+
+.boton-new {
+  background-color: #e5e7eb;
+  border: none;
+  color: #065d6d;
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.boton-new.activo {
+  background-color: #d9822b;
+  color: white;
+  font-weight: bold;
+}
 .botonGo {
-  background-color: #112978;
+  background-color: #e5e7eb;
   display: flex;
   padding: 0.8rem;
   height: 2rem;
   width: 90%;
-  color: white;
+  color: #065d6d;
   font-weight: bold;
   border-radius: 6px;
-  margin-bottom: 0.5rem;
+  margin-bottom: 1.2rem;
   text-align: center;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  transition: font-size 0.2s;
+}
+.botonGo:hover {
+  background-color: #5b74d9;
+  color: white;
+  font-size: large;
 }
