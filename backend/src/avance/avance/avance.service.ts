@@ -118,7 +118,7 @@ export class AvanceService
         return this.heapSort(listaDeAvance);
     }
 
-    avanceSeparadoPorPeriodo(avance: AvanceConAsignatura[])
+    avanceSeparadoPorPeriodo(avance: AvanceConAsignatura[]): Map<string, AvanceConAsignatura[]>
     {
         let hashmap = new Map<string, AvanceConAsignatura[]>();
 
