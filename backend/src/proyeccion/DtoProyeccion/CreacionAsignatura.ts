@@ -1,4 +1,4 @@
-class CreacionAsignatura
+export class CreacionAsignatura
 {
     codigoAsignatura: string;
     nombreAsignatura: string;

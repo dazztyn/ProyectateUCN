@@ -11,15 +11,17 @@ export class ProyeccionController
 {
     constructor(private proyeccion: ProyeccionService){}
     
-    @Get(':indiceCarrera')
+    @Post(':indiceCarrera')
     getProyeccion
     (
         @Req() request: Request,
-        @Param('indiceCarrera') indiceCarrera: string
+        @Param('indiceCarrera') indiceCarrera: string,
+        @Body() proyeccion: CreacionProyeccion
     )
     {
         const usuario = request.user as Usuario;
-        return this.proyeccion.proyeccionFutura(usuario.rut, usuario.carreras[indiceCarrera].codigo, usuario.carreras[indiceCarrera].catalogo, "");
+        return this.proyeccion.proyeccionFutura(usuario.rut, usuario.carreras[indiceCarrera].codigo, 
+            usuario.carreras[indiceCarrera].catalogo, proyeccion);
     }
 
     @Post('/Proyeccion')
