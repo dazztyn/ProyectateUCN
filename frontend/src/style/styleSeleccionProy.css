@@ -9,13 +9,11 @@
     align-items: center;
     justify-content:flex-start;
     height: 90%;
-    width: 100%;
+    width: 82vw;
     text-align: center;
     padding: 2rem;
-    border: 2px solid #065d6d;
     border-radius: 6px;
-    background-color: #91a0c3;
-    border-color: #065d6d;
+    background-color: #01343E;
     margin: auto;
     position:relative;
 }
@@ -32,10 +30,11 @@
 .bloque-existentes{
     position: relative;
     background-color: #065d6d;
+
     display: flex;
   padding: 0.8rem;
   height: 2rem;
-  width: 90%;
+  width: 74vw;
   color: rgba(255, 255, 255, 0.807);
   font-weight: bold;
   font-style: italic;
@@ -45,6 +44,10 @@
   flex-direction: row;
   justify-content: space-between;
   cursor: pointer;
+}
+.bloque-existentes:hover {
+    background-color: #2D8191;
+    color: white;
 }
 .iconoArrow {
     width: 32px;
@@ -59,11 +62,11 @@
 }
 .lista-proyecciones {
   position: absolute;       
-  background-color: #0a3d46;
+  background-color: #e5e7eb;
   border-radius: 6px;
   list-style: none;
   margin-top: 6.8rem;
-  width:85.5%;
+  width:74vw;
 
   padding: 0.8rem;
   
@@ -80,10 +83,11 @@
 .lista-proyecciones li {
   padding: 0.5rem;
   cursor: pointer;
-  border:#065d6d solid 2px;
   margin-top: 6px;
   border-radius: 6px;
-  background-color: #91a0c3;
+  background-color: #065d6d;
+  
+  color: #e5e7eb;
   transition: background-color 0.2s;
 }
 
@@ -91,39 +95,64 @@
   background-color: #e5e7eb;
   color:#065d6d;
 }
-.botones-seccion {
+.botones-seccion-proy {
   display: flex;
-  background-color: #5b74d9;
-  justify-content: center;
+  flex-direction: row;
+  background-color: #065d6d;
+  justify-content:space-around;
+  align-items: center;
   gap: 0.5rem;
   padding: 1rem;
   border-radius: 8px ;
   margin-bottom: 1rem;
   height: 2rem;
-  width: 90%;
+  width: 73.8vw;
 }
-
-.boton-new {
+.boton-select-proy {
   background-color: #e5e7eb;
   border: none;
   color: #065d6d;
-  padding: 0.6rem 1rem;
+  
+  padding: 0.4rem 1rem;
   border-radius: 6px;
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
-.boton-new.activo {
-  background-color: #d9822b;
+.boton-seccion-proy {
+  display: flex;
+  background-color: #e5e7eb;
+  border: none;
+  color: #065d6d;
+      border-style: solid;
+    border-width: 1px;
+    
+  padding:1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  justify-content: center;
+  align-items: center;
+  height:max-content;
+  width:100%;
+  transition: background-color 0.2s;
+}
+.boton-seccion-proy:hover {
+  background-color: #2D8191;
+  color: white;
+  border-color: #01343E;
+}
+
+.boton-seccion-proy.activo {
+  background-color: #2D8191;
   color: white;
   font-weight: bold;
 }
-.botonGo {
+.botonGo-proy{
   background-color: #e5e7eb;
   display: flex;
   padding: 0.8rem;
   height: 2rem;
-  width: 90%;
+  width: 74vw;
   color: #065d6d;
   font-weight: bold;
   border-radius: 6px;
@@ -134,8 +163,20 @@
   cursor: pointer;
   transition: font-size 0.2s;
 }
-.botonGo:hover {
-  background-color: #5b74d9;
+.botonGo-proy:hover {
+  background-color: #2D8191;
   color: white;
   font-size: large;
+}
+.input-nombre-proy{
+  width: 74vw;
+  height: 1rem;
+  border-radius: 6px;
+  border: none;
+  margin-bottom: 1rem;
+  border-style: solid;
+  border-width: 1px;
+  font-style: italic;
+  background-color: #01343E;
+  padding: 0.8rem;
 }

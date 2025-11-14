@@ -1,9 +1,7 @@
 .malla-container {
   display: flex;      
-  height : 82vh;
-  width: 82vw;
-  overflow-x: auto;
-  overflow-y: auto;
+  height : auto;
+  width: auto;
   border-radius: 8px;
   gap: 0.5rem;                    
   padding: 0.5rem;

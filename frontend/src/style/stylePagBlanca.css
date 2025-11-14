@@ -9,11 +9,10 @@
     flex-direction: row;
     align-items: center;
     font-weight: bold;
-    border: 2px solid #065d6d;
     border-radius: 6px;
     color: #e5e7eb;
     font-size: 1.2rem;
-    background-color: #065d6d;
+    background-color: #B17C06;
     padding: 0.5rem;
     margin-bottom: 0.5rem;
 }

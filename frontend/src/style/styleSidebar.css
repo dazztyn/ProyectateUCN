@@ -2,12 +2,11 @@
   height: 100vh;            
   width: 8rem;             
   background: #2D8191;
-background: linear-gradient(180deg, rgba(45, 129, 145, 1) 0%, rgba(6, 93, 109, 1) 49%, rgba(1, 52, 62, 1) 100%);
+background: linear-gradient(180deg, rgb(45, 137, 145) 0%, rgba(6, 93, 109, 1) 49%, rgb(1, 32, 62) 100%);
   color: white;
   display: flex;
   flex-direction: column;
   align-items: center;
-
 }
 
 .logo-container {

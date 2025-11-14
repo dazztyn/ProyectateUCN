@@ -41,6 +41,7 @@ const SeleccionCarrera: React.FC = () => {
 
       if (!res.ok) {
          setError("No se pudo obtener la información del usuario.");
+         navigate("/login");
       return;
 }
 

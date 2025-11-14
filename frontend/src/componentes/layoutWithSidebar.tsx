@@ -26,7 +26,7 @@ const LayoutWithSidebar: React.FC<LayoutWithSidebarProps> = ({ children }) => {
   }, [location.pathname]);
 
   return (
-    <div style={{ display: "flex", maxHeight: "100vh" }}>
+    <div style={{ display: "flex"}}>
       <Sidebar />
       <div style={{ flex: 1, color: "black", padding: "2rem" }}>
         {children}

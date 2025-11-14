@@ -27,16 +27,16 @@ const CompSelectProyeccion: React.FC = () => {
           <li>Proyección 2</li>
           <li>Proyección 3</li>
         </ul>
-        <div className="botonGo">
+        <div className="botonGo-proy">
           Ir a Proyección Seleccionada
         </div>
         <div className="titulo-seleccion-proy">Proyección Nueva</div>
-        <div className="botones-seccion">
+        <div className="botones-seccion-proy">
         {["Vacía", "Mejor Caso"].map((sec) => (
           <button
             key={sec}
             onClick={() => setSelectedSection(sec)}
-            className={`boton-seccion ${
+            className={`boton-seccion-proy ${
               selectedSection === sec ? "activo" : ""
             }`}
           >
@@ -45,9 +45,17 @@ const CompSelectProyeccion: React.FC = () => {
         ))}
       </div>
       <form>
-        Nombre proyeccion nueva
+        <label htmlFor="nombreProyeccion" className="label-nombre-proy">
+          <input
+            type="text"
+            id="nombreProyeccion"
+            name="nombreProyeccion"
+            placeholder="Nombre de la Proyección"
+            className="input-nombre-proy"
+          />
+        </label>
       </form>
-      <div className="botonGo">
+      <div className="botonGo-proy">
           Crear Proyección nueva
         </div>
       </div>
