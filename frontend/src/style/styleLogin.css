@@ -42,7 +42,7 @@ justify-content: center;
   color: #B17C06;
 }
 
-/* Sobrescribir autofill de Chrome/Brave/Edge */
+/* Sobrescribir autofill */
 .login-box input:-webkit-autofill,
 .login-box input:-webkit-autofill:hover,
 .login-box input:-webkit-autofill:focus {
@@ -53,7 +53,6 @@ justify-content: center;
   border: 1px solid #e5e7eb;
 }
 
-/* Sobrescribir autofill de Firefox */
 .login-box input:autofill {
   background-color: #263538 !important;
   color: #e5e7eb !important;
