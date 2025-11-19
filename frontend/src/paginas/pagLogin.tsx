@@ -30,7 +30,7 @@ const Login: React.FC = () => {
       });
 
       if (!response.ok) {
-        setError('Credenciales incorrectas');
+        setError('Usuario no encontrado o credenciales incorrectas');
         return;
       }
 
@@ -46,7 +46,7 @@ const Login: React.FC = () => {
 
   return (
     <div className="cuerpoLogin">
-      <img src={logo} alt="Logo UCN" className="logo" />
+      <img src={logo} alt="Logo UCN" className="logo-ucn" />
       <h3>Bienvenid@ a Proyectate UCN</h3>
 
       <div className="login-box">
@@ -66,7 +66,7 @@ const Login: React.FC = () => {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-          <button type="submit">Ingresar Datos</button>
+          <button type="submit" className="login-button">Ingresar Datos</button>
         </form>
 
         {error && <ErrorMessage message={error} onClose={() => setError(null)}/>}

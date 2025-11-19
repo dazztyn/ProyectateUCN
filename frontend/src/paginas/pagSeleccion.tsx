@@ -72,7 +72,7 @@ const SeleccionCarrera: React.FC = () => {
 
   return (
     <div className="cuerpoLogin">
-    <img src={logo} alt="Logo UCN" className="logo" />
+    <img src={logo} alt="Logo UCN" className="logo-ucn" />
     <div className="fondo-franja">
     <div className="fondo-contenido">
     <div className="seleccion-container">

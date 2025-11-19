@@ -9,9 +9,9 @@ background: linear-gradient(180deg, rgb(45, 137, 145) 0%, rgba(6, 93, 109, 1) 49
     width: 100vw;
     color: white;
 }
-.logo {
+.logo-ucn {
     width: 100px;
-    height: auto;
+    height: 100px;
     margin-bottom: 2rem;
    filter: drop-shadow(3px 5px 5px #03353e);
     
@@ -21,7 +21,9 @@ background: linear-gradient(180deg, rgb(45, 137, 145) 0%, rgba(6, 93, 109, 1) 49
 display: flex;
 flex-direction: column;
 align-items: center;
+justify-content: center;
   background-color: #e5e7eb;
+  margin-top: 1rem;
   padding: 2rem;
   border-radius: 10px;
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
@@ -29,6 +31,7 @@ align-items: center;
 }
 
 
+/* Fondo y texto del input normal */
 .login-box input {
   margin: 1rem 0;
   padding: 0.75rem;
@@ -36,24 +39,40 @@ align-items: center;
   border-radius: 5px;
   background-color: #263538;
   border: 1px solid #e5e7eb;
+  color: #B17C06;
 }
 
+/* Sobrescribir autofill de Chrome/Brave/Edge */
+.login-box input:-webkit-autofill,
+.login-box input:-webkit-autofill:hover,
+.login-box input:-webkit-autofill:focus {
+  background-color: #263538 !important;
+  -webkit-text-fill-color: #e5e7eb !important;
+  transition: background-color 9999s ease-in-out 0s;
+  caret-color: #e5e7eb;
+  border: 1px solid #e5e7eb;
+}
 
-.login-box button {
-    background-color: #aa6d33;
-    color: e5e7eb;
+/* Sobrescribir autofill de Firefox */
+.login-box input:autofill {
+  background-color: #263538 !important;
+  color: #e5e7eb !important;
+}
+.login-button {
+    background-color: #B17C06;
+    color: #e5e7eb;
     font-size: 1.2rem;
     padding: 0.75rem 1.5rem;
     width: 100%;
     cursor: pointer;
-    transition: background-color 0.3s ease;
 }
 
-.login-box button:hover {
-    background-color: #d9822b;
+.login-button:hover {
+    background-color: #107386;
+    border-color: #024A58;
 }
-.login-box button:active {
-    background-color: #2D8191;
+.login-button:active {
+    background-color: #024A58;
 }
 .login-box h2 {
     margin-bottom: 1rem;
@@ -67,14 +86,16 @@ align-items: center;
     font-size: 3rem;
 }
 .seleccion-container {
+ 
   max-width: 400px;
   margin: 2rem auto;
   text-align: center;
 }
 
 .botones-seccion {
+   margin-top: 1rem;
   display: flex;
-  background-color: #5b74d9;
+  background-color: #065D6D;
   justify-content: center;
   gap: 0.5rem;
   padding: 1rem;
@@ -89,17 +110,24 @@ align-items: center;
   padding: 0.6rem 1rem;
   border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, color 0.2s;
 }
 
 .boton-seccion.activo {
-  background-color: #d9822b;
+  background-color: #065D6D;
+  border-style: solid;
+  border-width: 2px;
+  border-color: #e5e7eb;
   color: white;
   font-weight: bold;
 }
+.boton-seccion:hover {
+  background-color: #2D8191;
+  color: #e5e7eb;
+}
 
 .bloque-carrera {
-  background-color: #d9822b;
+  background-color: #B17C06;
   padding: 0.8rem;
   border-radius: 6px;
   margin-bottom: 0.5rem;
@@ -110,13 +138,15 @@ align-items: center;
   list-style: none;
   margin: 0;
   padding: 0;
+  border-radius: 6px;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
 }
 
 .lista-carreras li {
   padding: 0.5rem;
-  
+  border-radius: 6px;
+  background-color: #024A58;
   cursor: pointer;
   transition: background-color 0.2s;
 }
@@ -129,7 +159,7 @@ align-items: center;
 .boton-ir {
   margin-top: 1rem;
   padding: 0.7rem 1.5rem;
-  background-color: #5b74d9;
+  background-color: #01343E;
   color: white;
   border: none;
   border-radius: 6px;
@@ -137,7 +167,7 @@ align-items: center;
 }
 
 .boton-ir:hover {
-  background-color: #4a61c7;
+  background-color: #024A58;
 }
 .fondo-franja {
   position: relative;

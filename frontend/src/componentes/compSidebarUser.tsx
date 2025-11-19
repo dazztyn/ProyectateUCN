@@ -4,6 +4,8 @@ import iconoHome from "../assets/home-icon-silhouette.png";
 import iconoMalla from "../assets/menu.png";
 import iconoProyeccion from "../assets/magic-ball.png";
 import iconoAvance from "../assets/globe.png";
+import ToggleThemeButton from "../componentes/compBotonDarkMode.tsx";
+import { useTheme } from "../contexts/ThemeContext.tsx";
 import React from 'react';
 import '../style/styleSidebar.css';
 import { useNavigate } from 'react-router-dom';
@@ -16,7 +18,10 @@ const Sidebar: React.FC = () => {
   const indiceCarrera = localStorage.getItem("indiceCarrera");
   const carreraActual =
     usuario?.carreras?.[Number(indiceCarrera)]?.nombre || "Ninguna seleccionada";
-
+  const Componente = () => {
+  const { theme, setTheme } = useTheme();
+  return <div>Tema actual: {theme}</div>;
+};
   const handleNav = (path: string) => {
     const access_token = localStorage.getItem("access_token");
     const indiceCarrera = localStorage.getItem("indiceCarrera");
@@ -62,6 +67,7 @@ const Sidebar: React.FC = () => {
           Proyección
         </button>
       </nav>
+      <ToggleThemeButton />
     </div>
   );
 };

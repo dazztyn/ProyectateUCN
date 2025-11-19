@@ -11,7 +11,7 @@ const ErrorMessage: React.FC<ErrorMessageProps> = ({ message, onClose }) => {
     <div className="errorContainer">
       <div className="errorTitulo">ERROR</div>
       <div className="errorMensaje">{message}</div>
-      <button className= "errorClose" onClick={onClose}>Cerrar</button>
+      <button className= "errorBoton" onClick={onClose}>Cerrar</button>
     </div>
   );
 };

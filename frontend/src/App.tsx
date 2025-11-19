@@ -1,6 +1,6 @@
 
 import { Routes, Route } from "react-router-dom";
-import './style/App.css'
+import './App.css'
 import Malla from './paginas/pagMalla';
 import Avance from './paginas/pagAvance';
 import Proyeccion from './paginas/pagProyeccion';
