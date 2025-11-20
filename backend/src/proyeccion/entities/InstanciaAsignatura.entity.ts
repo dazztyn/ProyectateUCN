@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
-import { Semestre } from './semestre.entity.js';
-import { Asignaturas } from './asignatura.entity.js';
+import { Semestre } from './semestre.entity';
+import { Asignaturas } from './asignatura.entity';
 
 @Entity('instancias_asignaturas')
 export class InstanciaAsignatura {
