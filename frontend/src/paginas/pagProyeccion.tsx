@@ -65,7 +65,6 @@ const Proyeccion: React.FC = () => {
   if (indice === null || !access_token) return <p>Cargando...</p>;
   return (
     <Layout>
-    
     <div>
       <h2>Proyeccion Curricular - {carreraActual} - Selección de proyección</h2>
       <div className="warningMensaje"><img src={Warning} className='iconoWarning'></img>

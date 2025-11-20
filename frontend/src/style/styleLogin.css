@@ -1,6 +1,22 @@
 .cuerpoLogin {
 background: #2D8191;
 background: linear-gradient(180deg, rgb(45, 137, 145) 0%, rgba(6, 93, 109, 1) 49%, rgb(1, 32, 62) 100%);
+  --s: 145px; /* control the size*/
+  --c1: #2D8191;
+  --c2: #065d6d;
+  --c3: #024A58;
+  
+  --_g: 0 120deg,#0000 0;
+  background:
+    conic-gradient(             at calc(250%/3) calc(100%/3),var(--c3) var(--_g)),
+    conic-gradient(from -120deg at calc( 50%/3) calc(100%/3),var(--c2) var(--_g)),
+    conic-gradient(from  120deg at calc(100%/3) calc(250%/3),var(--c1) var(--_g)),
+    conic-gradient(from  120deg at calc(200%/3) calc(250%/3),var(--c1) var(--_g)),
+    conic-gradient(from -180deg at calc(100%/3) 50%,var(--c2)  60deg,var(--c1) var(--_g)),
+    conic-gradient(from   60deg at calc(200%/3) 50%,var(--c1)  60deg,var(--c3) var(--_g)),
+    conic-gradient(from  -60deg at 50% calc(100%/3),var(--c1) 120deg,var(--c2) 0 240deg,var(--c3) 0);
+  background-size: calc(var(--s)*sqrt(3)) var(--s);
+
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -8,6 +24,7 @@ background: linear-gradient(180deg, rgb(45, 137, 145) 0%, rgba(6, 93, 109, 1) 49
     height: 100vh;
     width: 100vw;
     color: white;
+
 }
 .logo-ucn {
     width: 100px;
@@ -16,6 +33,7 @@ background: linear-gradient(180deg, rgb(45, 137, 145) 0%, rgba(6, 93, 109, 1) 49
    filter: drop-shadow(3px 5px 5px #03353e);
     
 }
+
 
 .login-box {
 display: flex;
@@ -39,7 +57,7 @@ justify-content: center;
   border-radius: 5px;
   background-color: #263538;
   border: 1px solid #e5e7eb;
-  color: #B17C06;
+  color: #e5e7eb;
 }
 
 /* Sobrescribir autofill */

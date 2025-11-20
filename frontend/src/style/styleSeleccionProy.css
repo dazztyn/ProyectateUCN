@@ -8,7 +8,7 @@
     flex-direction: column;
     align-items: center;
     justify-content:flex-start;
-    height: 90%;
+    height: max-content;
     width: 82vw;
     text-align: center;
     padding: 2rem;
@@ -33,7 +33,8 @@
 
     display: flex;
   padding: 0.8rem;
-  height: 2rem;
+  height: 4rem;
+  align-items: center;
   width: 74vw;
   color: rgba(255, 255, 255, 0.807);
   font-weight: bold;
@@ -81,6 +82,10 @@
 }
 
 .lista-proyecciones li {
+  display: flex;
+  height: 4rem;
+  align-items: center;
+  justify-content: center;
   padding: 0.5rem;
   cursor: pointer;
   margin-top: 6px;
@@ -100,12 +105,11 @@
   flex-direction: row;
   background-color: #065d6d;
   justify-content:space-around;
+  height: 4rem;
   align-items: center;
   gap: 0.5rem;
   padding: 1rem;
   border-radius: 8px ;
-  margin-bottom: 1rem;
-  height: 2rem;
   width: 73.8vw;
 }
 .boton-select-proy {
@@ -126,7 +130,7 @@
   color: #065d6d;
       border-style: solid;
     border-width: 1px;
-    
+  height: 2.5rem;
   padding:1rem;
   border-radius: 6px;
   cursor: pointer;
@@ -151,7 +155,8 @@
   background-color: #e5e7eb;
   display: flex;
   padding: 0.8rem;
-  height: 2rem;
+  height: 4rem;
+  align-items: center;
   width: 74vw;
   color: #065d6d;
   font-weight: bold;
@@ -178,5 +183,6 @@
   border-width: 1px;
   font-style: italic;
   background-color: #01343E;
+  color:#e5e7eb;
   padding: 0.8rem;
 }

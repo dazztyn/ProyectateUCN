@@ -2,6 +2,7 @@ import React from 'react';
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate  } from 'react-router-dom';
 import Layout from '../componentes/layoutWithSidebar';
+import '../style/stylePagBlanca.css';
 import AvanceDisplay from '../componentes/compAvanceDisplay'
 
 const Avance: React.FC = () => {

@@ -1,7 +1,7 @@
 .malla-container {
   display: flex;      
   height : auto;
-  width: auto;
+  width: min-content;
   border-radius: 8px;
   gap: 0.5rem;                    
   padding: 0.5rem;
@@ -40,8 +40,9 @@
 .asignatura-card {
 display: flex;
 line-height: 0.5rem;
-  height: max-content;
+  height: 4rem;
   flex-direction: column;  
+  justify-content: space-between;
   text-align: center;
   background: #e5e7eb;
   border-radius: 8px;

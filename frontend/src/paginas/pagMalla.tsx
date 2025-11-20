@@ -2,6 +2,7 @@ import React from 'react';
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate  } from 'react-router-dom';
 import Layout from '../componentes/layoutWithSidebar';
+import '../style/stylePagBlanca.css';
 import MallaCarrera from '../componentes/compMallaDisplay';
 
 const Malla: React.FC = () => {

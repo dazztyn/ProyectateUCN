@@ -67,7 +67,6 @@ const Sidebar: React.FC = () => {
           Proyección
         </button>
       </nav>
-      <ToggleThemeButton />
     </div>
   );
 };

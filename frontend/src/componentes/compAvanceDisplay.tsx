@@ -25,7 +25,7 @@ type Props = {
 const AvanceDisplay: React.FC<Props> = ({ indice, access_token }) => {
   const [avance, setAvance] = useState<Record<string, Avance[]>>({});
   const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = React.useState<string | null>(null);
 
   useEffect(() => {
     const obtenerAvance = async () => {
@@ -54,7 +54,7 @@ const AvanceDisplay: React.FC<Props> = ({ indice, access_token }) => {
   }, [indice, access_token]);
 
   if (cargando) return <p className="loading">Cargando avance...</p>;
-  if (error) return <ErrorMessage message={error} />;
+  if (error) return <ErrorMessage message={error} onClose={() => setError(null)}/>;
   if (!Object.keys(avance).length)
     return <p className="error">No se encontraron registros de avance.</p>;
   const getPeriodoNombre = (periodo: string) => {
