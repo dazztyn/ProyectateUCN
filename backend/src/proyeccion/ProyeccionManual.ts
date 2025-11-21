@@ -65,12 +65,21 @@ export class ProyeccionManual
     private prepararAsignaturasNoDisponibles(): Asignatura[]
     {
         const noDisponibles: Asignatura[] = [];
-        
+
+        const semestresPendientes = Array.from(this.malla.keys()).sort((a, b) => a - b);
+        if (semestresPendientes.length === 0) return [];
+
+        const semestreMasAtrasado = semestresPendientes[0];
+        const limiteSemestre = semestreMasAtrasado + 2;
+
         for (const [nivel, asignaturas] of this.malla.entries())
         {
-            const noDisponiblesEnNivel = asignaturas.filter(asignatura => 
-                !this.verificarPrerrequisitosCumplidos(asignatura)
+            const fueraDeRango = nivel > limiteSemestre;
+
+            const noDisponiblesEnNivel = asignaturas.filter(asignatura =>
+                fueraDeRango || !this.verificarPrerrequisitosCumplidos(asignatura)
             );
+
             noDisponibles.push(...noDisponiblesEnNivel);
         }
 
