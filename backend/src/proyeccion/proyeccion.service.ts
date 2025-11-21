@@ -13,6 +13,7 @@ import { CreacionSemestre } from './DtoProyeccion/CreacionSemestre.js';
 import { CreacionProyeccion } from './DtoProyeccion/CreacionProyeccion.js';
 import { CreacionInstanciaAsignatura } from './DtoProyeccion/CreacionInstanciaAsignatura.js';
 import { CreacionAsignatura } from './DtoProyeccion/CreacionAsignatura.js'
+import { ProyeccionManual } from './ProyeccionManual.js';
 
 
 @Injectable()
@@ -260,5 +261,41 @@ export class ProyeccionService
         const nuevaProyeccion = this.crearProyeccion(rut, proyeccion, arraySemestres);
 
         return await this.proyeccionRepository.save(nuevaProyeccion);
+    }
+
+    async prepararDatosParaProyeccion(rutAlumno: string, codigoCarrera: string,  catalogo: string)
+    {
+        const avance = await this.avanceService.fetchAvanceData(rutAlumno,codigoCarrera);
+        const malla = await this.mallaService.fetchMallaCarrera(codigoCarrera,catalogo);
+
+        const listaDeAvanceConAsignatura = this.avanceService.rellenarListaDeAvance(avance, malla);
+        const asignaturasAprobadas = this.asignaturasAprobadas(listaDeAvanceConAsignatura); 
+
+        const avanceSeparado = this.avanceService.avanceSeparadoPorPeriodo(listaDeAvanceConAsignatura);
+        const ultimoPeriodo = this.avanceService.sacarUltimoPeriodo(avanceSeparado);
+
+        const mallaSeparada = this.mallaService.mallaSeparadaEnSemestres(malla);
+        const aparicionesPrerrequisitos = this.mallaService.asignaturasCantidadAparicionesPrerrequisitos(malla);
+
+        return {
+            mallaSeparada,
+            aparicionesPrerrequisitos,
+            asignaturasAprobadas,
+            ultimoPeriodo
+        };        
+    }
+
+    async obtenerAsignaturasProyeccionManual(rutAlumno:string, codigoCarrera:string, catalogo:string)
+    {
+        const datosProyeccion = await this.prepararDatosParaProyeccion(rutAlumno, codigoCarrera, catalogo);
+
+        const proyeccionManual = new ProyeccionManual(
+            datosProyeccion.mallaSeparada, 
+            datosProyeccion.aparicionesPrerrequisitos, 
+            datosProyeccion.asignaturasAprobadas, 
+            datosProyeccion.ultimoPeriodo
+        );
+
+        return proyeccionManual.enviarAsignaturas();
     }
 }

@@ -35,17 +35,16 @@ export class ProyeccionController
         return this.proyeccion.crearProyeccionConAvance(usuario.rut, usuario.carreras[0].catalogo, usuario.carreras[0].codigo, proyeccion);
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
+    @Get('/asignaturasDisponibles/:indiceCarrera')
+    obtenerAsignaturasDisponibles
+    (
+        @Req() request: Request,
+        @Param('indiceCarrera') indiceCarrera: string,
+    )
+    {
+        const usuario = request.user as Usuario;
+        const carrera = usuario.carreras[indiceCarrera];
+        return this.proyeccion.obtenerAsignaturasProyeccionManual(usuario.rut, carrera.codigo, carrera.catalogo);
+    }
 
 }
