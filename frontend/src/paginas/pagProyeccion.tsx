@@ -69,7 +69,7 @@ const Proyeccion: React.FC = () => {
       <h2>Proyeccion Curricular - {carreraActual} - Selección de proyección</h2>
       <div className="warningMensaje"><img src={Warning} className='iconoWarning'></img>
       Atención: Antes de acceder al editor es necesario establecer la proyección a la cual accederá.</div>
-      <SelectProy/>
+      <SelectProy indice = {indice} access_token={access_token}/>
     </div>
     </Layout>
   );
