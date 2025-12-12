@@ -1,57 +1,56 @@
 import React from 'react';
 import '../style/styleLogin.css';
 import logo from '../assets/logoUCN.png';
+import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import ErrorMessage from '../componentes/compMensajeError';
 
 const Login: React.FC = () => {
+
   // Datos Usuario
   const [email, setCorreo] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [error, setError] = React.useState<string | null>(null);
   const navigate = useNavigate();
+
   useEffect(() => {
     document.title = "Inicio — Proyéctate UCN";
   }, []);
 
-  // Manejo de formulario
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    const url = "http://localhost:3000/auth/login";
-
     try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+      const response = await axios.post('http://localhost:3000/auth/login', {
+        email,
+        password
       });
 
-      if (!response.ok) {
-        setError('Usuario no encontrado o credenciales incorrectas');
-        return;
+      const { access_token } = response.data;
+
+      localStorage.setItem("access_token", access_token);
+      navigate("/seleccion");
+
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        setError("Credenciales incorrectas");
+      } else {
+        setError("Error de conexión");
       }
-
-      const data = await response.json();
-
-      localStorage.setItem('access_token', data.access_token);
-      console.log('Login exitoso:', data);
-      navigate('/seleccion');
-    } catch (err) {
-      setError('Error de conexión');
     }
   };
 
   return (
     <div className="cuerpoLogin">
-      <img src={logo} alt="Logo UCN" className="logo-ucn" />
-      <h3>Bienvenid@ a Proyectate UCN</h3>
+      <img src={logo} alt="Logo oficial de la Universidad Católica del Norte" className="logo-ucn" />
+      <h3 id="login-title">Bienvenid@ a Proyectate UCN</h3>
 
-      <div className="login-box">
+      <div className="login-box" role="form" aria-labelledby="login-title">
         <h2>Iniciar Sesión</h2>
         <form onSubmit={handleSubmit}>
+          <label htmlFor="email-input" className="sr-only">Correo</label>
           <input
             type="email"
             placeholder="Correo"
@@ -59,17 +58,20 @@ const Login: React.FC = () => {
             onChange={(e) => setCorreo(e.target.value)}
             required
           />
-          <input
+          <label htmlFor="password-input" className="sr-only">Contraseña</label>
+          <input 
             type="password"
             placeholder="Contraseña"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-          <button type="submit" className="login-button">Ingresar Datos</button>
+          <button type="submit" className="login-button" aria-label="Ingresar al sistema">Ingresar Datos</button>
         </form>
 
-        {error && <ErrorMessage message={error} onClose={() => setError(null)}/>}
+        {error && <ErrorMessage message={error} onClose={() => setError(null)
+          
+        }/>}
       </div>
     </div>
   );

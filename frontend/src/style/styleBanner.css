@@ -1,5 +1,5 @@
 .banner {        
-  width: 97.9vw;
+  width: 100%;
   background-color: #065d6d;
   color: white;
   padding-left: 1rem;
@@ -16,10 +16,9 @@
   align-items: center;
   gap: 1rem;            
 }
-.logo {
-  padding-top: 1.7rem;
-  width: 80px;
+.logo-top {
   height: 80px;
+  padding: 0.5rem;
 }
 .wawa {
   font-family: 'Arial', sans-serif;

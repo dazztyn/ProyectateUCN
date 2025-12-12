@@ -4,69 +4,71 @@ import { useLocation, useNavigate  } from 'react-router-dom';
 import Layout from '../componentes/layoutWithSidebar';
 import '../style/stylePagBlanca.css';
 import MallaCarrera from '../componentes/compMallaDisplay';
+import axios from "axios";
 
 const Malla: React.FC = () => {
-  const location = useLocation();
+const location = useLocation();
   const navigate = useNavigate();
 
-  const [carreraActual, setCarreraActual] = useState<string>('Cargando...');
+  const [carreraActual, setCarreraActual] = useState<string>("Cargando...");
   const [indice, setIndice] = useState<number | null>(null);
   const [access_token, setAccessToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+
+  const fetchUsuario = async (token: string, i: number) => {
+    try {
+      const res = await axios.post(
+        "http://localhost:3000/alumno",
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const carrera = res.data.carreras?.[i]?.nombre;
+      setCarreraActual(carrera || "Ninguna seleccionada");
+    } catch (err) {
+      console.error(err);
+      navigate("/seleccion");
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   useEffect(() => {
-    const state = location.state as { indice: number; access_token: string } | undefined;
+    const state = location.state as
+      | { indice: number; access_token: string }
+      | undefined;
 
-    if (state && state.access_token !== undefined) {
+    
+    if (state?.access_token) {
       setAccessToken(state.access_token);
       setIndice(state.indice);
-
-      const fetchUsuario = async () => {
-        try {
-          const res = await fetch('http://localhost:3000/alumno', {
-            method: 'POST',
-            headers: { 
-              Authorization: `Bearer ${state.access_token}` },
-          });
-          if (!res.ok) throw new Error('Error al obtener usuario');
-          const data = await res.json();
-          setCarreraActual(data.carreras[state.indice]?.nombre || 'Ninguna seleccionada');
-        } catch (err) {
-          console.error(err);
-        }
-      };
-      fetchUsuario();
-    } else {
-
-      const token = sessionStorage.getItem('access_token');
-      if (!token) {
-        navigate('/seleccion'); 
-        return;
-      }
-      setAccessToken(token);
-
-      const fetchUsuario = async () => {
-        try {
-          const res = await fetch('http://localhost:3000/alumno', {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (!res.ok) throw new Error('Error al obtener usuario');
-          const data = await res.json();
-          const savedIndex = sessionStorage.getItem('indiceCarrera');
-          const idx = savedIndex ? Number(savedIndex) : 0;
-          setIndice(idx);
-          setCarreraActual(data.carreras[idx]?.nombre || 'Ninguna seleccionada');
-        } catch (err) {
-          console.error(err);
-        }
-      };
-      fetchUsuario();
+      fetchUsuario(state.access_token, state.indice);
+      return;
     }
+
+    
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      navigate("/seleccion");
+      return;
+    }
+
+    const idx = Number(localStorage.getItem("indiceCarrera")) || 0;
+
+    setAccessToken(token);
+    setIndice(idx);
+    fetchUsuario(token, idx);
   }, [location.state, navigate]);
-  if (indice === null || !access_token) return <p>Cargando...</p>;
+
+  if (loading) return <p role="status">Cargando...</p>;
+  if (indice === null || !access_token)
+    return <p role="alert">No fue posible cargar la información.</p>;
   return (
     <Layout>
-      <div>
-        <h2>Malla Curricular - {carreraActual}</h2>
+      <div role="region" aria-labelledby="titulo-malla">
+        <h2 id="titulo-malla">Malla Curricular — {carreraActual}</h2>
         <MallaCarrera indice = {indice} access_token={access_token}/>
       </div>
     </Layout>

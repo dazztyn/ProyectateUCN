@@ -1,5 +1,4 @@
 import Layout from '../componentes/componentesEditor/layoutWithBanner';
-import React from 'react';
 import { useLocation } from 'react-router-dom';
 import MallaEditorDisplay from '../componentes/componentesEditor/compMallaEditor';
 
@@ -16,7 +15,6 @@ const PagEditor = () => {
   }
   return (
     <Layout>
-        <h1>Editor Page</h1>
         <MallaEditorDisplay malla={data} />
     </Layout>
     );

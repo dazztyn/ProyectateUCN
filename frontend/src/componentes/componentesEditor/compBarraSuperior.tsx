@@ -1,5 +1,4 @@
-import logo from "../../assets/logoUCN.png";
-import locoLogo from "../../assets/locoUCN.png";
+import logo from "../../assets/logoUCN.png"
 import backIcon from "../../assets/backIcon.png";
 import "../../style/styleBanner.css";
 import React from 'react';
@@ -20,7 +19,7 @@ const BarraSuperior: React.FC = () => {
     return (
     <div className="banner">
         <div className="banner-left">
-        <img src={logo} alt="Logo UCN" className="logo"/>
+        <img src={logo} alt="Logo UCN" className="logo-top"/>
         <div className="wawa">Editor de proyecciones</div>
         </div>
         <div className="banner-right">

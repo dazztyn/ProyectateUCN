@@ -1,5 +1,5 @@
 import React from "react";
-import "../../style/styleMalla.css";
+import "../../mallaEdit/styleMallaEdit.css";
 
 type Asignatura = {
   codigoAsignatura: string;
@@ -7,6 +7,10 @@ type Asignatura = {
   creditos: number;
   nivel: number;
   prerrequisitos: string;
+};
+type Semestre = {
+  numero: number;
+  asignaturas: Asignatura[];
 };
 
 type Props = {
@@ -34,9 +38,8 @@ const MallaEditorDisplay: React.FC<Props> = ({ malla }) => {
           <div className="asignaturas-grid">
             {sem.asignaturas.map((a) => (
               <div key={a.codigoAsignatura} className="asignatura-card">
-                <h3>{a.codigoAsignatura}</h3>
-                <h4>{a.nombreAsignatura}</h4>
                 <h3>Créditos: {a.creditos}</h3>
+                <h4>{a.nombreAsignatura}</h4>
               </div>
             ))}
           </div>
