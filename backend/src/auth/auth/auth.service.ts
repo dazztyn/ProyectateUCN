@@ -2,11 +2,17 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Usuario } from '../../ArchivosComunes/Usuario.js';
 import { ErrorResponse } from '../../ArchivosComunes/ErrorResponse.js';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { RolUsuario } from './entities/rol-usuario.entity.js';
 
 @Injectable()
 export class AuthService 
 {
-    constructor(private readonly jwtService: JwtService) {}
+    constructor(private readonly jwtService: JwtService,
+        @InjectRepository(RolUsuario)
+        private rolRepository: Repository<RolUsuario>,
+    ) {}
 
     async fetchloginData(email: string, password: string): Promise<Usuario> 
     {
@@ -37,24 +43,66 @@ export class AuthService
         }
     }
 
-    async login(email: string, contraseña: string)
+    async login(email: string, password: string)
     {
-        try {
+        let usuarioLocal: RolUsuario | null = null;
 
-            const alumno = await this.fetchloginData(email, contraseña);
+        try
+        {
+            usuarioLocal = await this.rolRepository.findOne({ where: { email } });
+        }
+        catch (error)
+        {
+            console.warn('Error accediendo a BD local, procediendo como estudiante normal:', error);
+        }
 
-            const payload = {rut: alumno.rut, carreras: alumno.carreras};
+        if(usuarioLocal)
+        {
+            if(usuarioLocal.password === password)
+            {
+                const payload = { 
+                    rut: usuarioLocal.rut || 'ADMIN', 
+                    carreras: [], 
+                    role: usuarioLocal.rol // 'admin'
+                };
+                const accessToken = this.jwtService.sign(payload);
+                return {
+                    access_token: accessToken, 
+                    role: usuarioLocal.rol, 
+                    usuario: { rut: 'ADMIN', nombre: 'Administrador', carreras: [] }
+                };
+            }
+            else
+            {
+                throw new UnauthorizedException('Credenciales de administrador incorrectas.');
+            }
+            
+        }
+
+        try
+        {
+            const alumno = await this.fetchloginData(email, password);
+            const payload = {
+                rut: alumno.rut, 
+                carreras: alumno.carreras,
+                role: 'student' // Rol por defecto
+            };
 
             const accessToken = this.jwtService.sign(payload);
 
-            return {access_token: accessToken, usuario: alumno};
-            
-        } catch (error) {
-            if (error instanceof UnauthorizedException) {
-                throw error;
-            }
-            throw new Error('Ocurrió un error inesperado durante el login.');
+            return {
+                access_token: accessToken, 
+                role: 'student',
+                usuario: alumno
+            };
+
+
         }
-  
+        catch (error)
+        {
+           if (error instanceof UnauthorizedException) throw error;
+            throw new Error(error.message || 'Error al conectar con servicio UCN');
+        }
+    
     }
 }
