@@ -14,6 +14,7 @@ import { CreacionProyeccion } from './DtoProyeccion/CreacionProyeccion.js';
 import { CreacionInstanciaAsignatura } from './DtoProyeccion/CreacionInstanciaAsignatura.js';
 import { CreacionAsignatura } from './DtoProyeccion/CreacionAsignatura.js'
 import { ProyeccionManual } from './ProyeccionManual.js';
+import { InstanciaAsignatura } from './entities/InstanciaAsignatura.entity.js';
 
 
 @Injectable()
@@ -30,7 +31,9 @@ export class ProyeccionService
                 private semestreRepository: Repository<Semestre>,
                 
                 @InjectRepository(Asignaturas)
-                private asignaturaRepository: Repository<Asignatura>
+                private asignaturaRepository: Repository<Asignatura>,
+
+                @InjectRepository(InstanciaAsignatura) private instanciaRepository: Repository<InstanciaAsignatura>
                 ){}
 
     asignaturasAprobadas(avance: AvanceConAsignatura[]): string[]
@@ -297,5 +300,28 @@ export class ProyeccionService
         );
 
         return proyeccionManual.enviarAsignaturas();
+    }
+
+    async obtenerEstadisticas(periodo: string) 
+    {
+        /* Query: Busca todas las instancias (ramos inscritos en proyecciones),
+           filtra por el periodo (ej: '202510'), agrupa por asignatura 
+           y cuenta cuántas veces se repite.
+        */
+        const resultado = await this.instanciaRepository
+            .createQueryBuilder('instancia')
+            .leftJoin('instancia.semestre', 'semestre') 
+            .leftJoinAndSelect('instancia.asignatura', 'asignatura') 
+            .select('asignatura.nombreAsignatura', 'nombre') 
+            .addSelect('asignatura.codigoAsignatura', 'codigo') 
+            .addSelect('COUNT(instancia.id)', 'total') // Cuenta cuántas veces aparece
+            .where('semestre.periodo = :periodo', { periodo })
+            .groupBy('asignatura.codigoAsignatura') 
+            .addGroupBy('asignatura.nombreAsignatura') 
+            .orderBy('total', 'DESC') // Ordena: los más solicitados primero
+            .limit(20) // Top 20 asignaturas
+            .getRawMany(); 
+
+        return resultado;
     }
 }
