@@ -22,6 +22,9 @@ import { ProyeccionManual } from './ProyeccionManual';
 import { Asignatura } from '../ArchivosComunes/Asignatura';
 import { AvanceConAsignatura } from '../avance/avance/AvanceConAsignatura';
 
+// para stats
+import { InstanciaAsignatura } from './entities/InstanciaAsignatura.entity.js';
+
 @Injectable()
 export class ProyeccionService 
 {
@@ -34,7 +37,9 @@ export class ProyeccionService
         @InjectRepository(Semestre)
         private semestreRepository: Repository<Semestre>,
         @InjectRepository(Asignaturas)
-        private asignaturaRepository: Repository<Asignatura>
+        private asignaturaRepository: Repository<Asignatura>,
+        @InjectRepository(InstanciaAsignatura) private instanciaRepository: Repository<InstanciaAsignatura>
+        
     ) {}
 
     /**
@@ -162,5 +167,24 @@ export class ProyeccionService
 
         const guardada = await this.proyeccionRepository.save(entidad);
         return guardada.idProyeccion;
+    }
+
+    async obtenerEstadisticas(periodo: string) 
+    {
+        const resultado = await this.instanciaRepository
+            .createQueryBuilder('instancia')
+            .leftJoin('instancia.semestre', 'semestre') 
+            .leftJoinAndSelect('instancia.asignatura', 'asignatura') 
+            .select('asignatura.nombreAsignatura', 'nombre') 
+            .addSelect('asignatura.codigoAsignatura', 'codigo') 
+            .addSelect('COUNT(instancia.id)', 'total') // Cuenta cuántas veces aparece
+            .where('semestre.periodo = :periodo', { periodo })
+            .groupBy('asignatura.codigoAsignatura') 
+            .addGroupBy('asignatura.nombreAsignatura') 
+            .orderBy('total', 'DESC') // Ordena: los más solicitados primero
+            .limit(20) // Top 20 asignaturas
+            .getRawMany(); 
+
+        return resultado;
     }
 }

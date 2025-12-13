@@ -49,4 +49,10 @@ export class ProyeccionController
         return this.proyeccion.obtenerAsignaturasProyeccionManual(usuario.rut, carrera.codigo, carrera.catalogo);
     }
 
+    @Get('/estadisticas/:periodo')
+    getEstadisticas(@Param('periodo') periodo: string) 
+    {
+        return this.proyeccion.obtenerEstadisticas(periodo);
+    }
+
 }
