@@ -3,24 +3,24 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 // Entidades
-import { Proyeccion } from './entities/proyeccion.entity.js';
-import { Semestre } from './entities/semestre.entity.js';
-import { Asignaturas } from './entities/asignatura.entity.js';
+import { Proyeccion } from './entities/proyeccion.entity';
+import { Semestre } from './entities/semestre.entity';
+import { Asignaturas } from './entities/asignatura.entity';
 
 // DTOs
-import { CreacionProyeccion } from './DtoProyeccion/CreacionProyeccion.js';
-import { CreacionSemestre } from './DtoProyeccion/CreacionSemestre.js';
+import { CreacionProyeccion } from './DtoProyeccion/CreacionProyeccion';
+import { CreacionSemestre } from './DtoProyeccion/CreacionSemestre';
 
 // Patrones
-import { StudentDataFacade } from './StudentDataFacade.js';
-import { ProyeccionMapper } from './proyeccion.mapper.js'; // 👈 Inyectamos el Mapper
-import { IProyeccionStrategy } from './strategies/IProyeccionStrategy.js';
-import { GreedyProjectionStrategy } from './strategies/GreedyProjectionStrategy.js';
-import { ProyeccionManual } from './ProyeccionManual.js';
+import { StudentDataFacade } from './StudentDataFacade';
+import { ProyeccionMapper } from './proyeccion.mapper';
+import { IProyeccionStrategy } from './strategies/IProyeccionStrategy';
+import { GreedyProjectionStrategy } from './strategies/GreedyProjectionStrategy';
+import { ProyeccionManual } from './ProyeccionManual';
 
 // Tipos
-import { Asignatura } from '../ArchivosComunes/Asignatura.js';
-import { AvanceConAsignatura } from '../avance/avance/AvanceConAsignatura.js';
+import { Asignatura } from '../ArchivosComunes/Asignatura';
+import { AvanceConAsignatura } from '../avance/avance/AvanceConAsignatura';
 
 @Injectable()
 export class ProyeccionService 

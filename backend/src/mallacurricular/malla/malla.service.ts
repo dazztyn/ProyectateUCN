@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { Asignatura } from 'src/ArchivosComunes/Asignatura';
-import { RamoInfo } from 'src/ArchivosComunes/RamoInfo';
-import { AcademicUtilsService } from 'src/ArchivosComunes/AcademicUtilsService';
+import { Asignatura } from '../../ArchivosComunes/Asignatura';
+import { RamoInfo } from '../../ArchivosComunes/RamoInfo';
+import { AcademicUtilsService } from '../../ArchivosComunes/AcademicUtilsService';
 
 @Injectable()
 export class MallaService 

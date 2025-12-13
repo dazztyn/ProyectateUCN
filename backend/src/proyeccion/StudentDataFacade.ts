@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { MallaService } from '../mallacurricular/malla/malla.service.js';
-import { AvanceService } from '../avance/avance/avance.service.js';
-import { AcademicUtilsService } from '../ArchivosComunes/AcademicUtilsService.js';
-import { EstadoAcademico } from './interfaces/EstadoAcademico.js';
+import { MallaService } from '../mallacurricular/malla/malla.service';
+import { AvanceService } from '../avance/avance/avance.service';
+import { AcademicUtilsService } from '../ArchivosComunes/AcademicUtilsService';
+import { EstadoAcademico } from './interfaces/EstadoAcademico';
 
 @Injectable()
 export class StudentDataFacade {

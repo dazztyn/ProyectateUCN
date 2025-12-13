@@ -1,5 +1,5 @@
 import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
-import { AvanceService } from './avance.service.js';
+import { AvanceService } from './avance.service';
 import { AuthGuard } from '@nestjs/passport';
 import type { Request } from 'express';
 import { Usuario } from '../../ArchivosComunes/Usuario.js';

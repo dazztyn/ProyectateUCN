@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { MallaService } from '../../mallacurricular/malla/malla.service.js';
+import { MallaService } from '../../mallacurricular/malla/malla.service';
 import { RamoTomado } from './RamoTomado';
-import { ErrorResponse } from 'src/ArchivosComunes/ErrorResponse';
-import { Asignatura } from 'src/ArchivosComunes/Asignatura';
+import { ErrorResponse } from '../../ArchivosComunes/ErrorResponse';
+import { Asignatura } from '../../ArchivosComunes/Asignatura';
 import { AvanceConAsignatura } from './AvanceConAsignatura';
-import { AcademicUtilsService } from 'src/ArchivosComunes/AcademicUtilsService';
+import { AcademicUtilsService } from '../../ArchivosComunes/AcademicUtilsService';
 
 @Injectable()
 export class AvanceService 
