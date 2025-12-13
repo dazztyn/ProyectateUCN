@@ -4,7 +4,7 @@ import { Usuario } from '../../ArchivosComunes/Usuario.js';
 import { ErrorResponse } from '../../ArchivosComunes/ErrorResponse.js';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { RolUsuario } from './entities/rol-usuario.entity.js';
+import { RolUsuario } from './entities/rol-usuario.entity';
 
 @Injectable()
 export class AuthService 
