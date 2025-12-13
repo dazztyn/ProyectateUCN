@@ -1,301 +1,166 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { AvanceService } from '../avance/avance/avance.service.js';
-import { MallaService } from '../mallacurricular/malla/malla.service.js';
-import { ProyeccionFutura } from './ProyeccionFutura.js';
-import { AvanceConAsignatura } from '../avance/avance/AvanceConAsignatura.js';
-import { Asignatura } from '../ArchivosComunes/Asignatura.js';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+
+// Entidades
 import { Proyeccion } from './entities/proyeccion.entity.js';
 import { Semestre } from './entities/semestre.entity.js';
 import { Asignaturas } from './entities/asignatura.entity.js';
-import { Repository } from 'typeorm';
-import { CreacionSemestre } from './DtoProyeccion/CreacionSemestre.js';
+
+// DTOs
 import { CreacionProyeccion } from './DtoProyeccion/CreacionProyeccion.js';
-import { CreacionInstanciaAsignatura } from './DtoProyeccion/CreacionInstanciaAsignatura.js';
-import { CreacionAsignatura } from './DtoProyeccion/CreacionAsignatura.js'
+import { CreacionSemestre } from './DtoProyeccion/CreacionSemestre.js';
+
+// Patrones
+import { StudentDataFacade } from './StudentDataFacade.js';
+import { ProyeccionMapper } from './proyeccion.mapper.js'; // 👈 Inyectamos el Mapper
+import { IProyeccionStrategy } from './strategies/IProyeccionStrategy.js';
+import { GreedyProjectionStrategy } from './strategies/GreedyProjectionStrategy.js';
 import { ProyeccionManual } from './ProyeccionManual.js';
 
+// Tipos
+import { Asignatura } from '../ArchivosComunes/Asignatura.js';
+import { AvanceConAsignatura } from '../avance/avance/AvanceConAsignatura.js';
 
 @Injectable()
 export class ProyeccionService 
 {
-    constructor(private readonly avanceService: AvanceService, 
+    constructor(
+        private readonly studentFacade: StudentDataFacade,
+        private readonly mapper: ProyeccionMapper, // 👈 Inyección del Mapper
 
-                private readonly mallaService: MallaService,
+        @InjectRepository(Proyeccion)
+        private proyeccionRepository: Repository<Proyeccion>,
+        @InjectRepository(Semestre)
+        private semestreRepository: Repository<Semestre>,
+        @InjectRepository(Asignaturas)
+        private asignaturaRepository: Repository<Asignatura>
+    ) {}
 
-                @InjectRepository(Proyeccion)
-                private proyeccionRepository: Repository<Proyeccion>,
-                
-                @InjectRepository(Semestre)
-                private semestreRepository: Repository<Semestre>,
-                
-                @InjectRepository(Asignaturas)
-                private asignaturaRepository: Repository<Asignatura>
-                ){}
-
-    asignaturasAprobadas(avance: AvanceConAsignatura[]): string[]
+    /**
+     * Genera y guarda una proyección futura automática.
+     */
+    async proyeccionFutura(rutAlumno:string, codigoCarrera:string, catalogo:string, proyeccionDto: CreacionProyeccion)
     {
-        return avance
-        .filter(item => item != null && item.getCourse() != null && (item.getStatus() === 'APROBADO' || item.getStatus() === 'INSCRITO'))
-            .map(item => item.getCourse().codigo);
+        // 1. Facade: Obtener datos
+        const estado = await this.studentFacade.obtenerEstadoAcademico(rutAlumno, codigoCarrera, catalogo);
+
+        // 2. Strategy: Calcular futuro
+        const estrategia: IProyeccionStrategy = new GreedyProjectionStrategy(estado);
+        const mapaFuturo = estrategia.generar(estado);
+
+        // 3. Mapper + Repo: Persistencia del Catálogo
+        const catalogoEntidades = this.mapper.toPersistenceCatalog(estado.mallaCompleta);
+        await this.guardarCatalogoAsignaturas(catalogoEntidades);
+
+        // 4. Mapper + Repo: Persistencia de la Proyección
+        const idProyeccion = await this.guardarProyeccionCompleta(
+            estado.avancePorPeriodo, 
+            mapaFuturo, 
+            rutAlumno, 
+            proyeccionDto
+        );
+
+        // 5. Query: Retornar resultado
+        return this.proyeccionSeparadaEnPeriodos(idProyeccion);
     }
 
-    async cargarAsignaturasBaseDeDatos(malla: Asignatura[])
+    /**
+     * Prepara datos para manual (Facade + Helper)
+     */
+    async obtenerAsignaturasProyeccionManual(rutAlumno:string, codigoCarrera:string, catalogo:string)
     {
-        const mallaRefactorizada: CreacionAsignatura[] = malla.map(asig =>
-        ({
-            codigoAsignatura: asig.codigo,
-            nombreAsignatura: asig.asignatura,
-            creditos: asig.creditos,
-            nivel: asig.nivel,
-            prerrequisitos: asig.prereq
-        }));
-
-        const asignaturasEntidades = this.asignaturaRepository.create(mallaRefactorizada);
-
-        await this.asignaturaRepository
-        .createQueryBuilder()
-        .insert()
-        .into(Asignaturas)
-        .values(asignaturasEntidades)
-        .orIgnore()
-        .execute();
+        const estado = await this.studentFacade.obtenerEstadoAcademico(rutAlumno, codigoCarrera, catalogo);
+        const proyeccionManual = new ProyeccionManual(estado);
+        return proyeccionManual.enviarAsignaturas();
     }
 
-    crearProyeccion(rut: string, proyeccion: CreacionProyeccion, arraySemestres: CreacionSemestre[])
+    /**
+     * Crea solo avance (Facade + Mapper + Repo)
+     */
+    async crearProyeccionConAvance(rut: string, catalogo: string, codigoCarrera: string, proyeccionDto: CreacionProyeccion)
     {
-        const nuevaProyeccion = this.proyeccionRepository.create( 
-        {
-            rutUsuario: rut,
-            ideal: proyeccion.ideal,
-            nombreProyeccion: proyeccion.nombreProyeccion,
-            semestres: arraySemestres,
-        })
-        return nuevaProyeccion;
-    }
+        const estado = await this.studentFacade.obtenerEstadoAcademico(rut, codigoCarrera, catalogo);
 
-    async agregarProyeccionFuturaEnBaseDeDatos(avanceSeparado: Map<string, AvanceConAsignatura[]>, 
-        proyeccionOptima: Map<string, Asignatura[]>, rutAlumno: string, proyeccion: CreacionProyeccion): Promise<number>
-    {
-        const arraySemestresAvance: CreacionSemestre[] = this.crearArrayDeSemestresAvance(avanceSeparado);
-
-        const ultimoPeriodo: string =  arraySemestresAvance[arraySemestresAvance.length - 1].periodo 
-
-        let ultimoSemestre: number = arraySemestresAvance[arraySemestresAvance.length - 1].numero;
-
-        const tipoSemestre = ultimoPeriodo.slice(4, 6);
-
-        if (tipoSemestre !== '15' && tipoSemestre !== '25') 
-        {
-            ultimoSemestre++;
-        }
-
-        const arraySemestresProyeccionFutura: CreacionSemestre[] = this.crearArrayDeSemestresProyeccionFutura(proyeccionOptima, ultimoSemestre); 
-
-        const arraySemestres: CreacionSemestre[] = arraySemestresAvance.concat(arraySemestresProyeccionFutura); 
+        // Mapper: Convertir solo avance
+        const semestresDto = this.mapper.avanceToPersistence(estado.avancePorPeriodo);
         
-        const nuevaProyeccion = this.crearProyeccion(rutAlumno, proyeccion, arraySemestres);
+        // Repo: Guardar catálogo y proyección
+        const catalogoEntidades = this.mapper.toPersistenceCatalog(estado.mallaCompleta);
+        await this.guardarCatalogoAsignaturas(catalogoEntidades);
 
-        await this.proyeccionRepository.save(nuevaProyeccion);
+        const nuevaProyeccion = this.proyeccionRepository.create({
+            rutUsuario: rut,
+            ideal: proyeccionDto.ideal,
+            nombreProyeccion: proyeccionDto.nombreProyeccion,
+            semestres: semestresDto,
+        });
 
-        return (await this.proyeccionRepository.save(nuevaProyeccion)).idProyeccion;
+        return await this.proyeccionRepository.save(nuevaProyeccion);
     }
 
     async proyeccionSeparadaEnPeriodos(idProyeccion: number)
     {
         const proyeccion = await this.proyeccionRepository.findOne({
             where: { idProyeccion: idProyeccion },
-            relations: [
-                'semestres',
-                'semestres.instancias',
-                'semestres.instancias.asignatura'
-            ]
+            relations: ['semestres', 'semestres.instancias', 'semestres.instancias.asignatura']
         });
 
-        if (!proyeccion) {
-            throw new NotFoundException(`Proyección con ID ${idProyeccion} no encontrada.`);
-        }
+        if (!proyeccion) throw new NotFoundException(`Proyección ${idProyeccion} no encontrada.`);
 
         const proyeccionMap = new Map<string, Asignaturas[]>();
-
-        for (const semestre of proyeccion.semestres) 
-        {
-            const clave = semestre.periodo;
-            
-            const asignaturasDelSemestre = semestre.instancias.map(
-                (instancia) => instancia.asignatura
-            );
-            
-            proyeccionMap.set(clave, asignaturasDelSemestre);
+        for (const semestre of proyeccion.semestres) {
+            const asignaturas = semestre.instancias.map(i => i.asignatura);
+            proyeccionMap.set(semestre.periodo, asignaturas);
         }
-
         return Object.fromEntries(proyeccionMap);
-        
-    }    
+    } 
 
-    async proyeccionFutura(rutAlumno:string, codigoCarrera:string, catalogo:string, proyeccion: CreacionProyeccion)
-    {
-        const avance =  await this.avanceService.fetchAvanceData(rutAlumno,codigoCarrera);
-        const malla = await this.mallaService.fetchMallaCarrera(codigoCarrera,catalogo);
+    // ===========================================================================
+    // MÉTODOS PRIVADOS DE PERSISTENCIA (Coordinación de TypeORM)
+    // ===========================================================================
 
-        const listaDeAvanceConAsignatura = this.avanceService.rellenarListaDeAvance(avance, malla);
-
-        let asignaturasAprobadas = this.asignaturasAprobadas(listaDeAvanceConAsignatura);
-
-        let aparicionesPrerrequisitos = this.mallaService.asignaturasCantidadAparicionesPrerrequisitos(malla);
-
-        let avanceSeparado = this.avanceService.avanceSeparadoPorPeriodo(listaDeAvanceConAsignatura);
-        
-        let mallaSeparada = this.mallaService.mallaSeparadaEnSemestres(malla);
-
-        const ultimoPeriodo = this.avanceService.sacarUltimoPeriodo(avanceSeparado);
-
-        const proyeccionFutura = new ProyeccionFutura(mallaSeparada, aparicionesPrerrequisitos, asignaturasAprobadas, ultimoPeriodo);
-
-        let proyeccionOptima: Map<string, Asignatura[]> = proyeccionFutura.generarProyeccionOptima();
-
-        this.cargarAsignaturasBaseDeDatos(malla);
-
-        const idProyeccion = await this.agregarProyeccionFuturaEnBaseDeDatos(avanceSeparado, proyeccionOptima, rutAlumno, proyeccion);
-
-        let proyeccionCompleta = this.proyeccionSeparadaEnPeriodos(idProyeccion);
-
-        return proyeccionCompleta;
+    private async guardarCatalogoAsignaturas(asignaturasDto: any[]) {
+        const entidades = this.asignaturaRepository.create(asignaturasDto);
+        await this.asignaturaRepository.createQueryBuilder()
+            .insert().into(Asignaturas).values(entidades)
+            .orIgnore().execute();
     }
 
-    //POSIBLEMENTE SE BORRE ESTA COSA
-    // cantidadCreditosSemestre(asignaturas: Asignatura[]): number
-    // {
-    //     if(asignaturas != null)
-    //     {
-    //         return asignaturas.reduce((totalCreditos, credito) => {return totalCreditos + credito.creditos}, 0);
-    //     }
-    //     return 0;
-    // }
+    private async guardarProyeccionCompleta(
+        avanceMap: Map<string, AvanceConAsignatura[]>, 
+        futuroMap: Map<string, Asignatura[]>, 
+        rut: string, 
+        dto: CreacionProyeccion
+    ): Promise<number> {
+        
+        // 1. Usar Mapper para convertir el Avance
+        const semestresAvance = this.mapper.avanceToPersistence(avanceMap);
 
-    crearArrayDeSemestresProyeccionFutura(proyeccionFutura:Map<string, Asignatura[]>, numeroUltimoSemestre: number): CreacionSemestre[]
-    {
-        let numeroSemestre: number = numeroUltimoSemestre;
-        const arraySemestres: CreacionSemestre[] = [];
-        for(const[periodo, asignaturas] of proyeccionFutura)
-        {
-            let creditosTotales = 0;
-            let instanciaAsignatura: CreacionInstanciaAsignatura[] = asignaturas.map(instance => {
-
-                creditosTotales += instance.creditos;
-
-                return {
-                    aprobada: true,
-                    asignatura: {
-                        codigoAsignatura: instance.codigo,
-                    }
-                };
-            });
-            
-            const semestre: CreacionSemestre = {
-                numero: numeroSemestre,
-                periodo: periodo,
-                totalCreditos: creditosTotales,
-                instancias: instanciaAsignatura
-            };
-
-            arraySemestres.push(semestre);
-
-            numeroSemestre++;
+        // 2. Calcular número de semestre para continuar
+        const ultimoSemestreAvance = semestresAvance[semestresAvance.length - 1];
+        let siguienteNumero = ultimoSemestreAvance.numero;
+        
+        // (Tu lógica original de saltar veranos para el contador)
+        const tipoSemestre = ultimoSemestreAvance.periodo.slice(4, 6);
+        if (tipoSemestre !== '15' && tipoSemestre !== '25') {
+            siguienteNumero++;
         }
-        return arraySemestres;
-    }
 
-    crearArrayDeSemestresAvance(avance: Map<string, AvanceConAsignatura[]>): CreacionSemestre[]
-    {
-        let numeroSemestre: number = 1;
-        const arraySemestres: CreacionSemestre[] = [];
-        for(const[periodo, asignaturas] of avance)
-        {
-            let creditosTotales = 0;
-            let instanciaAsignatura: CreacionInstanciaAsignatura[] = asignaturas.map(instance => {
-                
-                const asignaturaOriginal = instance.getCourse();
+        // 3. Usar Mapper para convertir el Futuro
+        const semestresFuturo = this.mapper.futureToPersistence(futuroMap, siguienteNumero);
 
-                creditosTotales += asignaturaOriginal.creditos;
-
-                return {
-                    aprobada: (instance.getStatus() === 'APROBADO'),
-                    asignatura: {
-                        codigoAsignatura: asignaturaOriginal.codigo,
-                    }
-                };
-            });
-            
-            const semestre: CreacionSemestre = {
-                numero: numeroSemestre,
-                periodo: periodo,
-                totalCreditos: creditosTotales,
-                instancias: instanciaAsignatura
-            };
-
-            arraySemestres.push(semestre);
-
-            const tipoSemestre = periodo.slice(4, 6);
-            
-            if (tipoSemestre !== '15' && tipoSemestre !== '25') {
-                numeroSemestre++;
-            }
-            
-        }
-        return arraySemestres;
-    }
-
-    async crearProyeccionConAvance(rut: string, catalogo: string, codigoCarrera: string, proyeccion: CreacionProyeccion)
-    {
-
-        const avance = await this.avanceService.fetchAvanceData(rut, codigoCarrera);
-        const malla = await this.mallaService.fetchMallaCarrera(codigoCarrera,catalogo);
-        const avanceRelleno: AvanceConAsignatura[] = this.avanceService.rellenarListaDeAvance(avance, malla);
-        const avanceSeparado: Map<string, AvanceConAsignatura[]> = this.avanceService.avanceSeparadoPorPeriodo(avanceRelleno);
-
-        const arraySemestres = this.crearArrayDeSemestresAvance(avanceSeparado);
+        // 4. Unir y Guardar
+        const todosLosSemestres = semestresAvance.concat(semestresFuturo);
         
-        this.cargarAsignaturasBaseDeDatos(malla);
+        const entidad = this.proyeccionRepository.create({
+            rutUsuario: rut,
+            ideal: dto.ideal,
+            nombreProyeccion: dto.nombreProyeccion,
+            semestres: todosLosSemestres,
+        });
 
-        const nuevaProyeccion = this.crearProyeccion(rut, proyeccion, arraySemestres);
-
-        return await this.proyeccionRepository.save(nuevaProyeccion);
-    }
-
-    async prepararDatosParaProyeccion(rutAlumno: string, codigoCarrera: string,  catalogo: string)
-    {
-        const avance = await this.avanceService.fetchAvanceData(rutAlumno,codigoCarrera);
-        const malla = await this.mallaService.fetchMallaCarrera(codigoCarrera,catalogo);
-
-        const listaDeAvanceConAsignatura = this.avanceService.rellenarListaDeAvance(avance, malla);
-        const asignaturasAprobadas = this.asignaturasAprobadas(listaDeAvanceConAsignatura); 
-
-        const avanceSeparado = this.avanceService.avanceSeparadoPorPeriodo(listaDeAvanceConAsignatura);
-        const ultimoPeriodo = this.avanceService.sacarUltimoPeriodo(avanceSeparado);
-
-        const mallaSeparada = this.mallaService.mallaSeparadaEnSemestres(malla);
-        const aparicionesPrerrequisitos = this.mallaService.asignaturasCantidadAparicionesPrerrequisitos(malla);
-
-        return {
-            mallaSeparada,
-            aparicionesPrerrequisitos,
-            asignaturasAprobadas,
-            ultimoPeriodo
-        };        
-    }
-
-    async obtenerAsignaturasProyeccionManual(rutAlumno:string, codigoCarrera:string, catalogo:string)
-    {
-        const datosProyeccion = await this.prepararDatosParaProyeccion(rutAlumno, codigoCarrera, catalogo);
-
-        const proyeccionManual = new ProyeccionManual(
-            datosProyeccion.mallaSeparada, 
-            datosProyeccion.aparicionesPrerrequisitos, 
-            datosProyeccion.asignaturasAprobadas, 
-            datosProyeccion.ultimoPeriodo
-        );
-
-        return proyeccionManual.enviarAsignaturas();
+        const guardada = await this.proyeccionRepository.save(entidad);
+        return guardada.idProyeccion;
     }
 }

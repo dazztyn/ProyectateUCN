@@ -8,6 +8,10 @@ import { Proyeccion } from './entities/proyeccion.entity.js';
 import { Semestre } from './entities/semestre.entity.js';
 import { Asignaturas } from './entities/asignatura.entity.js';
 import { InstanciaAsignatura } from './entities/InstanciaAsignatura.entity.js';
+import { AcademicUtilsService } from '../ArchivosComunes/AcademicUtilsService.js';
+import { StudentDataFacade } from './StudentDataFacade.js';
+import { ProyeccionMapper } from './proyeccion.mapper.js';
+
 
 @Module({
   imports: [
@@ -16,6 +20,11 @@ import { InstanciaAsignatura } from './entities/InstanciaAsignatura.entity.js';
     TypeOrmModule.forFeature([Proyeccion, Semestre, Asignaturas, InstanciaAsignatura])
   ],
   controllers: [ProyeccionController],
-  providers: [ProyeccionService]
+  providers: [
+    ProyeccionService,
+    StudentDataFacade,
+    AcademicUtilsService,
+    ProyeccionMapper
+  ]
 })
 export class ProyeccionModule {}

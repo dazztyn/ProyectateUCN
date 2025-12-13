@@ -1,11 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { Asignatura } from 'src/ArchivosComunes/Asignatura.js';
+import { Asignatura } from 'src/ArchivosComunes/Asignatura';
 import { RamoInfo } from 'src/ArchivosComunes/RamoInfo';
-
+import { AcademicUtilsService } from 'src/ArchivosComunes/AcademicUtilsService';
 
 @Injectable()
 export class MallaService 
 {
+    constructor(private readonly academicUtils: AcademicUtilsService) {}
+
     async fetchMallaCarrera(codigoCarrera: string, catalogo: string): Promise<Asignatura[]>
     {
         const url = `https://losvilos.ucn.cl/hawaii/api/mallas?${codigoCarrera}-${catalogo}`;
@@ -26,7 +28,8 @@ export class MallaService
                 throw new Error('Malla no encontrada o Catalogo/Codigo de carrera incorrecto');
             }
 
-            return this.limpiarPrerrequisitosInvalidos(data);
+            // Usamos el servicio de utilidades para limpiar
+            return this.academicUtils.limpiarPrerrequisitosInvalidos(data);
         } 
         catch (error) 
         {
@@ -35,133 +38,35 @@ export class MallaService
         }
     }
 
-    asignaturasCantidadAparicionesPrerrequisitos(malla: Asignatura[])
-    {
-        const hasmap = new Map<string, Asignatura[]>();
-
-        malla.forEach((asignatura) => 
-        {
-            const codigo = asignatura.codigo;
-
-            if(!hasmap.has(codigo))
-            {
-                hasmap.set(codigo, []);
-            }
-        });
-
-        malla.forEach((asignatura) => 
-        {
-            const prereq = asignatura.prereq;
-            let codigos: string[] = [];
-            if(prereq != '')
-            {
-                codigos = prereq.split(",");
-                codigos.forEach((codigo) => 
-                {
-                    hasmap.get(codigo)?.push(asignatura);
-                });
-            }
-        });
-        return hasmap;
-    }
-    listaDePrerrequisitosPorAsignatura(malla: Asignatura[])
-    {
-        const hasmap = new Map<string, Asignatura[]>();
-
-        malla.forEach((asignatura) => 
-        {
-            const codigo = asignatura.codigo;
-
-            if(!hasmap.has(codigo))
-            {
-                hasmap.set(codigo, []);
-            }
-        });
-
-        malla.forEach((asignatura) => 
-        {
-            const prereq = asignatura.prereq;
-            let codigos: string[] = [];
-            let listaAsignaturas: Asignatura[] = [] 
-            if(prereq != '')
-            {
-                codigos = prereq.split(",");
-                codigos.forEach((codigo) => 
-                {
-                    const asignaturaEncontrada: Asignatura = malla.find(asig => asig.codigo === codigo) as Asignatura;
-                    listaAsignaturas.push(asignaturaEncontrada);
-                });
-                hasmap.set(asignatura.codigo, listaAsignaturas);
-                listaAsignaturas = [];
-            }
-        });
-        return hasmap;
-    }
-
-    limpiarPrerrequisitosInvalidos(malla: Asignatura[]): Asignatura[] {
-
-        const codigosValidos = new Set(malla.map(asignatura => asignatura.codigo));
-
-        return malla.map((asignatura) => {
-
-            if (!asignatura.prereq) 
-            {
-                return asignatura;
-            }
-
-            const prerequisitosLimpios = asignatura.prereq
-            .split(',') 
-            .filter(codigo => codigosValidos.has(codigo));
-            return {
-            ...asignatura, 
-            prereq: prerequisitosLimpios.join(','), 
-            };
-        });
-    }
-
+    // Mantenemos esta función simple porque AvanceService la usa
     buscarAsignaturaEnMalla(codigo: string, malla: Asignatura[]): Asignatura | undefined
     {
         return malla.find((asignatura) => asignatura.codigo === codigo);
     }
 
-    mallaSeparadaEnSemestres(malla: Asignatura[])
-    {
-        let hashmap = new Map<number, Asignatura[]>();
-
-        malla.forEach((asignatura) => 
-        {
-            let nivel = asignatura.nivel;
-            if(!hashmap.has(nivel))
-            {
-                hashmap.set(nivel, []);
-            }
-            hashmap.get(nivel)?.push(asignatura);
-        });
-
-        return hashmap;
-    }
-
-    agregarListaDeAsignaturasQueAbre(malla: Map<number, Asignatura[]>)
+    private agregarListaDeAsignaturasQueAbre(mallaPorNiveles: Map<number, Asignatura[]>, mallaCompleta: Asignatura[])
     {
         let nuevaMalla: Map<number, RamoInfo[]> = new Map<number, RamoInfo[]>();
 
-        const listaDeAsignaturas: Asignatura[] = Array.from(malla.values()).flat();
-
-        const listaAparicionesPrerrequisito:Map<string, Asignatura[]> = this.asignaturasCantidadAparicionesPrerrequisitos(listaDeAsignaturas);
-
-        const listaDePrerrequisitos:Map<string, Asignatura[]> = this.listaDePrerrequisitosPorAsignatura(listaDeAsignaturas); 
+        // Usamos utils para obtener los grafos pre-calculados
+        const grafoApertura = this.academicUtils.construirGrafoDeApertura(mallaCompleta);
+        const grafoPrerrequisitos = this.academicUtils.obtenerObjetosPrerrequisitos(mallaCompleta);
 
         let nuevaListaRamos: RamoInfo[] = [];
 
-        for (const [nivel, asignaturas] of malla.entries())
+        for (const [nivel, asignaturas] of mallaPorNiveles.entries())
         {
             for(let asig of asignaturas)
             {
                 const nuevoRamo = new RamoInfo(asig.codigo, asig.asignatura, asig.creditos, asig.nivel);
-                const listaDeAsignaturasQueAbre: Asignatura[] = listaAparicionesPrerrequisito.get(asig.codigo) as Asignatura[];
-                const listaPrerrequisitos: Asignatura[] = listaDePrerrequisitos.get(asig.codigo) as Asignatura[];
+                
+                // Obtenemos la info directamente de los mapas generados por utils
+                const listaDeAsignaturasQueAbre = grafoApertura.get(asig.codigo) || [];
+                const listaPrerrequisitos = grafoPrerrequisitos.get(asig.codigo) || [];
+                
                 nuevoRamo.rellenarAsignaturasQueAbre(listaDeAsignaturasQueAbre);
                 nuevoRamo.rellenarPrerrequisitos(listaPrerrequisitos);
+                
                 nuevaListaRamos.push(nuevoRamo);
             }
             nuevaMalla.set(nivel, nuevaListaRamos);
@@ -174,9 +79,11 @@ export class MallaService
     {
         const malla = await this.fetchMallaCarrera(codigoCarrera, catalogo);
 
-        let mallaSeparada = this.mallaSeparadaEnSemestres(malla);
+        // Usamos utils para agrupar por nivel
+        let mallaSeparada = this.academicUtils.agruparPor(malla, (a) => a.nivel);
     
-        const mallaInfo = this.agregarListaDeAsignaturasQueAbre(mallaSeparada);
+        // Pasamos tanto la malla agrupada como la completa para los cálculos de grafos
+        const mallaInfo = this.agregarListaDeAsignaturasQueAbre(mallaSeparada, malla);
 
         return Object.fromEntries(mallaInfo);
     }

@@ -1,15 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { MallaService } from '../../mallacurricular/malla/malla.service.js';
-import { RamoTomado } from './RamoTomado.js';
-import { ErrorResponse } from 'src/ArchivosComunes/ErrorResponse.js';
-import { Asignatura } from 'src/ArchivosComunes/Asignatura.js';
-import { AvanceConAsignatura } from './AvanceConAsignatura.js';
+import { RamoTomado } from './RamoTomado';
+import { ErrorResponse } from 'src/ArchivosComunes/ErrorResponse';
+import { Asignatura } from 'src/ArchivosComunes/Asignatura';
+import { AvanceConAsignatura } from './AvanceConAsignatura';
+import { AcademicUtilsService } from 'src/ArchivosComunes/AcademicUtilsService';
 
 @Injectable()
 export class AvanceService 
 {
-    
-    constructor(private readonly mallaService: MallaService) {}
+    constructor(
+        private readonly mallaService: MallaService,
+        private readonly academicUtils: AcademicUtilsService
+    ) {}
 
     async fetchAvanceData(rut:string, codigoCarrera:string): Promise<RamoTomado[]>
     {
@@ -39,61 +42,20 @@ export class AvanceService
         }
     }
 
-    swap(arr: AvanceConAsignatura[], i: number, j: number): void 
+    // Reemplazo del HeapSort manual por el sort nativo de JS (Más rápido y legible)
+    ordenarPorPeriodo(arr: AvanceConAsignatura[]): AvanceConAsignatura[] 
     {
-        const temp = arr[i];
-        arr[i] = arr[j];
-        arr[j] = temp;
-    }
-
-    heapSort(arr: AvanceConAsignatura[]): AvanceConAsignatura[] 
-    {
-        const n = arr.length;
-
-        for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
-            this.heapify(arr, n, i);
-        }
-
-        for (let i = n - 1; i > 0; i--) {
-            this.swap(arr, 0, i);
-            this.heapify(arr, i, 0);
-        }
-
-        return arr;
-    }
-
-    heapify(arr: AvanceConAsignatura[], n: number, i: number): void 
-    {
-        let largest = i;
-        const left = 2 * i + 1;
-        const right = 2 * i + 2;
-
-        if (left < n && arr[left].getPeriod() > arr[largest].getPeriod()) {
-            largest = left;
-        }
-
-        if (right < n && arr[right].getPeriod() > arr[largest].getPeriod()) {
-            largest = right;
-        }
-
-        if (largest !== i) {
-            this.swap(arr, i, largest);
-            this.heapify(arr, n, largest);
-        }
+        return arr.sort((a, b) => {
+            // Compara strings (ej: "202310" vs "202410")
+            if (a.getPeriod() > b.getPeriod()) return 1;
+            if (a.getPeriod() < b.getPeriod()) return -1;
+            return 0;
+        });
     }
 
     verificarAsignatura(codigoAsignatura: string, malla: Asignatura[])
     {
-        let asignatura = this.mallaService.buscarAsignaturaEnMalla(codigoAsignatura, malla)
-        if(asignatura === undefined)
-        {
-            return null;
-        }
-        else
-        {
-            return asignatura;
-        }
-
+        return this.mallaService.buscarAsignaturaEnMalla(codigoAsignatura, malla) || null;
     }
 
     rellenarListaDeAvance(avance: RamoTomado[], malla: Asignatura[]): AvanceConAsignatura[]
@@ -101,7 +63,7 @@ export class AvanceService
         const listaDeAvance: AvanceConAsignatura[] = [];
         avance.forEach((ramo) =>
         {
-            const asignatura = this.verificarAsignatura(ramo.course, malla) as Asignatura;
+            const asignatura = this.verificarAsignatura(ramo.course, malla);
             if(asignatura != null)
             {
                 listaDeAvance.push(new AvanceConAsignatura(
@@ -115,24 +77,15 @@ export class AvanceService
                 ));
             }
         });
-        return this.heapSort(listaDeAvance);
+        
+        // Usamos el nuevo método de ordenamiento simplificado
+        return this.ordenarPorPeriodo(listaDeAvance);
     }
 
     avanceSeparadoPorPeriodo(avance: AvanceConAsignatura[]): Map<string, AvanceConAsignatura[]>
     {
-        let hashmap = new Map<string, AvanceConAsignatura[]>();
-
-        avance.forEach((avance) => 
-        {
-            let nivel = avance.getPeriod();
-            if(!hashmap.has(nivel))
-            {
-                hashmap.set(nivel, []);
-            }
-            hashmap.get(nivel)?.push(avance);
-        });
-
-        return hashmap;
+        // Usamos el utilitario genérico para agrupar
+        return this.academicUtils.agruparPor(avance, (a) => a.getPeriod());
     }
 
     async getAvance(rutAlumno:string, codigoCarrera:string, catalogo:string)

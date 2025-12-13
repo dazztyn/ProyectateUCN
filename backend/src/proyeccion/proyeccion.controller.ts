@@ -10,6 +10,17 @@ import { CreacionProyeccion } from './DtoProyeccion/CreacionProyeccion';
 export class ProyeccionController 
 {
     constructor(private proyeccion: ProyeccionService){}
+
+    @Post('/Proyeccion')
+    patchCrearProyeccion
+    (
+        @Req() request: Request,
+        @Body() proyeccion: CreacionProyeccion
+    )
+    {
+        const usuario = request.user as Usuario;
+        return this.proyeccion.crearProyeccionConAvance(usuario.rut, usuario.carreras[0].catalogo, usuario.carreras[0].codigo, proyeccion);
+    }
     
     @Post(':indiceCarrera')
     getProyeccion
@@ -24,16 +35,7 @@ export class ProyeccionController
             usuario.carreras[indiceCarrera].catalogo, proyeccion);
     }
 
-    @Post('/Proyeccion')
-    patchCrearProyeccion
-    (
-        @Req() request: Request,
-        @Body() proyeccion: CreacionProyeccion
-    )
-    {
-        const usuario = request.user as Usuario;
-        return this.proyeccion.crearProyeccionConAvance(usuario.rut, usuario.carreras[0].catalogo, usuario.carreras[0].codigo, proyeccion);
-    }
+
 
     @Get('/asignaturasDisponibles/:indiceCarrera')
     obtenerAsignaturasDisponibles
