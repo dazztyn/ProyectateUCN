@@ -17,27 +17,27 @@ vi.mock('./compMensajeError', () => ({
 const TOKEN_AVANCE = 'TEST_AVANCE_TOKEN';
 const INDICE_AVANCE = 1;
 
-// Datos mockeados de la API: Incluye todos los casos de periodo y status
+// Datos mockeados 
 const mockDataAvance = {
-    // Periodo 1er Semestre (Tipo "10")
+    // Periodo 1er Semestre 
     "202310": [
         { nrc: "N1", period: "202310", course: { codigo: "MAT1", asignatura: "Cálculo", creditos: 8 }, status: "APROBADO" },
     ],
-    // Periodo 2do Semestre (Tipo "20")
+    // Periodo 2do Semestre 
     "202320": [
         { nrc: "N2", period: "202320", course: { codigo: "INF2", asignatura: "Datos", creditos: 6 }, status: "REPROBADO" },
     ],
-    // Periodo Invierno (Tipo "15")
+    // Periodo Invierno 
     "202415": [
         { nrc: "N3", period: "202415", course: { codigo: "TALLER", asignatura: "Taller", creditos: 3 }, status: "CURSANDO" },
     ],
-    // Periodo desconocido (Caso Límite)
+    // Periodo desconocido
     "202599": [
         { nrc: "N4", period: "202599", course: { codigo: "MISTERIO", asignatura: "Ramo Secreto", creditos: 3 }, status: "N/A" },
     ],
 };
 
-// Configuración del servidor MSW (Mock Service Worker)
+// Configuración del servidor mock
 const serverAvance = setupServer(
     http.get(`http://localhost:3000/avance/${INDICE_AVANCE}`, ({ request }) => {
         if (request.headers.get('Authorization') !== `Bearer ${TOKEN_AVANCE}`) {
@@ -57,21 +57,20 @@ afterAll(() => serverAvance.close());
 
 describe('AvanceDisplay Component - Carga, Transformación de Periodos y Estados', () => {
 
-    it('1. Caso de Éxito: Debería renderizar todos los periodos y asignaturas (I.A.2)', async () => {
+    it('1.Debería renderizar todos los periodos y asignaturas', async () => {
         render(<AvanceDisplay indice={INDICE_AVANCE} access_token={TOKEN_AVANCE} />);
 
-        // 1. Debe mostrar el estado de carga inicial
         expect(screen.getByText('Cargando avance...')).toBeInTheDocument();
 
-        // 2. Esperar a que se carguen y transformen los periodos
+
         await waitFor(() => {
-            // Verifica transformación de periodos (Lógica getPeriodoNombre)
+
             expect(screen.getByText('2023 - 1er Sem.')).toBeInTheDocument(); // 202310
             expect(screen.getByText('2023 - 2do Sem.')).toBeInTheDocument(); // 202320
             expect(screen.getByText('2024 - Invierno')).toBeInTheDocument();  // 202415
         });
 
-        // 3. Verifica asignaturas y códigos
+ 
         expect(screen.getByText('Cálculo')).toBeInTheDocument();
         expect(screen.getByText('INF2')).toBeInTheDocument();
     });
@@ -80,38 +79,37 @@ describe('AvanceDisplay Component - Carga, Transformación de Periodos y Estados
     // Casos Frontera de Lógica y Estilo (I.A.3)
     // ----------------------------------------------------------------------
 
-    it('2. Caso Límite: Debería manejar el tipo de periodo "Desconocido" (I.A.3)', async () => {
+    it('2.Debería manejar el tipo de periodo "Desconocido"', async () => {
         render(<AvanceDisplay indice={INDICE_AVANCE} access_token={TOKEN_AVANCE} />);
 
         await waitFor(() => {
-            // Verifica el caso 202599 (default en el switch)
             expect(screen.getByText('2025 - Desconocido')).toBeInTheDocument();
         });
     });
 
-    it('3. Caso de Estilo: Debería aplicar la clase "aprobado" y mostrar el estado (I.A.3)', async () => {
+    it('3.debería aplicar la clase "aprobado" y mostrar el estado', async () => {
         render(<AvanceDisplay indice={INDICE_AVANCE} access_token={TOKEN_AVANCE} />);
 
         await waitFor(() => {
-            // Encuentra la tarjeta de la asignatura APROBADA (MAT1)
+
             const aprobadoElement = screen.getByText('Cálculo').closest('.asignatura-card');
             expect(aprobadoElement).toHaveClass('aprobado');
             expect(screen.getAllByText('APROBADO').length).toBeGreaterThanOrEqual(1);
         });
     });
 
-    it('4. Caso de Estilo: Debería aplicar la clase "reprobado" (I.A.3)', async () => {
+    it('4.Debería aplicar la clase "reprobado"', async () => {
         render(<AvanceDisplay indice={INDICE_AVANCE} access_token={TOKEN_AVANCE} />);
 
         await waitFor(() => {
-            // Encuentra la tarjeta de la asignatura REPROBADA (INF2)
+            
             const reprobadoElement = screen.getByText('Datos').closest('.asignatura-card');
             expect(reprobadoElement).toHaveClass('reprobado');
         });
     });
 
-    it('5. Caso de Excepción: Debería mostrar mensaje si la API devuelve objeto vacío (I.A.3)', async () => {
-        // Mockear una respuesta 200 OK pero con data vacía
+    it('5.Debería mostrar mensaje si la API devuelve objeto vacío', async () => {
+        
         serverAvance.use(
             http.get(`http://localhost:3000/avance/${INDICE_AVANCE}`, () => {
                 return HttpResponse.json({}, { status: 200 });
@@ -119,7 +117,6 @@ describe('AvanceDisplay Component - Carga, Transformación de Periodos y Estados
         );
         render(<AvanceDisplay indice={INDICE_AVANCE} access_token={TOKEN_AVANCE} />);
 
-        // Esperar el mensaje de "No se encontraron registros de avance."
         await waitFor(() => {
             expect(screen.getByText('No se encontraron registros de avance.')).toBeInTheDocument();
         });

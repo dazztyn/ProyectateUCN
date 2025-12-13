@@ -44,9 +44,9 @@ afterAll(() => server.close());
 // III. CASOS DE PRUEBA
 // --------------------------------------------------------------------------
 
-describe('MallaCarrera Component - Carga y Transformación de Datos', () => {
+describe('MallaCarrera Component', () => {
 
-    it('1. Caso de Éxito: Debería cargar y renderizar semestres y asignaturas correctamente (I.A.2)', async () => {
+    it('debería cargar y renderizar semestres y asignaturas correctamente', async () => {
         render(<MallaCarrera indice={INDICE} access_token={TOKEN} />);
 
         expect(screen.getByText('Cargando malla...')).toBeInTheDocument();
@@ -59,7 +59,7 @@ describe('MallaCarrera Component - Carga y Transformación de Datos', () => {
         });
     });
 
-    it('2. Caso Límite: Debería manejar el parsing de prerequisitos correctamente (I.A.3 - Casos Frontera)', async () => {
+    it('debería manejar el parsing de prerequisitos correctamente', async () => {
         render(<MallaCarrera indice={INDICE} access_token={TOKEN} />);
 
         await waitFor(() => {
@@ -73,7 +73,7 @@ describe('MallaCarrera Component - Carga y Transformación de Datos', () => {
     // Casos de Error y Excepción
     // ----------------------------------------------------------------------
 
-    it('3. Caso de Excepción: Debería manejar la falla de la API (status 500 o red) (I.A.3)', async () => {
+    it('debería manejar la falla de la API (status 500 o red)', async () => {
         server.use(
             http.get(`http://localhost:3000/malla/${INDICE}`, () => {
                 return HttpResponse.json({}, { status: 500 });
@@ -87,7 +87,7 @@ describe('MallaCarrera Component - Carga y Transformación de Datos', () => {
         });
     });
 
-    it('4. Caso de Frontera: Debería mostrar mensaje si la API devuelve objeto vacío (I.A.3)', async () => {
+    it('debería mostrar mensaje si la API devuelve objeto vacío', async () => {
         // Mockear una respuesta 200 OK pero con data vacía
         server.use(
             http.get(`http://localhost:3000/malla/${INDICE}`, () => {

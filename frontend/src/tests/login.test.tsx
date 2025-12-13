@@ -60,7 +60,7 @@ const renderLogin = () => render(
 // III. CASOS DE PRUEBA 
 // --------------------------------------------------------------------------
 
-describe('Login Component - Flujo de Autenticación', () => {
+describe('Login Page', () => {
 
     
     const ingresarCredenciales = (email: string, password: string) => {
