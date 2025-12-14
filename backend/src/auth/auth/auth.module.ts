@@ -5,11 +5,14 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './jwt.strategy.js';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { RolUsuario } from './entities/rol-usuario.entity.js';
 
 @Module({
   imports: [
     ConfigModule,
     PassportModule,
+    TypeOrmModule.forFeature([RolUsuario]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

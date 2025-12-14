@@ -1,20 +1,21 @@
 import { Asignatura } from "../ArchivosComunes/Asignatura.js";
+import { EstadoAcademico } from "./interfaces/EstadoAcademico.js";
 
 export class ProyeccionManual
-{
+{   
     private malla: Map<number, Asignatura[]>;
-    private aparicionesPrerrequisitos: Map<string, Asignatura[]>;
+    // private aparicionesPrerrequisitos: Map<string, Asignatura[]>; // Ya no se usa para priorizar aquí, pero está disponible si se requiere
     private asignaturasAprobadas: Set<string>; 
     private periodoActual: string;
 
-    // Constructor
-    constructor(malla: Map<number, Asignatura[]>, aparicionesPrerrequisitos: Map<string, Asignatura[]>,
-    asignaturasAprobadas: string[], periodoInicial: string) 
+    // --- CAMBIO: Ahora recibe el objeto de contexto unificado ---
+    constructor(estado: EstadoAcademico) 
     {    
-        this.asignaturasAprobadas = new Set(asignaturasAprobadas);
-        this.aparicionesPrerrequisitos = aparicionesPrerrequisitos;
-        this.periodoActual = periodoInicial;
-        this.malla = this.eliminarAsignaturasAprobadasDeMalla(malla);
+        this.asignaturasAprobadas = estado.asignaturasAprobadas;
+        this.periodoActual = estado.ultimoPeriodo; // O el periodo que definas como inicial
+        
+        // La malla ya viene agrupada por niveles desde el Facade, solo filtramos las aprobadas
+        this.malla = this.eliminarAsignaturasAprobadasDeMalla(estado.mallaPorNiveles);
     }
 
     // Elimina las asignaturas ya aprobadas de la malla para armar la proyección del sgte semestre
@@ -35,10 +36,11 @@ export class ProyeccionManual
     private verificarPrerrequisitosCumplidos(asignatura: Asignatura): boolean 
     {
         if (!asignatura.prereq) return true;
+        // Check eficiente usando el Set de aprobadas
         return asignatura.prereq.split(',').every(prereq => this.asignaturasAprobadas.has(prereq));
     }
 
-    //prepara un array de asignaturas disponibles para inscribir en el semestre a proyectar y uno de asignaturas no disponibles
+    // Prepara un array de asignaturas disponibles para inscribir en el semestre a proyectar
     private prepararAsignaturasDisponibles(): Asignatura[]
     {
         let asignaturasElegibles: Asignatura[] = [];
@@ -50,12 +52,11 @@ export class ProyeccionManual
         const limiteSemestre = semestreMasAtrasado + 2;
 
         for (const [nivel, asignaturas] of this.malla.entries()) {
-        if (nivel <= limiteSemestre) {
-            const disponiblesEnNivel = asignaturas.filter(
-            (asignatura) =>
-                this.verificarPrerrequisitosCumplidos(asignatura)
-            );
-            asignaturasElegibles.push(...disponiblesEnNivel);
+            if (nivel <= limiteSemestre) {
+                const disponiblesEnNivel = asignaturas.filter(
+                    (asignatura) => this.verificarPrerrequisitosCumplidos(asignatura)
+                );
+                asignaturasElegibles.push(...disponiblesEnNivel);
             }
         }
 
@@ -86,7 +87,6 @@ export class ProyeccionManual
         return noDisponibles;
     }
 
-
     public enviarAsignaturas(): { disponibles: Asignatura[], noDisponibles: Asignatura[] }
     {
         const disponibles = this.prepararAsignaturasDisponibles();
@@ -94,5 +94,4 @@ export class ProyeccionManual
 
         return { disponibles, noDisponibles };
     }
-
 }

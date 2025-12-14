@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ProyeccionService } from './proyeccion.service';
 import type { Request } from 'express';
@@ -10,6 +10,28 @@ import { CreacionProyeccion } from './DtoProyeccion/CreacionProyeccion';
 export class ProyeccionController 
 {
     constructor(private proyeccion: ProyeccionService){}
+
+    @Post('/Proyeccion/:indiceCarrera')
+    patchCrearProyeccion
+    (
+        @Req() request: Request,
+        @Param('indiceCarrera') indiceCarrera: string,
+        @Body() proyeccion: CreacionProyeccion
+    )
+    {
+        const usuario = request.user as Usuario;
+        
+        const index = parseInt(indiceCarrera, 10);
+        
+        if (isNaN(index) || !usuario.carreras || !usuario.carreras[index]) 
+        {
+            throw new BadRequestException(`El índice de carrera ${index} no es válido.`);
+        }
+
+        const carrera = usuario.carreras[index];
+
+        return this.proyeccion.crearProyeccionConAvance(usuario.rut, carrera.catalogo, carrera.codigo, proyeccion);
+    }
     
     @Post(':indiceCarrera')
     getProyeccion
@@ -20,19 +42,17 @@ export class ProyeccionController
     )
     {
         const usuario = request.user as Usuario;
-        return this.proyeccion.proyeccionFutura(usuario.rut, usuario.carreras[indiceCarrera].codigo, 
-            usuario.carreras[indiceCarrera].catalogo, proyeccion);
-    }
 
-    @Post('/Proyeccion')
-    patchCrearProyeccion
-    (
-        @Req() request: Request,
-        @Body() proyeccion: CreacionProyeccion
-    )
-    {
-        const usuario = request.user as Usuario;
-        return this.proyeccion.crearProyeccionConAvance(usuario.rut, usuario.carreras[0].catalogo, usuario.carreras[0].codigo, proyeccion);
+        const index = parseInt(indiceCarrera, 10);
+        
+        if (isNaN(index) || !usuario.carreras || !usuario.carreras[index]) 
+        {
+            throw new BadRequestException(`El índice de carrera ${index} no es válido.`);
+        }
+
+        const carrera = usuario.carreras[index];
+
+        return this.proyeccion.proyeccionFutura(usuario.rut, carrera.codigo, carrera.catalogo, proyeccion);
     }
 
     @Get('/asignaturasDisponibles/:indiceCarrera')
@@ -43,8 +63,22 @@ export class ProyeccionController
     )
     {
         const usuario = request.user as Usuario;
-        const carrera = usuario.carreras[indiceCarrera];
+
+        const index = parseInt(indiceCarrera, 10);
+        
+        if (isNaN(index) || !usuario.carreras || !usuario.carreras[index]) 
+        {
+            throw new BadRequestException(`El índice de carrera ${index} no es válido.`);
+        }
+
+        const carrera = usuario.carreras[index];
         return this.proyeccion.obtenerAsignaturasProyeccionManual(usuario.rut, carrera.codigo, carrera.catalogo);
+    }
+
+    @Get('/estadisticas/:periodo')
+    getEstadisticas(@Param('periodo') periodo: string) 
+    {
+        return this.proyeccion.obtenerEstadisticas(periodo);
     }
 
 }

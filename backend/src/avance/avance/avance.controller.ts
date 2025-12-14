@@ -1,5 +1,5 @@
-import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
-import { AvanceService } from './avance.service.js';
+import { BadRequestException, Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
+import { AvanceService } from './avance.service';
 import { AuthGuard } from '@nestjs/passport';
 import type { Request } from 'express';
 import { Usuario } from '../../ArchivosComunes/Usuario.js';
@@ -17,6 +17,15 @@ export class AvanceController
     )
     {
         const usuario = request.user as Usuario;
-        return this.avance.getAvance(usuario.rut, usuario.carreras[indiceCarrera].codigo, usuario.carreras[indiceCarrera].catalogo);
+        
+        const index = parseInt(indiceCarrera, 10);
+                
+        if (isNaN(index) || !usuario.carreras || !usuario.carreras[index]) 
+        {
+            throw new BadRequestException(`El índice de carrera ${index} no es válido.`);
+        }
+        
+        const carrera = usuario.carreras[index];
+        return this.avance.getAvance(usuario.rut, carrera.codigo, carrera.catalogo);
     }
 }
