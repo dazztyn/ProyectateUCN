@@ -37,13 +37,7 @@ export class MallaService
             throw error;
         }
     }
-
-    // Mantenemos esta función simple porque AvanceService la usa
-    buscarAsignaturaEnMalla(codigo: string, malla: Asignatura[]): Asignatura | undefined
-    {
-        return malla.find((asignatura) => asignatura.codigo === codigo);
-    }
-
+    
     private agregarListaDeAsignaturasQueAbre(mallaPorNiveles: Map<number, Asignatura[]>, mallaCompleta: Asignatura[])
     {
         let nuevaMalla: Map<number, RamoInfo[]> = new Map<number, RamoInfo[]>();

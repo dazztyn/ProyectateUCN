@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
 import { MallaService } from './malla.service.js';
 import { AuthGuard } from '@nestjs/passport';
 import type { Request } from 'express';
@@ -14,10 +14,20 @@ export class MallaController
     getMalla
     (
         @Req() request: Request,
-        @Param('indiceCarrera') indice: string,
+        @Param('indiceCarrera') indiceCarrera: string,
     )
     {
         const usuario = request.user as Usuario;
-        return this.malla.getMalla(usuario.carreras[indice].codigo, usuario.carreras[indice].catalogo);
+
+        const index = parseInt(indiceCarrera, 10);
+                
+        if (isNaN(index) || !usuario.carreras || !usuario.carreras[index]) 
+        {
+            throw new BadRequestException(`El índice de carrera ${index} no es válido.`);
+        }
+
+        const carrera = usuario.carreras[index];
+
+        return this.malla.getMalla(carrera.codigo, carrera.catalogo);
     }
 }

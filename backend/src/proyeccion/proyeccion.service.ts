@@ -125,7 +125,8 @@ export class ProyeccionService
     // MÉTODOS PRIVADOS DE PERSISTENCIA (Coordinación de TypeORM)
     // ===========================================================================
 
-    private async guardarCatalogoAsignaturas(asignaturasDto: any[]) {
+    private async guardarCatalogoAsignaturas(asignaturasDto: any[]) 
+    {
         const entidades = this.asignaturaRepository.create(asignaturasDto);
         await this.asignaturaRepository.createQueryBuilder()
             .insert().into(Asignaturas).values(entidades)

@@ -23,7 +23,7 @@ export class ProyeccionMapper {
 
     /**
      * Convierte el Mapa de Avance Histórico a un Array de Semestres para TypeORM.
-     * Incluye la lógica de numeración de semestres (saltando veranos 15/25).
+     * Incluye la lógica de numeración de semestres (saltando veranos y invierno 25/15).
      */
     avanceToPersistence(avanceMap: Map<string, AvanceConAsignatura[]>): CreacionSemestre[] {
         let numeroSemestre = 1;

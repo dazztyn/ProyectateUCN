@@ -99,4 +99,8 @@ export class AcademicUtilsService {
         
         return aprobadas;
     }
+    buscarAsignatura(codigo: string, malla: Asignatura[]): Asignatura | undefined
+    {
+        return malla.find((asignatura) => asignatura.codigo === codigo);
+    }
 }

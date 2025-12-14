@@ -55,7 +55,7 @@ export class AvanceService
 
     verificarAsignatura(codigoAsignatura: string, malla: Asignatura[])
     {
-        return this.mallaService.buscarAsignaturaEnMalla(codigoAsignatura, malla) || null;
+        return this.academicUtils.buscarAsignatura(codigoAsignatura, malla) || null;
     }
 
     rellenarListaDeAvance(avance: RamoTomado[], malla: Asignatura[]): AvanceConAsignatura[]
@@ -64,7 +64,7 @@ export class AvanceService
         avance.forEach((ramo) =>
         {
             const asignatura = this.verificarAsignatura(ramo.course, malla);
-            if(asignatura != null)
+            if(asignatura != null && !ramo.excluded)
             {
                 listaDeAvance.push(new AvanceConAsignatura(
                     ramo.nrc,
