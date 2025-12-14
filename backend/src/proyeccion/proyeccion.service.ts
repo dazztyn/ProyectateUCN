@@ -67,7 +67,7 @@ export class ProyeccionService
         );
 
         // 5. Query: Retornar resultado
-        return this.proyeccionSeparadaEnPeriodos(idProyeccion);
+        return this.buscarProyeccionSeparadaEnPeriodos(idProyeccion);
     }
 
     /**
@@ -113,7 +113,7 @@ export class ProyeccionService
         }
     }
 
-    async proyeccionSeparadaEnPeriodos(idProyeccion: number)
+    async buscarProyeccionSeparadaEnPeriodos(idProyeccion: number)
     {
         const proyeccion = await this.proyeccionRepository.findOne({
             where: { idProyeccion: idProyeccion },
