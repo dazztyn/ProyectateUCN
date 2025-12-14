@@ -25,12 +25,16 @@ import { AvanceConAsignatura } from '../avance/avance/AvanceConAsignatura';
 // para stats
 import { InstanciaAsignatura } from './entities/InstanciaAsignatura.entity.js';
 
+//para transacciones
+import { DataSource } from 'typeorm';
+
 @Injectable()
 export class ProyeccionService 
 {
     constructor(
         private readonly studentFacade: StudentDataFacade,
-        private readonly mapper: ProyeccionMapper, // 👈 Inyección del Mapper
+        private readonly mapper: ProyeccionMapper,
+        private readonly dataSource: DataSource,
 
         @InjectRepository(Proyeccion)
         private proyeccionRepository: Repository<Proyeccion>,
@@ -42,32 +46,72 @@ export class ProyeccionService
         
     ) {}
 
-    /**
-     * Genera y guarda una proyección futura automática.
-     */
     async proyeccionFutura(rutAlumno:string, codigoCarrera:string, catalogo:string, proyeccionDto: CreacionProyeccion)
     {
-        // 1. Facade: Obtener datos
+        // 1. Facade: Obtener datos y calcular lógica (Esto no toca la BD, puede ir fuera de la transacción)
         const estado = await this.studentFacade.obtenerEstadoAcademico(rutAlumno, codigoCarrera, catalogo);
-
-        // 2. Strategy: Calcular futuro
         const estrategia: IProyeccionStrategy = new GreedyProjectionStrategy(estado);
         const mapaFuturo = estrategia.generar(estado);
 
-        // 3. Mapper + Repo: Persistencia del Catálogo
-        const catalogoEntidades = this.mapper.toPersistenceCatalog(estado.mallaCompleta);
-        await this.guardarCatalogoAsignaturas(catalogoEntidades);
+        // INICIO DE LA TRANSACCIÓN
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
 
-        // 4. Mapper + Repo: Persistencia de la Proyección
-        const idProyeccion = await this.guardarProyeccionCompleta(
-            estado.avancePorPeriodo, 
-            mapaFuturo, 
-            rutAlumno, 
-            proyeccionDto
-        );
+        try {
+            // A. Persistencia del Catálogo (Usando el queryRunner, NO el repositorio global)
+            const catalogoEntidades = this.mapper.toPersistenceCatalog(estado.mallaCompleta);
+            
+            // Debes refactorizar guardarCatalogoAsignaturas para que acepte el queryRunner
+            // O hacerlo directamente aquí:
+            await queryRunner.manager.createQueryBuilder()
+                .insert()
+                .into(Asignaturas)
+                .values(catalogoEntidades)
+                .orIgnore()
+                .execute();
 
-        // 5. Query: Retornar resultado
-        return this.buscarProyeccionSeparadaEnPeriodos(idProyeccion);
+            // B. Persistencia de la Proyección
+            // (Lógica de mapeo movida aquí para brevedad)
+            const semestresAvance = this.mapper.avanceToPersistence(estado.avancePorPeriodo);
+            
+            // Calcular número de semestre para continuar
+            const ultimoSemestreAvance = semestresAvance[semestresAvance.length - 1];
+            let siguienteNumero = ultimoSemestreAvance.numero;
+            const tipoSemestre = ultimoSemestreAvance.periodo.slice(4, 6);
+            if (tipoSemestre !== '15' && tipoSemestre !== '25') {
+                siguienteNumero++;
+            }
+            
+            const semestresFuturo = this.mapper.futureToPersistence(mapaFuturo, siguienteNumero);
+            const todosLosSemestres = semestresAvance.concat(semestresFuturo);
+
+            const nuevaProyeccion = queryRunner.manager.create(Proyeccion, {
+                rutUsuario: rutAlumno,
+                ideal: proyeccionDto.ideal,
+                nombreProyeccion: proyeccionDto.nombreProyeccion,
+                semestres: todosLosSemestres,
+            });
+
+            const guardada = await queryRunner.manager.save(nuevaProyeccion);
+            
+            // SI TODO SALE BIEN, CONFIRMAMOS LOS CAMBIOS
+            await queryRunner.commitTransaction();
+            
+            return this.buscarProyeccionSeparadaEnPeriodos(guardada.idProyeccion);
+
+        } catch (error) {
+            // SI ALGO FALLA, DESHACEMOS TODO (ROLLBACK)
+            await queryRunner.rollbackTransaction();
+            
+            if (error.code === '23505') {
+                throw new ConflictException(`Ya existe una proyección con ese nombre.`);
+            }
+            throw new InternalServerErrorException('Error al guardar la proyección, se han revertido los cambios.');
+        } finally {
+            // SIEMPRE LIBERAR EL QUERYRUNNER
+            await queryRunner.release();
+        }
     }
 
     /**
