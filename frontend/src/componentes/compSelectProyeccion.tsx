@@ -2,14 +2,12 @@ import "../style/styleSeleccionProy.css";
 import flecha from "../assets/arrow-down.png"
 import { useState } from "react";
 import React from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import ErrorMessage from '../componentes/compMensajeError';
 
-type Props = {
-  indice: number;
-  access_token: string;
-};
-
+import type { 
+  Props
+} from "../types/dataTypesSimple";
 const CompSelectProyeccion: React.FC<Props> = ({ indice, access_token})  => {
   const [open, setOpen] = useState(false);
   const toggleOpen = () => setOpen(o => !o);
@@ -24,7 +22,7 @@ const CompSelectProyeccion: React.FC<Props> = ({ indice, access_token})  => {
     setError('');
 
     if (!selectedSection) {
-      setError("Debes seleccionar 'Vacía' o 'Mejor Caso'");
+      setError("Debes seleccionar 'Personalizable' o 'Mejor Caso'");
       return;
     }
     if (nombreProy.trim() === "") {
@@ -38,9 +36,14 @@ const CompSelectProyeccion: React.FC<Props> = ({ indice, access_token})  => {
       ideal: selectedSection === "Mejor Caso",
       nombreProyeccion: nombreProy.trim(),
     };
+
+    const endpoint =
+    selectedSection === "Personalizable"
+      ? "http://localhost:3000/proyeccion/Proyeccion"
+      : `http://localhost:3000/proyeccion/${indice}`;
     try {
       const resp = await fetch(
-        `http://localhost:3000/proyeccion/${indice}`,
+        endpoint,
         {
           method: "POST",
           headers: {
@@ -86,7 +89,7 @@ const CompSelectProyeccion: React.FC<Props> = ({ indice, access_token})  => {
         <div className="titulo-seleccion-proy">Proyección Nueva</div>
 
         <div className="botones-seccion-proy">
-          {["Vacía", "Mejor Caso"].map(sec => (
+          {["Personalizable", "Mejor Caso"].map(sec => (
             <button
               key={sec}
               onClick={() => setSelectedSection(sec)}

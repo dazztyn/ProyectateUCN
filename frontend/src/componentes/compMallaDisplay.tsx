@@ -2,23 +2,12 @@ import React, { useState, useEffect } from "react";
 import ErrorMessage from "./compMensajeError";
 import '../style/styleMalla.css';
 
-type Asignatura = {
-  codigo: string;
-  asignatura: string;
-  creditos: number;
-  prereq: string[];
-  nivel: number;
-};
+import type { 
+  Asignatura,
+  Semestre,
+  Props 
 
-type Semestre = {
-  numero: number;
-  asignaturas: Asignatura[];
-};
-
-type Props = {
-  indice: number;
-  access_token: string;
-};
+} from "../types/dataTypesSimple";
 
 const MallaCarrera: React.FC<Props> = ({ indice, access_token}) => {
   const [semestres, setSemestres] = useState<Semestre[]>([]);

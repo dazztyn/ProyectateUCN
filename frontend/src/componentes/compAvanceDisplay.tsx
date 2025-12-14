@@ -2,26 +2,12 @@ import React, { useState, useEffect } from "react";
 import ErrorMessage from "./compMensajeError";
 import "../style/styleMalla.css";
 
-type Asignatura = {
-  codigo: string;
-  asignatura: string;
-  creditos: number;
-};
+import type { 
+  Avance,
+  Props 
 
-type Avance = {
-  nrc: string;
-  period: string;
-  student: string;
-  course: Asignatura;
-  excluded: boolean;
-  inscriptionType: string;
-  status: string;
-};
+} from "../types/dataTypesSimple";
 
-type Props = {
-  indice: number;
-  access_token: string;
-};
 const AvanceDisplay: React.FC<Props> = ({ indice, access_token }) => {
   const [avance, setAvance] = useState<Record<string, Avance[]>>({});
   const [cargando, setCargando] = useState(true);
