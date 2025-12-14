@@ -1,7 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, Unique } from 'typeorm';
 import { Semestre } from './semestre.entity'; // Importa la entidad hija
 
 @Entity('proyecciones') // Nombre de la tabla en la base de datos
+@Unique(['rutUsuario', 'nombreProyeccion'])
 export class Proyeccion {
   @PrimaryGeneratedColumn()
   idProyeccion: number;

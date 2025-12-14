@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
@@ -100,8 +100,17 @@ export class ProyeccionService
             nombreProyeccion: proyeccionDto.nombreProyeccion,
             semestres: semestresDto,
         });
-
-        return await this.proyeccionRepository.save(nuevaProyeccion);
+        try
+        {
+            return await this.proyeccionRepository.save(nuevaProyeccion);
+        }
+        catch (error) 
+        {
+            if (error.code === '23505') {
+                throw new ConflictException(`Ya tienes una proyección llamada "${proyeccionDto.nombreProyeccion}". Por favor elige otro nombre.`);
+            }
+            throw error;
+        }
     }
 
     async proyeccionSeparadaEnPeriodos(idProyeccion: number)
@@ -165,9 +174,23 @@ export class ProyeccionService
             nombreProyeccion: dto.nombreProyeccion,
             semestres: todosLosSemestres,
         });
-
-        const guardada = await this.proyeccionRepository.save(entidad);
-        return guardada.idProyeccion;
+        try
+        {
+            const guardada = await this.proyeccionRepository.save(entidad);
+            return guardada.idProyeccion;
+        }
+        catch (error) 
+        {
+            if (error.code === '23505') 
+            {
+                throw new ConflictException(
+                    `Ya existe una proyección con el nombre "${dto.nombreProyeccion}". Por favor elige otro.`
+                );
+            }
+        
+            console.error(error);
+            throw new InternalServerErrorException('Error al guardar la proyección');
+        }
     }
 
     async obtenerEstadisticas(periodo: string) 
