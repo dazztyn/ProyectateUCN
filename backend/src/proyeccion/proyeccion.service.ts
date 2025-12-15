@@ -161,7 +161,7 @@ export class ProyeccionService
         try
         {
             const guardada = await this.proyeccionRepository.save(nuevaProyeccion);
-            return await this.mapper.toResponse(guardada);
+            return await this.obtenerProyeccionCompleta(guardada.idProyeccion);
         }
         catch (error) 
         {
