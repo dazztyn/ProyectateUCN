@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, Unique } from 'typeorm';
 
 @Entity('avance_real')
-@Unique(['rutUsuario', 'codigoCarrera', 'codigoAsignatura'])
+@Unique(['rutUsuario', 'codigoCarrera', 'codigoAsignatura', 'periodo'])
 export class AvanceReal {
     @PrimaryGeneratedColumn()
     id: number;

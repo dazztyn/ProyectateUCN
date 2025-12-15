@@ -114,9 +114,12 @@ export class AvanceService
             where: { rutUsuario: rut, codigoCarrera: codigoCarrera }
         });
 
-        // Mapa para búsqueda rápida
         const mapaBD = new Map<string, AvanceReal>();
-        avanceEnBD.forEach(a => mapaBD.set(a.codigoAsignatura, a));
+        avanceEnBD.forEach(a => {
+            // Clave única: "DCCB-00107-202310"
+            const claveUnica = `${a.codigoAsignatura}-${a.periodo}`; 
+            mapaBD.set(claveUnica, a);
+        });
 
         const entidadesAGuardar: AvanceReal[] = [];
 
@@ -132,7 +135,8 @@ export class AvanceService
             const nrc = item.getNrc();
             const creditos = curso.creditos;
 
-            const entidadExistente = mapaBD.get(codigo);
+            const claveBusqueda = `${codigo}-${periodo}`;
+            const entidadExistente = mapaBD.get(claveBusqueda);
 
             if (entidadExistente) {
                 // 🟩 CASO ACTUALIZAR
