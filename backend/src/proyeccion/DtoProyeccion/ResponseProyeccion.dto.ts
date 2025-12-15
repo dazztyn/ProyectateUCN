@@ -2,6 +2,7 @@ export class ResponseAsignaturaDto
 {
     codigo: string;
     nombre?: string;
+    creditos: number;
     estado: 'APROBADO' | 'PENDIENTE' | 'REPROBADO'; 
 }
 

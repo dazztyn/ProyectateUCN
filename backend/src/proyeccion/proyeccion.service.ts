@@ -5,7 +5,7 @@ import { Repository } from 'typeorm';
 // Entidades
 import { Proyeccion } from './entities/proyeccion.entity';
 import { Semestre } from './entities/semestre.entity';
-import { Asignaturas } from './entities/asignatura.entity';
+import { Asignaturas } from '../mallacurricular/entities/asignatura.entity';
 
 // DTOs
 import { CreacionProyeccion } from './DtoProyeccion/CreacionProyeccion';

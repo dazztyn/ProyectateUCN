@@ -5,6 +5,7 @@ import { ErrorResponse } from '../../ArchivosComunes/ErrorResponse.js';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RolUsuario } from './entities/rol-usuario.entity.js';
+import { AvanceService } from '../../avance/avance/avance.service.js';
 
 @Injectable()
 export class AuthService 
@@ -13,6 +14,7 @@ export class AuthService
         private readonly jwtService: JwtService,
         @InjectRepository(RolUsuario)
         private readonly rolUsuarioRepository: Repository<RolUsuario>,
+        private readonly avanceService: AvanceService,
     ) {}
 
     async fetchloginData(email: string, password: string): Promise<Usuario> 
@@ -83,6 +85,27 @@ async login(email: string, password: string)
         try
         {
             const alumno = await this.fetchloginData(email, password);
+
+            if (alumno.carreras && alumno.carreras.length > 0) 
+            {
+                await Promise.all(alumno.carreras.map(async (carrera) => 
+                {
+                    try 
+                    {
+                        console.log(`Sincronizando carrera ${carrera.codigo}...`);
+                        await this.avanceService.sincronizarAvanceFull(
+                            alumno.rut, 
+                            carrera.codigo, 
+                            carrera.catalogo
+                        );
+                    } 
+                    catch (syncError) 
+                    {
+                        console.error(`Error sincronizando carrera ${carrera.codigo}:`, syncError);
+                    }
+                }));
+            }
+
             const payload = {
                 rut: alumno.rut, 
                 carreras: alumno.carreras,

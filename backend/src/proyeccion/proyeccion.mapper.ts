@@ -3,7 +3,7 @@ import { Asignatura } from '../ArchivosComunes/Asignatura.js';
 import { AvanceConAsignatura } from '../avance/avance/AvanceConAsignatura.js';
 import { CreacionSemestre } from './DtoProyeccion/CreacionSemestre.js';
 import { CreacionInstanciaAsignatura } from './DtoProyeccion/CreacionInstanciaAsignatura.js';
-import { CreacionAsignatura } from './DtoProyeccion/CreacionAsignatura.js';
+import { CreacionAsignatura } from '../mallacurricular/dtoMallaCurricular/CreacionAsignatura.js';
 import { Proyeccion } from './entities/proyeccion.entity';
 import { ResponseProyeccionDto, ResponseSemestreDto } from './DtoProyeccion/ResponseProyeccion.dto';
 import { ResponseProyeccionResumenDto } from './DtoProyeccion/ResponseProyeccionResumenDto.js';
@@ -116,6 +116,7 @@ export class ProyeccionMapper {
             asignaturas: semestre.instancias ? semestre.instancias.map(instancia => ({
                 codigo: instancia.asignatura.codigoAsignatura,
                 nombre: instancia.asignatura.nombreAsignatura,
+                creditos: instancia.asignatura.creditos,
                 estado: instancia.estado as 'APROBADO' | 'PENDIENTE' | 'REPROBADO'
             })) : []
         }));

@@ -22,14 +22,21 @@ export class AvanceConAsignatura
         this.status = status;
     }
 
+    getNrc(): string
+    {
+        return this.nrc;
+    }
+
     getPeriod(): string
     {
         return this.period;
     }
+    
     getStatus(): string
     {
         return this.status;
     }
+
     getCourse(): Asignatura
     {
         return this.course;

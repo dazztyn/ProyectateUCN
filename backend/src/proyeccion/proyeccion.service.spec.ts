@@ -5,7 +5,7 @@ import { ProyeccionMapper } from './proyeccion.mapper';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Proyeccion } from './entities/proyeccion.entity';
 import { Semestre } from './entities/semestre.entity';
-import { Asignaturas } from './entities/asignatura.entity';
+import { Asignaturas } from '../mallacurricular/entities/asignatura.entity';
 import { EstadoAcademico } from './interfaces/EstadoAcademico';
 
 describe('ProyeccionService', () => {
