@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, Unique } from 'typeorm';
 
 @Entity('avance_real')
-@Unique(['rutUsuario', 'codigoCarrera', 'codigoAsignatura']) // 🔒 Llave única compuesta
+@Unique(['rutUsuario', 'codigoCarrera', 'codigoAsignatura'])
 export class AvanceReal {
     @PrimaryGeneratedColumn()
     id: number;
@@ -19,20 +19,20 @@ export class AvanceReal {
     codigoAsignatura: string;
 
     @Column()
-    nombreAsignatura: string; // Guardamos el nombre para consultar rápido sin JOINs
+    nombreAsignatura: string; 
 
     @Column({ type: 'int', nullable: true }) 
     creditos: number;
 
     @Column()
-    periodo: string; // Ej: "202310"
+    periodo: string;
 
     @Column()
-    estado: string; // 'APROBADO', 'REPROBADO', 'INSCRITO', 'CONVALIDADO'
+    estado: string;
 
     @Column({ type: 'float', nullable: true })
     nota: number;
 
     @Column({ type: 'int', default: 1 })
-    vez: number; // Opcional: Para saber si es el 1er, 2do o 3er intento
+    vez: number; 
 }
