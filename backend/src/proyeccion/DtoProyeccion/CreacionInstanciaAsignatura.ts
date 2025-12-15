@@ -1,5 +1,5 @@
 export class CreacionInstanciaAsignatura
 {
-  aprobada: boolean;
+  estado: string;
   asignatura: { codigoAsignatura: string; };
 }

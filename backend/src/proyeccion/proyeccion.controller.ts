@@ -34,7 +34,7 @@ export class ProyeccionController
     }
     
     @Post(':indiceCarrera')
-    getProyeccion
+    getProyeccionFutura
     (
         @Req() request: Request,
         @Param('indiceCarrera') indiceCarrera: string,
@@ -53,6 +53,27 @@ export class ProyeccionController
         const carrera = usuario.carreras[index];
 
         return this.proyeccion.proyeccionFutura(usuario.rut, carrera.codigo, carrera.catalogo, proyeccion);
+    }
+
+    @Get('/obtenerProyecciones/:indiceCarrera')
+    obtenerProyecciones
+    (
+        @Req() request: Request,
+        @Param('indiceCarrera') indiceCarrera: string,
+    )
+    {
+        const usuario = request.user as Usuario;
+
+        const index = parseInt(indiceCarrera, 10);
+
+        if (isNaN(index) || !usuario.carreras || !usuario.carreras[index]) 
+        {
+            throw new BadRequestException(`El índice de carrera ${index} no es válido.`);
+        }
+
+        const carrera = usuario.carreras[index];
+
+        return this.proyeccion.listarProyeccionesDeUsuario(usuario.rut, carrera.codigo);
     }
 
     @Get('/asignaturasDisponibles/:indiceCarrera')
@@ -76,7 +97,10 @@ export class ProyeccionController
     }
 
     @Get('/estadisticas/:periodo')
-    getEstadisticas(@Param('periodo') periodo: string) 
+    getEstadisticas
+    (
+        @Param('periodo') periodo: string
+    ) 
     {
         return this.proyeccion.obtenerEstadisticas(periodo);
     }

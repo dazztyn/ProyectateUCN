@@ -7,15 +7,12 @@ export class InstanciaAsignatura {
   @PrimaryGeneratedColumn()
   id: number;
 
-  // --- TU NUEVA COLUMNA ---
-  @Column({ type: 'boolean', default: false })
-  aprobada: boolean;
+  @Column({ default: 'PENDIENTE' })
+  estado: string;
 
-  // --- RELACIÓN CON SEMESTRE ---
   @ManyToOne(() => Semestre, (semestre) => semestre.instancias)
   semestre: Semestre;
 
-  // --- RELACIÓN CON ASIGNATURA ---
   @ManyToOne(() => Asignaturas, (asignatura) => asignatura.instancias)
   asignatura: Asignaturas;
 }

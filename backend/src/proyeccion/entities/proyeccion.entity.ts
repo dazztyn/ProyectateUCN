@@ -2,10 +2,13 @@ import { Entity, PrimaryGeneratedColumn, Column, OneToMany, Unique } from 'typeo
 import { Semestre } from './semestre.entity'; // Importa la entidad hija
 
 @Entity('proyecciones') // Nombre de la tabla en la base de datos
-@Unique(['rutUsuario', 'nombreProyeccion'])
+@Unique(['rutUsuario', 'nombreProyeccion', 'codigoCarrera']) // Asegura que no haya proyecciones duplicadas por usuario, nombre y carrera
 export class Proyeccion {
   @PrimaryGeneratedColumn()
   idProyeccion: number;
+
+  @Column({ type: 'text', nullable: false })
+  codigoCarrera: string;
 
   @Column({ type: 'text', nullable: false })
   rutUsuario: string;

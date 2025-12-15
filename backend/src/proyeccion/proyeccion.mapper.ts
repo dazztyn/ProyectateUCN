@@ -4,7 +4,9 @@ import { AvanceConAsignatura } from '../avance/avance/AvanceConAsignatura.js';
 import { CreacionSemestre } from './DtoProyeccion/CreacionSemestre.js';
 import { CreacionInstanciaAsignatura } from './DtoProyeccion/CreacionInstanciaAsignatura.js';
 import { CreacionAsignatura } from './DtoProyeccion/CreacionAsignatura.js';
-
+import { Proyeccion } from './entities/proyeccion.entity';
+import { ResponseProyeccionDto, ResponseSemestreDto } from './DtoProyeccion/ResponseProyeccion.dto';
+import { ResponseProyeccionResumenDto } from './DtoProyeccion/ResponseProyeccionResumenDto.js';
 @Injectable()
 export class ProyeccionMapper {
 
@@ -41,7 +43,7 @@ export class ProyeccionMapper {
                 creditosTotales += asig.creditos;
 
                 return {
-                    aprobada: (item.getStatus() === 'APROBADO'),
+                    estado: item.getStatus(),
                     asignatura: { codigoAsignatura: asig.codigo }
                 };
             });
@@ -80,7 +82,7 @@ export class ProyeccionMapper {
             const instancias: CreacionInstanciaAsignatura[] = asignaturas.map(asig => {
                 creditosTotales += asig.creditos;
                 return {
-                    aprobada: true, // En el futuro asumimos aprobación
+                    estado: 'PENDIENTE', // En el futuro asumimos pendiente
                     asignatura: { codigoAsignatura: asig.codigo }
                 };
             });
@@ -95,5 +97,55 @@ export class ProyeccionMapper {
             numeroSemestre++;
         }
         return arraySemestres;
+    }
+
+    /**
+     * Convierte una Entidad de BD a un DTO de Respuesta limpio para el Frontend
+     */
+    toResponse(entidad: Proyeccion): ResponseProyeccionDto {
+        // Ordenamos semestres por si la BD los trae desordenados
+        const semestresOrdenados = entidad.semestres 
+            ? entidad.semestres.sort((a, b) => a.numero - b.numero) 
+            : [];
+
+        const semestresDto: ResponseSemestreDto[] = semestresOrdenados.map(semestre => ({
+            numero: semestre.numero,
+            periodo: semestre.periodo,
+            totalCreditos: semestre.totalCreditos,
+            // Mapeamos las instancias (asignaturas dentro del semestre)
+            asignaturas: semestre.instancias ? semestre.instancias.map(instancia => ({
+                codigo: instancia.asignatura.codigoAsignatura,
+                nombre: instancia.asignatura.nombreAsignatura,
+                estado: instancia.estado as 'APROBADO' | 'PENDIENTE' | 'REPROBADO'
+            })) : []
+        }));
+
+        return {
+            id: entidad.idProyeccion,
+            rut: entidad.rutUsuario,
+            nombre: entidad.nombreProyeccion,
+            esIdeal: entidad.ideal,
+            semestres: semestresDto
+        };
+    }
+
+    /**
+     * Versión para listas (Arrays)
+     */
+    toResponseList(entidades: Proyeccion[]): ResponseProyeccionDto[] {
+        return entidades.map(entidad => this.toResponse(entidad));
+    }
+
+    toSummaryResponse(entidad: Proyeccion): ResponseProyeccionResumenDto 
+    {
+        return {
+            id: entidad.idProyeccion,
+            nombre: entidad.nombreProyeccion,
+            esIdeal: entidad.ideal,
+        };
+    }
+    toSummaryResponseList(entidades: Proyeccion[]): ResponseProyeccionResumenDto[] 
+    {
+        return entidades.map(e => this.toSummaryResponse(e));
     }
 }

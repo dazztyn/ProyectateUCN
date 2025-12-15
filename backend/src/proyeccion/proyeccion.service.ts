@@ -9,7 +9,6 @@ import { Asignaturas } from './entities/asignatura.entity';
 
 // DTOs
 import { CreacionProyeccion } from './DtoProyeccion/CreacionProyeccion';
-import { CreacionSemestre } from './DtoProyeccion/CreacionSemestre';
 
 // Patrones
 import { StudentDataFacade } from './StudentDataFacade';
@@ -20,7 +19,6 @@ import { ProyeccionManual } from './ProyeccionManual';
 
 // Tipos
 import { Asignatura } from '../ArchivosComunes/Asignatura';
-import { AvanceConAsignatura } from '../avance/avance/AvanceConAsignatura';
 
 // para stats
 import { InstanciaAsignatura } from './entities/InstanciaAsignatura.entity.js';
@@ -48,22 +46,19 @@ export class ProyeccionService
 
     async proyeccionFutura(rutAlumno:string, codigoCarrera:string, catalogo:string, proyeccionDto: CreacionProyeccion)
     {
-        // 1. Facade: Obtener datos y calcular lógica (Esto no toca la BD, puede ir fuera de la transacción)
         const estado = await this.studentFacade.obtenerEstadoAcademico(rutAlumno, codigoCarrera, catalogo);
         const estrategia: IProyeccionStrategy = new GreedyProjectionStrategy(estado);
         const mapaFuturo = estrategia.generar(estado);
 
-        // INICIO DE LA TRANSACCIÓN
         const queryRunner = this.dataSource.createQueryRunner();
         await queryRunner.connect();
         await queryRunner.startTransaction();
 
-        try {
-            // A. Persistencia del Catálogo (Usando el queryRunner, NO el repositorio global)
+        try 
+        {
+
             const catalogoEntidades = this.mapper.toPersistenceCatalog(estado.mallaCompleta);
-            
-            // Debes refactorizar guardarCatalogoAsignaturas para que acepte el queryRunner
-            // O hacerlo directamente aquí:
+
             await queryRunner.manager.createQueryBuilder()
                 .insert()
                 .into(Asignaturas)
@@ -71,11 +66,8 @@ export class ProyeccionService
                 .orIgnore()
                 .execute();
 
-            // B. Persistencia de la Proyección
-            // (Lógica de mapeo movida aquí para brevedad)
             const semestresAvance = this.mapper.avanceToPersistence(estado.avancePorPeriodo);
-            
-            // Calcular número de semestre para continuar
+
             const ultimoSemestreAvance = semestresAvance[semestresAvance.length - 1];
             let siguienteNumero = ultimoSemestreAvance.numero;
             const tipoSemestre = ultimoSemestreAvance.periodo.slice(4, 6);
@@ -88,6 +80,7 @@ export class ProyeccionService
 
             const nuevaProyeccion = queryRunner.manager.create(Proyeccion, {
                 rutUsuario: rutAlumno,
+                codigoCarrera: codigoCarrera,
                 ideal: proyeccionDto.ideal,
                 nombreProyeccion: proyeccionDto.nombreProyeccion,
                 semestres: todosLosSemestres,
@@ -95,23 +88,43 @@ export class ProyeccionService
 
             const guardada = await queryRunner.manager.save(nuevaProyeccion);
             
-            // SI TODO SALE BIEN, CONFIRMAMOS LOS CAMBIOS
             await queryRunner.commitTransaction();
             
-            return this.buscarProyeccionSeparadaEnPeriodos(guardada.idProyeccion);
+            return this.obtenerProyeccionCompleta(guardada.idProyeccion);
 
-        } catch (error) {
-            // SI ALGO FALLA, DESHACEMOS TODO (ROLLBACK)
+        } 
+        catch (error)
+        {
             await queryRunner.rollbackTransaction();
             
-            if (error.code === '23505') {
+            if (error.code === '23505') 
+            {
                 throw new ConflictException(`Ya existe una proyección con ese nombre.`);
             }
             throw new InternalServerErrorException('Error al guardar la proyección, se han revertido los cambios.');
-        } finally {
-            // SIEMPRE LIBERAR EL QUERYRUNNER
+        } 
+        finally 
+        {
             await queryRunner.release();
         }
+    }
+
+    async listarProyeccionesDeUsuario(rut: string, codigoCarrera: string) 
+    {
+        const proyecciones = await this.proyeccionRepository.find({
+            where: { 
+                rutUsuario: rut,
+                codigoCarrera: codigoCarrera 
+            },
+            select: {
+                idProyeccion: true,
+                nombreProyeccion: true,
+                ideal: true,
+                rutUsuario: true
+            },
+            order: { idProyeccion: 'DESC' }
+        });
+        return this.mapper.toSummaryResponseList(proyecciones);
     }
 
     /**
@@ -140,13 +153,15 @@ export class ProyeccionService
 
         const nuevaProyeccion = this.proyeccionRepository.create({
             rutUsuario: rut,
+            codigoCarrera: codigoCarrera,
             ideal: proyeccionDto.ideal,
             nombreProyeccion: proyeccionDto.nombreProyeccion,
             semestres: semestresDto,
         });
         try
         {
-            return await this.proyeccionRepository.save(nuevaProyeccion);
+            const guardada = await this.proyeccionRepository.save(nuevaProyeccion);
+            return await this.mapper.toResponse(guardada);
         }
         catch (error) 
         {
@@ -157,7 +172,7 @@ export class ProyeccionService
         }
     }
 
-    async buscarProyeccionSeparadaEnPeriodos(idProyeccion: number)
+    async obtenerProyeccionCompleta(idProyeccion: number)
     {
         const proyeccion = await this.proyeccionRepository.findOne({
             where: { idProyeccion: idProyeccion },
@@ -166,17 +181,8 @@ export class ProyeccionService
 
         if (!proyeccion) throw new NotFoundException(`Proyección ${idProyeccion} no encontrada.`);
 
-        const proyeccionMap = new Map<string, Asignaturas[]>();
-        for (const semestre of proyeccion.semestres) {
-            const asignaturas = semestre.instancias.map(i => i.asignatura);
-            proyeccionMap.set(semestre.periodo, asignaturas);
-        }
-        return Object.fromEntries(proyeccionMap);
+        return this.mapper.toResponse(proyeccion);
     } 
-
-    // ===========================================================================
-    // MÉTODOS PRIVADOS DE PERSISTENCIA (Coordinación de TypeORM)
-    // ===========================================================================
 
     private async guardarCatalogoAsignaturas(asignaturasDto: any[]) 
     {
@@ -186,56 +192,56 @@ export class ProyeccionService
             .orIgnore().execute();
     }
 
-    private async guardarProyeccionCompleta(
-        avanceMap: Map<string, AvanceConAsignatura[]>, 
-        futuroMap: Map<string, Asignatura[]>, 
-        rut: string, 
-        dto: CreacionProyeccion
-    ): Promise<number> {
+    // private async guardarProyeccionCompleta(
+    //     avanceMap: Map<string, AvanceConAsignatura[]>, 
+    //     futuroMap: Map<string, Asignatura[]>, 
+    //     rut: string, 
+    //     dto: CreacionProyeccion
+    // ): Promise<number> {
         
-        // 1. Usar Mapper para convertir el Avance
-        const semestresAvance = this.mapper.avanceToPersistence(avanceMap);
+    //     // 1. Usar Mapper para convertir el Avance
+    //     const semestresAvance = this.mapper.avanceToPersistence(avanceMap);
 
-        // 2. Calcular número de semestre para continuar
-        const ultimoSemestreAvance = semestresAvance[semestresAvance.length - 1];
-        let siguienteNumero = ultimoSemestreAvance.numero;
+    //     // 2. Calcular número de semestre para continuar
+    //     const ultimoSemestreAvance = semestresAvance[semestresAvance.length - 1];
+    //     let siguienteNumero = ultimoSemestreAvance.numero;
         
-        // (Tu lógica original de saltar veranos para el contador)
-        const tipoSemestre = ultimoSemestreAvance.periodo.slice(4, 6);
-        if (tipoSemestre !== '15' && tipoSemestre !== '25') {
-            siguienteNumero++;
-        }
+    //     // (Tu lógica original de saltar veranos para el contador)
+    //     const tipoSemestre = ultimoSemestreAvance.periodo.slice(4, 6);
+    //     if (tipoSemestre !== '15' && tipoSemestre !== '25') {
+    //         siguienteNumero++;
+    //     }
 
-        // 3. Usar Mapper para convertir el Futuro
-        const semestresFuturo = this.mapper.futureToPersistence(futuroMap, siguienteNumero);
+    //     // 3. Usar Mapper para convertir el Futuro
+    //     const semestresFuturo = this.mapper.futureToPersistence(futuroMap, siguienteNumero);
 
-        // 4. Unir y Guardar
-        const todosLosSemestres = semestresAvance.concat(semestresFuturo);
+    //     // 4. Unir y Guardar
+    //     const todosLosSemestres = semestresAvance.concat(semestresFuturo);
         
-        const entidad = this.proyeccionRepository.create({
-            rutUsuario: rut,
-            ideal: dto.ideal,
-            nombreProyeccion: dto.nombreProyeccion,
-            semestres: todosLosSemestres,
-        });
-        try
-        {
-            const guardada = await this.proyeccionRepository.save(entidad);
-            return guardada.idProyeccion;
-        }
-        catch (error) 
-        {
-            if (error.code === '23505') 
-            {
-                throw new ConflictException(
-                    `Ya existe una proyección con el nombre "${dto.nombreProyeccion}". Por favor elige otro.`
-                );
-            }
+    //     const entidad = this.proyeccionRepository.create({
+    //         rutUsuario: rut,
+    //         ideal: dto.ideal,
+    //         nombreProyeccion: dto.nombreProyeccion,
+    //         semestres: todosLosSemestres,
+    //     });
+    //     try
+    //     {
+    //         const guardada = await this.proyeccionRepository.save(entidad);
+    //         return guardada.idProyeccion;
+    //     }
+    //     catch (error) 
+    //     {
+    //         if (error.code === '23505') 
+    //         {
+    //             throw new ConflictException(
+    //                 `Ya existe una proyección con el nombre "${dto.nombreProyeccion}". Por favor elige otro.`
+    //             );
+    //         }
         
-            console.error(error);
-            throw new InternalServerErrorException('Error al guardar la proyección');
-        }
-    }
+    //         console.error(error);
+    //         throw new InternalServerErrorException('Error al guardar la proyección');
+    //     }
+    // }
 
     async obtenerEstadisticas(periodo: string) 
     {
