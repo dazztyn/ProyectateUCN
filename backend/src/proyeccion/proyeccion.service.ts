@@ -243,22 +243,4 @@ export class ProyeccionService
     //     }
     // }
 
-    async obtenerEstadisticas(periodo: string) 
-    {
-        const resultado = await this.instanciaRepository
-            .createQueryBuilder('instancia')
-            .leftJoin('instancia.semestre', 'semestre') 
-            .leftJoinAndSelect('instancia.asignatura', 'asignatura') 
-            .select('asignatura.nombreAsignatura', 'nombre') 
-            .addSelect('asignatura.codigoAsignatura', 'codigo') 
-            .addSelect('COUNT(instancia.id)', 'total') // Cuenta cuántas veces aparece
-            .where('semestre.periodo = :periodo', { periodo })
-            .groupBy('asignatura.codigoAsignatura') 
-            .addGroupBy('asignatura.nombreAsignatura') 
-            .orderBy('total', 'DESC') // Ordena: los más solicitados primero
-            .limit(20) // Top 20 asignaturas
-            .getRawMany(); 
-
-        return resultado;
-    }
 }
