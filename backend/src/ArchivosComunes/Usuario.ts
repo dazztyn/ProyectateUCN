@@ -4,4 +4,5 @@ export interface Usuario
 {
     rut: string;
     carreras: Carrera[];
+    role?: string;
 }
