@@ -1,10 +1,152 @@
 .asigcontainer {
-  display: flex;      
+  display: flex;   
+  flex-direction: column;   
   overflow-y: auto;
   width: 25%;
-  height: 100%;
+  height: 80vh;
   border-radius: 8px;
+  align-items: center;
   gap: 0.5rem;                    
   padding: 0.5rem;
   background-color: #91a0c3;
+}
+.seccion-botones{
+  display: flex;
+  position-anchor: inherit;
+  flex-direction: column;
+  width: 100%;
+  height: 60vh;
+  border-radius: 8px;
+  background-color: #065d6d;
+  gap: 0.5rem;
+  justify-content: space-evenly;
+  padding: 0.5rem;
+  
+}
+.boton-top{
+  height: 3rem;
+  width: 100%;
+  display: flex;
+  padding-top: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #2D8191;
+  border-style: solid;
+  border-color:#e5e7eb;
+  border-width: 3px;
+  font-weight: bolder;
+  color: white;
+  border: none;
+  transition: 0.2s;
+}
+.boton-top:hover{
+  background-color: #065d6d;
+  font-weight: bolder;
+  border-width: 8px;
+}
+.asigcard{
+  display: flex;
+  height: 4rem;
+  width: 100%;
+  flex-direction: row;
+    align-items: center;
+  text-align: center;
+  justify-content: space-between;
+  background: #e5e7eb;
+  border-color: #065d6d;
+  border-width: 3px;
+  border-radius: 8px;
+  padding-left: 0.5rem; 
+}
+.asigcard.no-disponible {
+  display: flex;
+  height: 4rem;
+  width: 100%;
+  flex-direction: row;
+    align-items: center;
+  text-align: center;
+  justify-content: space-between;
+  background: #787f8e;
+  border-color: #065d6d;
+  border-width: 3px;
+  border-radius: 8px;
+  padding-left: 0.5rem; 
+}
+.asig-info {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  font-size: small;
+  align-items: flex-start;
+}
+.boton-agregar{
+  border-radius: unset;
+  border-bottom-right-radius: 8px;
+  border-top-right-radius: 8px;
+  height: 100%;
+  width:25%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #065d6d;
+  color: white;
+  border-color: #065d6d;
+  cursor: pointer;
+}
+.boton-agregar:hover{
+  background-color: #2D8191;
+}
+.icon-suma{
+  width: 50px;
+  height: 50px;
+  filter: invert(1);
+}
+.icon-mini{
+  width: 30px;
+  height: 30px;
+  filter: invert(1);
+}
+.asig-motivo-bloqueo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.boton-prereq {
+  border-radius: unset;
+  border-bottom-right-radius: 8px;
+  border-top-right-radius: 8px;
+  height: 100%;
+  width:50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #065d6d;
+  border-color: #065d6d;
+  color: white;
+  cursor: pointer;
+}
+
+.boton-prereq:hover {
+  background-color: #2D8191;
+}
+
+.mensaje-prereq {
+  position: absolute;
+  background: #e5e7eb;
+  color: #1f2937;
+  border-radius: 6px;
+  padding: 0.4rem;
+  font-size: 0.75rem;
+  max-width: 180px;
+  text-align: right;
+  overflow: hidden;
+}
+.mensaje-prereq.visible {
+  max-height: 4rem;   
+  opacity: 1;
+  padding: 0.4rem 0.5rem;
 }

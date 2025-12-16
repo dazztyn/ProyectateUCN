@@ -155,6 +155,7 @@ const PagEditor = () => {
         onAddAsignatura={handleAddAsignatura} 
         access_token={access_token} 
         indiceCarrera={indice}
+        idProyeccion={1}
         />
     </Layout>
     );
