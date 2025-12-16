@@ -44,6 +44,7 @@ export class ProyeccionService
         
     ) {}
 
+
     async proyeccionFutura(rutAlumno:string, codigoCarrera:string, catalogo:string, proyeccionDto: CreacionProyeccion)
     {
         const estado = await this.studentFacade.obtenerEstadoAcademico(rutAlumno, codigoCarrera, catalogo);
@@ -224,15 +225,29 @@ export class ProyeccionService
                 }
                 // Actualizamos la lista en memoria del objeto semestre
                 semestre.instancias = instanciasValidas; 
-            }
 
+                // 1. Recalculamos la suma de créditos con las instancias que SOBREVIVIERON
+                const nuevosCreditos = instanciasValidas.reduce((acc, inst) => {
+                    return acc + (inst.asignatura?.creditos || 0);
+                }, 0);
+
+                // 2. Si la suma es diferente a lo que dice el semestre, actualizamos y guardamos
+                if (semestre.totalCreditos !== nuevosCreditos) {
+                    console.log(`Actualizando créditos Semestre ${semestre.numero}: ${semestre.totalCreditos} -> ${nuevosCreditos}`);
+                    semestre.totalCreditos = nuevosCreditos;
+                    
+                    // Guardamos el cambio en la tabla 'semestres'
+                    await queryRunner.manager.save(semestre);
+                    huboCambios = true;
+                }
+
+            }
             await queryRunner.commitTransaction();
             return huboCambios;
-
         } 
         catch (error) 
         {
-            console.error("❌ Error fatal en validación de consistencia:", error);
+            console.error("Error fatal en validación de consistencia:", error);
             await queryRunner.rollbackTransaction();
             // No lanzamos el error para no interrumpir el flujo del usuario, 
             // pero lo dejamos registrado en consola.
