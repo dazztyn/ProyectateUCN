@@ -4,6 +4,7 @@ import { ProyeccionService } from './proyeccion.service';
 import type { Request } from 'express';
 import { Usuario } from '../ArchivosComunes/Usuario.js';
 import { CreacionProyeccion } from './DtoProyeccion/CreacionProyeccion';
+import { AsignaturaInputDto } from './DtoProyeccion/GuardarSemestreDto';
 
 @Controller('proyeccion')
 @UseGuards(AuthGuard('jwt'))
@@ -53,6 +54,37 @@ export class ProyeccionController
         const carrera = usuario.carreras[index];
 
         return this.proyeccion.proyeccionFutura(usuario.rut, carrera.codigo, carrera.catalogo, proyeccion);
+    }
+
+    @Post('/actualizarProyeccion/:indiceCarrera/:idProyeccion/:numeroSemestre/:periodo')
+    actualizarProyeccion
+    (
+        @Req() request: Request,
+        @Param('indiceCarrera') indiceCarrera: string,
+        @Param('idProyeccion') idProyeccion: string,
+        @Param('numeroSemestre') numeroSemestre: string,
+        @Param('periodo') periodo: string,
+        @Body() semestre: AsignaturaInputDto[]
+    )
+    {
+        const usuario = request.user as Usuario;
+
+        const index = parseInt(indiceCarrera, 10);
+        
+        if (isNaN(index) || !usuario.carreras || !usuario.carreras[index]) 
+        {
+            throw new BadRequestException(`El índice de carrera ${index} no es válido.`);
+        }
+        const carrera = usuario.carreras[index];
+
+        return this.proyeccion.guardarSemestreManual(
+            parseInt(idProyeccion, 10), 
+            parseInt(numeroSemestre, 10), 
+            periodo, 
+            semestre,
+            carrera.catalogo
+        );
+
     }
 
     @Patch('/autocompletar/:indiceCarrera')

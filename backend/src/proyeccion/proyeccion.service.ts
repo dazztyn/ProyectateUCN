@@ -1,8 +1,9 @@
-import { ConflictException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 
 // Entidades
+import { Asignaturas } from '../mallacurricular/entities/asignatura.entity';
 import { Proyeccion } from './entities/proyeccion.entity';
 import { Semestre } from './entities/semestre.entity';
 
@@ -161,8 +162,10 @@ export class ProyeccionService
             catalogo
         );
 
+        // Conjunto de asignaturas aprobadas (Históricas + Proyectadas que vamos acumulando)
         const aprobadosAcumulados = new Set(estado.asignaturasAprobadas);
 
+        // Ordenamos cronológicamente (Importante: 1 -> 2 -> 3...)
         const semestresOrdenados = proyeccion.semestres.sort((a, b) => a.numero - b.numero);
 
         const queryRunner = this.dataSource.createQueryRunner();
@@ -182,11 +185,23 @@ export class ProyeccionService
                     {
                         const asignatura = instancia.asignatura;
 
+                        // 🛡️ PROTECCIÓN CRÍTICA: Detectar datos corruptos
+                        // Si la asignatura es null (se guardó mal antes), la eliminamos
+                        // para que no rompa el bucle y permita continuar la validación.
+                        if (!asignatura) {
+                            console.warn(`⚠️ Instancia corrupta (ID: ${instancia.id}) en Semestre ${semestre.numero}. Eliminando...`);
+                            await queryRunner.manager.remove(instancia);
+                            huboCambios = true;
+                            continue; // Saltamos a la siguiente iteración
+                        }
+
                         let cumpleRequisitos = true;
                         
                         if (asignatura.prerrequisitos && asignatura.prerrequisitos.length > 0) 
                         {
-                            const requisitos = asignatura.prerrequisitos.split(',');
+                            // 🛡️ MEJORA: .trim() elimina espacios accidentales (ej: "MAT101, MAT102")
+                            const requisitos = asignatura.prerrequisitos.split(',').map(r => r.trim());
+                            
                             const tieneTodos = requisitos.every(req => aprobadosAcumulados.has(req));
                             
                             if (!tieneTodos) cumpleRequisitos = false;
@@ -194,17 +209,20 @@ export class ProyeccionService
 
                         if (cumpleRequisitos) 
                         {
+                            // Si cumple, la "aprobamos" virtualmente para los siguientes semestres
                             aprobadosAcumulados.add(asignatura.codigoAsignatura);
                             instanciasValidas.push(instancia);
                         } 
                         else
                         {
+                            // Si NO cumple, la borramos de la proyección
                             await queryRunner.manager.remove(instancia);
                             console.log(`🗑️ Eliminando ${asignatura.codigoAsignatura} del semestre ${semestre.numero} por falta de requisitos.`);
                             huboCambios = true;
                         }
                     }
                 }
+                // Actualizamos la lista en memoria del objeto semestre
                 semestre.instancias = instanciasValidas; 
             }
 
@@ -214,8 +232,11 @@ export class ProyeccionService
         } 
         catch (error) 
         {
+            console.error("❌ Error fatal en validación de consistencia:", error);
             await queryRunner.rollbackTransaction();
-            throw new InternalServerErrorException("Error al validar consistencia de la proyección");
+            // No lanzamos el error para no interrumpir el flujo del usuario, 
+            // pero lo dejamos registrado en consola.
+            return false; 
         } 
         finally 
         {
@@ -240,6 +261,24 @@ export class ProyeccionService
             const proyeccion = await this.proyeccionRepository.findOne({ where: { idProyeccion } });
 
             if (!proyeccion) throw new NotFoundException(`Proyección no encontrada.`);
+
+            if (asignaturasDto.length > 0) {
+                const codigosEntrantes = asignaturasDto.map(d => d.codigo);
+
+                const asignaturasReales = await this.instanciaRepository.manager.getRepository(Asignaturas).find({
+                    where: {
+                        codigoAsignatura: In(codigosEntrantes),
+                        codigoCarrera: proyeccion.codigoCarrera
+                    }
+                });
+
+                const codigosRealesSet = new Set(asignaturasReales.map(a => a.codigoAsignatura));
+                const invalidos = codigosEntrantes.filter(cod => !codigosRealesSet.has(cod));
+
+                if (invalidos.length > 0) {
+                    throw new BadRequestException(`Las siguientes asignaturas no existen en la malla: ${invalidos.join(', ')}`);
+                }
+            }
 
             let semestre = await this.semestreRepository.findOne({
                 where: { numero: numeroSemestre, proyeccion: { idProyeccion: idProyeccion } },
