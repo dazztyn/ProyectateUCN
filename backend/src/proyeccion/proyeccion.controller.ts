@@ -56,7 +56,7 @@ export class ProyeccionController
         return this.proyeccion.proyeccionFutura(usuario.rut, carrera.codigo, carrera.catalogo, proyeccion);
     }
 
-    @Post('/actualizarProyeccion/:indiceCarrera/:idProyeccion/:numeroSemestre/:periodo')
+    @Patch('/actualizarProyeccion/:indiceCarrera/:idProyeccion/:numeroSemestre/:periodo')
     actualizarProyeccion
     (
         @Req() request: Request,
