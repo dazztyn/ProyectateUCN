@@ -130,6 +130,15 @@ export class ProyeccionController
         return this.proyeccion.listarProyeccionesDeUsuario(usuario.rut, carrera.codigo);
     }
 
+    @Get('obtenerProyeccion/:idProyeccion')
+    obtenerProyeccionCompleta
+    (
+        @Param('idProyeccion') idProyeccion: string
+    )
+    {
+        return this.proyeccion.obtenerProyeccionCompleta(parseInt(idProyeccion, 10));
+    }
+
     @Get('/asignaturasDisponibles/:indiceCarrera')
     obtenerAsignaturasDisponibles
     (
