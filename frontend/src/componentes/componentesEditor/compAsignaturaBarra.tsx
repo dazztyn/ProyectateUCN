@@ -139,7 +139,7 @@ const CompAsignaturasDisponibles: React.FC<Props> = ({ selectedSemestreId, onAdd
 
                         {openPrereq[asig.codigo] && (
                         <div className="mensaje-prereq" style={{ display: openPrereq[asig.codigo] ? "block" : "none" }}>
-                            ⚠️ Prerrequisitos:
+                            ⚠Prerrequisitos:
                             <br />
                             {asig.prereq || 'N/A'}
                         </div>
