@@ -121,7 +121,7 @@ export class ProyeccionMapper {
             numero: semestre.numero,
             periodo: semestre.periodo,
             totalCreditos: semestre.totalCreditos,
-            // Mapeamos las instancias (asignaturas dentro del semestre)
+            editable: semestre.editable,
             asignaturas: semestre.instancias ? semestre.instancias
             .filter(instancia => instancia.asignatura != null)
             .map(instancia => ({
