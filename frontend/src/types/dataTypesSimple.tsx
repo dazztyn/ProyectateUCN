@@ -13,15 +13,18 @@ export type Semestre = {
 
 export type Avance = {
   nrc: string;
-  period: string;
-  student: string;
-  course: Asignatura;
-  excluded: boolean;
-  inscriptionType: string;
-  status: string;
+  periodo: string;
+  rut: string;
+  codigo: string; 
+  asignatura: string; 
+  creditos: number; 
+  estado: "APROBADO" | "REPROBADO" | "INSCRITO" | string;
+  tipo: string;
 };
 
+export type AvanceData = Record<string, Avance[]>;
+
 export type Props = {
-  indice: number;
+  indice: string;
   access_token: string;
 };

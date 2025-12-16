@@ -1,49 +1,48 @@
 import React, { useState, useEffect } from "react";
 import ErrorMessage from "./compMensajeError";
+import { useMemo } from "react";
 import "../style/styleMalla.css";
 
 import type { 
   Avance,
-  Props 
+  Props,
+  AvanceData
 
 } from "../types/dataTypesSimple";
+interface AsignaturaCardProps {
+  ramo: Avance;
+}
+const AsignaturaCard: React.FC<AsignaturaCardProps> = React.memo(({ ramo }) => {
 
-const AvanceDisplay: React.FC<Props> = ({ indice, access_token }) => {
-  const [avance, setAvance] = useState<Record<string, Avance[]>>({});
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = React.useState<string | null>(null);
+  const getEstadoClase = (estado: string) => {
+    switch (estado) {
+      case "APROBADO":
+        return "aprobado";
+      case "REPROBADO":
+        return "reprobado";
+      case "INSCRITO":
+        return "cursando"; 
+      default:
+        return "cursando";
+    }
+  };
 
-  useEffect(() => {
-    const obtenerAvance = async () => {
-      try {
-        setCargando(true);
-        setError("");
+  const estadoClase = getEstadoClase(ramo.estado);
 
-        const res = await fetch(`http://localhost:3000/avance/${indice}`, {
-          headers: {
-            Authorization: `Bearer ${access_token}`,
-          },
-        });
+  return (
+    <div
+      key={ramo.nrc}
+      className={`asignatura-card ${estadoClase}`}
+    >
+      <h3>{ramo.codigo || "No Disponible"}</h3>
+      <h4>{ramo.asignatura || "No Disponible"}</h4>
+      <h3>Créditos: {ramo.creditos || "?"}</h3>
+      <div className={`status ${estadoClase}`}>{ramo.estado}</div>
+    </div>
+  );
+});
 
-        if (!res.ok) throw new Error("No se pudo obtener el avance del alumno.");
-
-        const data: Record<string, Avance[]> = await res.json();
-        setAvance(data);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setCargando(false);
-      }
-    };
-
-    obtenerAvance();
-  }, [indice, access_token]);
-
-  if (cargando) return <p className="loading">Cargando avance...</p>;
-  if (error) return <ErrorMessage message={error} onClose={() => setError(null)}/>;
-  if (!Object.keys(avance).length)
-    return <p className="error">No se encontraron registros de avance.</p>;
-  const getPeriodoNombre = (periodo: string) => {
+const getPeriodoNombre = (periodo: string): string => {
   const anio = periodo.slice(0, 4);
   const tipo = periodo.slice(4);
 
@@ -64,34 +63,55 @@ const AvanceDisplay: React.FC<Props> = ({ indice, access_token }) => {
 
   return `${anio} - ${nombrePeriodo}`;
 };
+const AvanceDisplay: React.FC<Props> = ({ indice, access_token }) => {
+  const [avance, setAvance] = useState<AvanceData>({}); 
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const obtenerAvance = async () => {
+      try {
+        setCargando(true);
+        setError(null); 
+
+        const res = await fetch(`http://localhost:3000/avance/${indice}`, {
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+          },
+        });
+
+        if (!res.ok) {
+          throw new Error(`No se pudo obtener el avance del alumno. Código: ${res.status}`);
+        }
+
+        const data: AvanceData = await res.json();
+        setAvance(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Error desconocido al obtener avance.");
+      } finally {
+        setCargando(false);
+      }
+    };
+
+    obtenerAvance();
+  }, [indice, access_token]);
+
+  // Utilizamos useMemo para obtener las entradas del objeto, solo recalculando si 'avance' cambia.
+  const avanceEntries = useMemo(() => Object.entries(avance).sort((a, b) => a[0].localeCompare(b[0])), [avance]);
+
+  if (cargando) return <p className="loading">Cargando avance...</p>;
+  if (error) return <ErrorMessage message={error} onClose={() => setError(null)}/>;
+  if (!avanceEntries.length)
+    return <p className="error">No se encontraron registros de avance.</p>;
+  
   return (
     <div className="malla-container">
-      {Object.entries(avance).map(([periodo, ramos]) => (
+      {avanceEntries.map(([periodo, ramos]) => (
         <div key={periodo} className="semestre-card">
           <div className="semestre-titulo-container">{getPeriodoNombre(periodo)}</div>
           <div className="asignaturas-grid">
-            {ramos.map((r) => (
-              <div
-                key={r.nrc}
-                className={`asignatura-card ${
-                  r.status === "APROBADO"
-                    ? "aprobado"
-                    : r.status === "REPROBADO"
-                    ? "reprobado"
-                    : "cursando"
-                }`}
-              >
-                <h3>{r.course?.codigo || "No Disponible"}</h3>
-                <h4>{r.course?.asignatura || "No Disponible"}</h4>
-                <h3>Créditos: {r.course?.creditos || "?"}</h3>
-                <div className={`status ${
-                  r.status === "APROBADO"
-                    ? "aprobado"
-                    : r.status === "REPROBADO"
-                    ? "reprobado"
-                    : "cursando"
-                }`}>{r.status}</div>
-              </div>
+            {ramos.map((ramo) => (
+              <AsignaturaCard key={ramo.nrc} ramo={ramo} />
             ))}
           </div>
         </div>
