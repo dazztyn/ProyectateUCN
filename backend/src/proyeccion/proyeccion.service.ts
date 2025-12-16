@@ -24,6 +24,7 @@ import { InstanciaAsignatura } from './entities/InstanciaAsignatura.entity.js';
 
 //para transacciones
 import { DataSource } from 'typeorm';
+import { EstadoAcademico } from './interfaces/EstadoAcademico';
 
 @Injectable()
 export class ProyeccionService 
@@ -115,24 +116,69 @@ export class ProyeccionService
         return this.mapper.toSummaryResponseList(proyecciones);
     }
 
+    private fusionarEstadoConProyeccion(estado: EstadoAcademico, proyeccion: Proyeccion): void 
+    {
+        if (!proyeccion.semestres || proyeccion.semestres.length === 0) return;
+
+        let ultimoPeriodoSimulado = estado.ultimoPeriodo;
+
+        // Ordenamos los semestres de la BD cronológicamente
+        const semestresOrdenados = proyeccion.semestres.sort((a, b) => a.numero - b.numero);
+
+        for (const semestre of semestresOrdenados) 
+        {
+            // 1. Avanzamos el reloj del estado al periodo más futuro que haya guardado el usuario
+            if (semestre.periodo > ultimoPeriodoSimulado) {
+                ultimoPeriodoSimulado = semestre.periodo;
+            }
+
+            // 2. Agregamos los ramos guardados al Set de Aprobados
+            if (semestre.instancias) {
+                for (const instancia of semestre.instancias) {
+                    estado.asignaturasAprobadas.add(instancia.asignatura.codigoAsignatura);
+                }
+            }
+        }
+
+        // Actualizamos el último periodo en el estado para que los algoritmos 
+        // sepan desde dónde empezar a calcular el futuro.
+        estado.ultimoPeriodo = ultimoPeriodoSimulado;
+    }
+
+
     /**
      * Prepara datos para manual (Facade + Helper)
      */
-    async obtenerAsignaturasProyeccionManual(rutAlumno:string, codigoCarrera:string, catalogo:string)
+    async obtenerAsignaturasProyeccionManual(idProyeccion: number, catalogo:string)
     {
-        const estado = await this.studentFacade.obtenerEstadoAcademico(rutAlumno, codigoCarrera, catalogo);
+        // A. Buscamos la proyección y sus datos
+        const proyeccion = await this.proyeccionRepository.findOne({
+            where: { idProyeccion },
+            relations: ['semestres', 'semestres.instancias', 'semestres.instancias.asignatura']
+        });
+
+        if (!proyeccion) throw new NotFoundException(`La proyección ${idProyeccion} no existe.`);
+
+        // B. Obtenemos el Estado Real (Base) usando los datos de la proyección
+        const estado = await this.studentFacade.obtenerEstadoAcademico(
+            proyeccion.rutUsuario, 
+            proyeccion.codigoCarrera, 
+            catalogo
+        );
+
+        // C. FUSIÓN: Sumamos lo que ya editó manualmente
+        this.fusionarEstadoConProyeccion(estado, proyeccion);
+
+        // D. Calculamos disponibles con el estado fusionado
         const proyeccionManual = new ProyeccionManual(estado);
         return proyeccionManual.enviarAsignaturas();
     }
 
-    /**
-     * Crea solo avance (Facade + Mapper + Repo)
-     */
+
     async crearProyeccionConAvance(rut: string, catalogo: string, codigoCarrera: string, proyeccionDto: CreacionProyeccion)
     {
         const estado = await this.studentFacade.obtenerEstadoAcademico(rut, codigoCarrera, catalogo);
 
-        // Mapper: Convertir solo avance
         const semestresDto = this.mapper.avanceToPersistence(estado.avancePorPeriodo, codigoCarrera);
 
         const nuevaProyeccion = this.proyeccionRepository.create({
@@ -156,14 +202,9 @@ export class ProyeccionService
         }
     }
 
-    /**
-     * Toma una proyección existente (manual o incompleta) y la rellena hasta el final
-     * usando el algoritmo Greedy.
-     */
     async autocompletarProyeccion(idProyeccion: number, catalogoCarrera: string)
     {
-        // 1. Recuperar la Proyección Manual desde la BD
-        // Necesitamos cargar las relaciones para ver qué puso el usuario
+
         const proyeccionExistente = await this.proyeccionRepository.findOne({
             where: { idProyeccion },
             relations: ['semestres', 'semestres.instancias', 'semestres.instancias.asignatura']
@@ -171,99 +212,61 @@ export class ProyeccionService
 
         if (!proyeccionExistente) throw new NotFoundException("Proyección no encontrada");
 
-        // 2. Obtener el Estado Académico REAL (Base)
-        // Esto trae su historial real (Avance) y la Malla
+        // B. Obtener Estado Real
         const estado = await this.studentFacade.obtenerEstadoAcademico(
             proyeccionExistente.rutUsuario, 
             proyeccionExistente.codigoCarrera, 
-            catalogoCarrera // Ojo: Aquí deberías tener el catálogo guardado en la proyección o sacarlo de algún lado
+            catalogoCarrera 
         );
 
-        // =====================================================================
-        // 🧠 EL TRUCO: FUSIONAR REALIDAD + FICCIÓN MANUAL
-        // =====================================================================
-        
-        // Vamos a modificar el 'estado' en memoria para engañar al algoritmo Greedy
-        
-        let ultimoPeriodoManual = estado.ultimoPeriodo;
+        // C. FUSIÓN: Greedy arrancará DESPUÉS de lo manual
+        this.fusionarEstadoConProyeccion(estado, proyeccionExistente);
 
-        if (proyeccionExistente.semestres) {
-            // Ordenamos los semestres manuales cronológicamente
-            const semestresOrdenados = proyeccionExistente.semestres.sort((a, b) => a.numero - b.numero);
-
-            for (const semestre of semestresOrdenados) {
-                // Actualizamos el último periodo para que Greedy arranque DESPUÉS de esto
-                // (Solo si el semestre manual es futuro respecto al avance real)
-                if (semestre.periodo > ultimoPeriodoManual) {
-                    ultimoPeriodoManual = semestre.periodo;
-                }
-
-                // Agregamos los ramos manuales al Set de "Aprobados"
-                // Así Greedy sabe que prerequisitos ya se cumplieron y no sugiere estos ramos de nuevo.
-                if (semestre.instancias) {
-                    for (const instancia of semestre.instancias) {
-                        estado.asignaturasAprobadas.add(instancia.asignatura.codigoAsignatura);
-                    }
-                }
-            }
-        }
-
-        // Le decimos al estado: "Tu punto de partida ahora es el final de lo que el usuario editó"
-        estado.ultimoPeriodo = ultimoPeriodoManual;
-
-        // =====================================================================
-        // 3. EJECUTAR ALGORITMO (AUTOCOMPLETADO)
-        // =====================================================================
-        
-        // Ahora Greedy cree que el alumno ya cursó lo manual y calculará el resto
+        // D. Ejecutar Algoritmo
         const estrategia: IProyeccionStrategy = new GreedyProjectionStrategy(estado);
         const mapaFuturo = estrategia.generar(estado); // Genera solo lo que falta
 
-        // =====================================================================
-        // 4. GUARDAR LOS NUEVOS SEMESTRES
-        // =====================================================================
-
-        // Calculamos el número de semestre para continuar la numeración
-        const ultimoSemestreDb = proyeccionExistente.semestres.sort((a,b) => b.numero - a.numero)[0];
-        let siguienteNumero = ultimoSemestreDb ? ultimoSemestreDb.numero : 1;
-        
-        // Ajuste de lógica de saltar semestre si corresponde (tu lógica de veranos)
-        const tipoSemestre = ultimoPeriodoManual.slice(4, 6);
-        if (tipoSemestre !== '15' && tipoSemestre !== '25') {
-            siguienteNumero++;
-        }
-
-        // Convertimos el mapa del algoritmo a Entidades (usando tu Mapper)
-        // OJO: Aquí pasamos el codigoCarrera que recuperamos de la proyección misma
-        const nuevosSemestres = this.mapper.futureToPersistence(
-            mapaFuturo, 
-            siguienteNumero, 
-            proyeccionExistente.codigoCarrera
-        );
-
-        // Guardamos los nuevos semestres y los vinculamos a la proyección existente
-        // No borramos lo anterior, solo ANEXAMOS lo nuevo.
+        // E. Guardado Transaccional
         const queryRunner = this.dataSource.createQueryRunner();
         await queryRunner.connect();
         await queryRunner.startTransaction();
 
         try {
-            for (const semDto of nuevosSemestres) {
+            // Calcular el número del siguiente semestre
+            // Buscamos el número más alto que ya exista en la BD
+            const ultimoSemestreDb = proyeccionExistente.semestres.sort((a,b) => b.numero - a.numero)[0];
+            let siguienteNumero = ultimoSemestreDb ? ultimoSemestreDb.numero : 0; // Si no hay semestres, parte de 0 (el mapper le sumará si corresponde)
 
+            // Ajuste de lógica de semestres (veranos) basado en el último periodo del estado fusionado
+            // Nota: Aquí depende de cómo 'futureToPersistence' maneje el inicio. 
+            // Si futureToPersistence incrementa de entrada, siguienteNumero está bien.
+            
+            // Convertimos el mapa futuro a DTOs
+            const nuevosSemestresDto = this.mapper.futureToPersistence(
+                mapaFuturo, 
+                siguienteNumero + 1, // Le pasamos el siguiente
+                proyeccionExistente.codigoCarrera // IMPORTANTE: Para la PK compuesta
+            );
+
+            for (const semDto of nuevosSemestresDto) {
+                // 1. Convertir DTO a Entidad para poder asignar relaciones
                 const nuevoSemestreEntidad = queryRunner.manager.create(Semestre, semDto);
 
+                // 2. Asignar la proyección padre
                 nuevoSemestreEntidad.proyeccion = proyeccionExistente; 
                 
+                // 3. Guardar (Cascada guarda instancias)
                 await queryRunner.manager.save(Semestre, nuevoSemestreEntidad);
             }
 
             await queryRunner.commitTransaction();
             
+            // Retornamos la proyección completa actualizada
             return this.obtenerProyeccionCompleta(idProyeccion);
 
         } catch (error) {
             await queryRunner.rollbackTransaction();
-            console.error(error);
+            console.error("Error en autocompletar:", error);
             throw new InternalServerErrorException("Error al autocompletar la proyección");
         } finally {
             await queryRunner.release();

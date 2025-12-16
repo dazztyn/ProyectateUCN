@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ProyeccionService } from './proyeccion.service';
 import type { Request } from 'express';
@@ -55,12 +55,12 @@ export class ProyeccionController
         return this.proyeccion.proyeccionFutura(usuario.rut, carrera.codigo, carrera.catalogo, proyeccion);
     }
 
-    @Patch('/autocompletar/:idProyeccion/:indiceCarrera')
+    @Patch('/autocompletar/:indiceCarrera')
     autocompletarProyeccion
     (
         @Req() request: Request,
-        @Param('idProyeccion') idProyeccion: string,
-        @Param('indiceCarrera') indiceCarrera: string
+        @Param('indiceCarrera') indiceCarrera: string,
+        @Query('idProyeccion') idProyeccion: string
     )
     {
         const usuario = request.user as Usuario;
@@ -103,6 +103,7 @@ export class ProyeccionController
     (
         @Req() request: Request,
         @Param('indiceCarrera') indiceCarrera: string,
+        @Query('idProyeccion') idProyeccion: string 
     )
     {
         const usuario = request.user as Usuario;
@@ -115,7 +116,7 @@ export class ProyeccionController
         }
 
         const carrera = usuario.carreras[index];
-        return this.proyeccion.obtenerAsignaturasProyeccionManual(usuario.rut, carrera.codigo, carrera.catalogo);
+        return this.proyeccion.obtenerAsignaturasProyeccionManual(parseInt(idProyeccion, 10), carrera.catalogo);
     }
 
     @Get('/estadisticas/:periodo')
