@@ -69,12 +69,38 @@ const CompSelectProyeccion: React.FC<Props> = ({ indice, access_token})  => {
     }
   };
   const handleGoToExistingProjection = async () => {
-    if (!selectedProyeccionId) {
-      //Aquí enviar ID de proyección seleccionada
-      setError("Por favor, seleccione una proyección de la lista.");
-      return;
-    }
+  setError(null);
+
+  if (!selectedProyeccionId) {
+    setError("Por favor, seleccione una proyección de la lista.");
+    return;
   }
+
+  try {
+    const resp = await fetch(
+      `http://localhost:3000/proyeccion/obtenerProyeccion/${selectedProyeccionId}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+        },
+      }
+    );
+
+    if (!resp.ok) {
+      throw new Error("Error al obtener la proyección");
+    }
+
+    const data = await resp.json();
+
+    navigate("/editor", { state: { data } });
+
+  } catch (e) {
+    console.error(e);
+    setError("No se pudo cargar la proyección seleccionada.");
+  }
+};
+
   useEffect(() => {
     const fetchProyecciones = async () => {
       setLoadingProyecciones(true);

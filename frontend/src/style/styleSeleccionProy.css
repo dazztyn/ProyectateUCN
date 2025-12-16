@@ -65,13 +65,14 @@
   position: absolute;       
   background-color: #e5e7eb;
   border-radius: 6px;
+  border-color: #065d6d;
+  border-width: 2px;
   list-style: none;
   margin-top: 6.8rem;
   width:74vw;
-
   padding: 0.8rem;
   
-  max-height: 80vh;
+  max-height: 30vh;
   overflow-y: auto;
 
   z-index: 1000;
@@ -85,6 +86,7 @@
   display: flex;
   height: 4rem;
   align-items: center;
+  
   justify-content: center;
   padding: 0.5rem;
   cursor: pointer;
