@@ -1,6 +1,8 @@
 import React from 'react';
 import "../../style/styleSelectAsig.css";
 import ErrorMessage from '../../componentes/compMensajeError';
+import addIcon from '../../assets/addIcon.png';
+import saveIcon from '../../assets/floppy-disc.png';
 
 import { useState, useEffect, useMemo } from 'react';
 
@@ -15,6 +17,7 @@ type Props = {
     onAddAsignatura: (asignatura: AsignaturaDisponible) => void; 
     access_token: string;
     indiceCarrera: number;
+    idProyeccion: number;
 };
 const processResponse = (data: AsignaturasDisponiblesResponse): AsignaturaDisponible[] => {
     const disponibles = data.disponibles.map(a => ({
@@ -38,49 +41,53 @@ const processResponse = (data: AsignaturasDisponiblesResponse): AsignaturaDispon
     return [...disponibles, ...noDisponibles];
 };
 
-const CompAsignaturasDisponibles: React.FC<Props> = ({ selectedSemestreId, onAddAsignatura, access_token, indiceCarrera }) => {
+const CompAsignaturasDisponibles: React.FC<Props> = ({ selectedSemestreId, onAddAsignatura, access_token, indiceCarrera, idProyeccion }) => {
     
     const [allAsignaturas, setAllAsignaturas] = useState<AsignaturaDisponible[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        if (!indiceCarrera || !access_token) {
-            setError("Falta el índice de carrera o el token de acceso.");
-            return;
-        }
-
-        const fetchAsignaturas = async () => {
-            setLoading(true);
-            setError(null);
-            
-            const url = `http://localhost:3000/proyeccion/asignaturasDisponibles/${indiceCarrera}`; 
-
-            try {
-                const resp = await fetch(url, {
-                    method: 'GET',
-                    headers: { 'Authorization': `Bearer ${access_token}` },
-                });
-
-                if (!resp.ok) {
-                    throw new Error("Error al cargar la lista de asignaturas.");
-                }
-
-                const rawData: AsignaturasDisponiblesResponse = await resp.json();
-
-                setAllAsignaturas(processResponse(rawData));
-
-            } catch (e) {
-                console.error("Error fetching disponibles:", e);
-                setError("No se pudo conectar para obtener la lista de asignaturas disponibles.");
-            } finally {
-                setLoading(false);
-            }
+    const [openPrereq, setOpenPrereq] = useState<Record<string, boolean>>({});
+    const togglePrereq = (codigo: string) => {
+            setOpenPrereq(prev => ({
+            ...prev,
+            [codigo]: !prev[codigo],
+            }));
         };
+    useEffect(() => {
+    if (indiceCarrera == null || !access_token) {
+        setError("Falta el índice de carrera o el token de acceso.");
+        return;
+    }
+    
 
-        fetchAsignaturas();
-        
-    }, [indiceCarrera, access_token]); 
+    const fetchAsignaturas = async () => {
+        setLoading(true);
+        setError(null);
+
+        const url = `http://localhost:3000/proyeccion/asignaturasDisponibles/${indiceCarrera}?idProyeccion=${idProyeccion}`;
+
+        try {
+            const resp = await fetch(url, {
+                headers: { Authorization: `Bearer ${access_token}` },
+            });
+
+            if (!resp.ok) {
+                throw new Error("Error al cargar la lista de asignaturas.");
+            }
+
+            const rawData: AsignaturasDisponiblesResponse = await resp.json();
+            setAllAsignaturas(processResponse(rawData));
+
+        } catch (e) {
+            console.error(e);
+            setError("No se pudo conectar para obtener la lista de asignaturas disponibles.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    fetchAsignaturas();
+}, [indiceCarrera, access_token]);
 
 
     if (loading) {
@@ -96,34 +103,57 @@ const CompAsignaturasDisponibles: React.FC<Props> = ({ selectedSemestreId, onAdd
     }
 
     return (
-        <div className="asignaturas-disponibles-container">
-            <h3>
-                Opciones Disponibles 
-                {selectedSemestreId ? ` (Filtrado por Nivel ${selectedSemestreId})` : ` (Catálogo Completo)`}
-            </h3>
+        <div className="asigcontainer">
+            <div className="seccion-botones">
+            <button className = "boton-top">
+                Guardar semestre 
+                <img src={saveIcon} alt="icono guardar" className="icon-mini"/>
+            </button>
+            <button className = "boton-top">
+                Añadir Semestre 
+                <img src={addIcon} alt="icono añadir semestre a proyeccion" className="icon-mini"/>
+            </button>
+
+            </div>
+             <h3>
+                    Asignaturas Disponibles 
+                </h3>
             {allAsignaturas.map(asig => (
                 <div 
                     key={asig.codigo} 
-                    className={`asignatura-disponible-card ${asig.puedeAgregar ? 'puede-agregar' : 'no-disponible'}`}
+                    className={`asigcard ${asig.puedeAgregar ? 'puede-agregar' : 'no-disponible'}`}
                 >
                     <div className="asig-info">
-                        <h4>{asig.nombre} ({asig.codigo})</h4>
-                        <p>Créditos: {asig.creditos} | Nivel: {asig.nivel}</p>
+                        <h3>{asig.nombre}</h3>
+                        <p>{asig.codigo} |Créditos: {asig.creditos} | Nivel: {asig.nivel}</p>
                     </div>
                     
                     {!asig.puedeAgregar && (
-                        <div className="asig-motivo-bloqueo">
-                            {/* Aquí puedes usar la propiedad 'prereq' para mostrar el requisito faltante */}
-                            ⚠️ Bloqueado. Prerrequisitos: {asig.prereq || 'N/A'}
+                    <div className="asig-motivo-bloqueo">
+                        <button
+                        className="boton-prereq"
+                        onClick={() => togglePrereq(asig.codigo)}
+                        >
+                        {openPrereq[asig.codigo] ? 'Ocultar prereq' : 'Ver prereq'}
+                        </button>
+
+                        {openPrereq[asig.codigo] && (
+                        <div className="mensaje-prereq" style={{ display: openPrereq[asig.codigo] ? "block" : "none" }}>
+                            ⚠️ Prerrequisitos:
+                            <br />
+                            {asig.prereq || 'N/A'}
                         </div>
+                        )}
+                    </div>
                     )}
+
                     
                     {asig.puedeAgregar && (
                          <button 
                              className="boton-agregar"
-                             onClick={() => onAddAsignatura(asig)} // Llamamos al prop para agregar
+                             onClick={() => onAddAsignatura(asig)}
                          >
-                             Agregar al Semestre {selectedSemestreId || 'actual'}
+                            <img src={addIcon} alt="icono añadir asignatura a semestre" className="icon-suma" />
                          </button>
                     )}
                 </div>
