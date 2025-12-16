@@ -32,15 +32,6 @@ export class ProyeccionController
 
         return this.proyeccion.crearProyeccionConAvance(usuario.rut, carrera.catalogo, carrera.codigo, proyeccion);
     }
-    
-    // @Get('/obtenerProyeccionCompleta/:idProyeccion')
-    // getProyeccionPorId
-    // (
-    //     @Param('idProyeccion') idProyeccion: string
-    // )
-    // {
-    //     return this.proyeccion.obtenerProyeccionCompleta(parseInt(idProyeccion, 10));
-    // }
 
     @Post('/ProyeccionIdeal/:indiceCarrera')
     getProyeccionFutura
