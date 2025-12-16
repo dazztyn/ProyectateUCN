@@ -44,7 +44,6 @@ export class ProyeccionService
         
     ) {}
 
-
     async proyeccionFutura(rutAlumno:string, codigoCarrera:string, catalogo:string, proyeccionDto: CreacionProyeccion)
     {
         const estado = await this.studentFacade.obtenerEstadoAcademico(rutAlumno, codigoCarrera, catalogo);
