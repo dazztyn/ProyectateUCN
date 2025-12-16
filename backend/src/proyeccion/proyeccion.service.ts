@@ -8,6 +8,7 @@ import { Semestre } from './entities/semestre.entity';
 
 // DTOs
 import { CreacionProyeccion } from './DtoProyeccion/CreacionProyeccion';
+import { AsignaturaInputDto } from './DtoProyeccion/GuardarSemestreDto';
 
 // Patrones
 import { StudentDataFacade } from './StudentDataFacade';
@@ -116,7 +117,7 @@ export class ProyeccionService
         return this.mapper.toSummaryResponseList(proyecciones);
     }
 
-    private fusionarEstadoConProyeccion(estado: EstadoAcademico, proyeccion: Proyeccion): void 
+    private fusionarEstadoConProyeccion(estado: EstadoAcademico, proyeccion: Proyeccion, hastaSemestreNumero?: number): void 
     {
         if (!proyeccion.semestres || proyeccion.semestres.length === 0) return;
 
@@ -126,6 +127,11 @@ export class ProyeccionService
 
         for (const semestre of semestresOrdenados) 
         {
+            if (hastaSemestreNumero !== undefined && semestre.numero >= hastaSemestreNumero) 
+            {
+                break; 
+            }
+
             if (semestre.periodo > ultimoPeriodoSimulado) {
                 ultimoPeriodoSimulado = semestre.periodo;
             }
@@ -140,7 +146,174 @@ export class ProyeccionService
         estado.ultimoPeriodo = ultimoPeriodoSimulado;
     }
 
-    async obtenerAsignaturasProyeccionManual(idProyeccion: number, catalogo:string)
+    async validarConsistenciaProyeccion(idProyeccion: number, catalogo: string)
+    {
+        const proyeccion = await this.proyeccionRepository.findOne({
+            where: { idProyeccion },
+            relations: ['semestres', 'semestres.instancias', 'semestres.instancias.asignatura']
+        });
+
+        if (!proyeccion) return;
+
+        const estado = await this.studentFacade.obtenerEstadoAcademico(
+            proyeccion.rutUsuario, 
+            proyeccion.codigoCarrera, 
+            catalogo
+        );
+
+        const aprobadosAcumulados = new Set(estado.asignaturasAprobadas);
+
+        const semestresOrdenados = proyeccion.semestres.sort((a, b) => a.numero - b.numero);
+
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+
+        try {
+            let huboCambios = false;
+
+            for (const semestre of semestresOrdenados) 
+            {
+                const instanciasValidas: InstanciaAsignatura[] = [];
+
+                if (semestre.instancias) 
+                {
+                    for (const instancia of semestre.instancias) 
+                    {
+                        const asignatura = instancia.asignatura;
+
+                        let cumpleRequisitos = true;
+                        
+                        if (asignatura.prerrequisitos && asignatura.prerrequisitos.length > 0) 
+                        {
+                            const requisitos = asignatura.prerrequisitos.split(',');
+                            const tieneTodos = requisitos.every(req => aprobadosAcumulados.has(req));
+                            
+                            if (!tieneTodos) cumpleRequisitos = false;
+                        }
+
+                        if (cumpleRequisitos) 
+                        {
+                            aprobadosAcumulados.add(asignatura.codigoAsignatura);
+                            instanciasValidas.push(instancia);
+                        } 
+                        else
+                        {
+                            await queryRunner.manager.remove(instancia);
+                            console.log(`🗑️ Eliminando ${asignatura.codigoAsignatura} del semestre ${semestre.numero} por falta de requisitos.`);
+                            huboCambios = true;
+                        }
+                    }
+                }
+                semestre.instancias = instanciasValidas; 
+            }
+
+            await queryRunner.commitTransaction();
+            return huboCambios;
+
+        } 
+        catch (error) 
+        {
+            await queryRunner.rollbackTransaction();
+            throw new InternalServerErrorException("Error al validar consistencia de la proyección");
+        } 
+        finally 
+        {
+            await queryRunner.release();
+        }
+    }
+
+    async guardarSemestreManual(
+        idProyeccion: number, 
+        numeroSemestre: number, 
+        periodo: string, 
+        asignaturasDto: AsignaturaInputDto[],
+        catalogo: string
+    ) 
+    {
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+
+        try 
+        {
+            const proyeccion = await this.proyeccionRepository.findOne({ where: { idProyeccion } });
+
+            if (!proyeccion) throw new NotFoundException(`Proyección no encontrada.`);
+
+            let semestre = await this.semestreRepository.findOne({
+                where: { numero: numeroSemestre, proyeccion: { idProyeccion: idProyeccion } },
+                relations: ['instancias']
+            });
+
+            const totalCreditos = asignaturasDto.reduce((acc, curr) => acc + curr.creditos, 0);
+
+            if (semestre) 
+            {
+                semestre.periodo = periodo;
+                semestre.totalCreditos = totalCreditos;
+                if (semestre.instancias?.length > 0) 
+                {
+                    await queryRunner.manager.remove(semestre.instancias);
+                }
+                semestre = await queryRunner.manager.save(semestre);
+            } 
+            else 
+            {
+                semestre = this.semestreRepository.create({
+                    numero: numeroSemestre,
+                    periodo: periodo,
+                    totalCreditos: totalCreditos,
+                    editable: true,
+                    proyeccion: proyeccion
+                });
+                semestre = await queryRunner.manager.save(semestre);
+            }
+
+            const nuevasInstancias: InstanciaAsignatura[] = [];
+            for (const dto of asignaturasDto) 
+            {
+                const nuevaInstancia = this.instanciaRepository.create({
+                    estado: 'PENDIENTE', 
+                    semestre: semestre,
+                    asignatura: { codigoAsignatura: dto.codigo, codigoCarrera: proyeccion.codigoCarrera }
+                });
+                nuevasInstancias.push(nuevaInstancia);
+            }
+
+            if (nuevasInstancias.length > 0) 
+            {
+                await queryRunner.manager.save(nuevasInstancias);
+            }
+
+            await queryRunner.commitTransaction();
+
+        } 
+        catch (error) 
+        {
+            await queryRunner.rollbackTransaction();
+            console.error("Error guardando semestre manual:", error);
+            throw new InternalServerErrorException("Error al guardar el semestre.");
+        }
+        finally 
+        {
+            await queryRunner.release();
+        }
+
+        try 
+        {
+            console.log("Validando consistencia post-guardado...");
+            await this.validarConsistenciaProyeccion(idProyeccion, catalogo);
+        } 
+        catch (validationError) 
+        {
+            console.error("Advertencia: Error al validar consistencia, pero el semestre se guardó.", validationError);
+        }
+
+        return this.obtenerProyeccionCompleta(idProyeccion);
+    }
+
+    async obtenerAsignaturasProyeccionManual(idProyeccion: number, catalogo:string, semestreObjetivo?: number)
     {
         const proyeccion = await this.proyeccionRepository.findOne({
             where: { idProyeccion },
@@ -155,7 +328,7 @@ export class ProyeccionService
             catalogo
         );
 
-        this.fusionarEstadoConProyeccion(estado, proyeccion);
+        this.fusionarEstadoConProyeccion(estado, proyeccion, semestreObjetivo);
 
         const proyeccionManual = new ProyeccionManual(estado);
         return proyeccionManual.enviarAsignaturas();

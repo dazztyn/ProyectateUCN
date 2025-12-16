@@ -1,5 +1,5 @@
 import { ProyeccionManual } from './ProyeccionManual';
-import { EstadoAcademico } from './interfaces/EstadoAcademico';
+import { EstadoAcademico, AvancePlano } from './interfaces/EstadoAcademico';
 import { Asignatura } from '../ArchivosComunes/Asignatura';
 
 describe('ProyeccionManual', () => {
@@ -14,7 +14,10 @@ describe('ProyeccionManual', () => {
     mallaPorNiveles: new Map([
       [1, [mat1]], [2, [mat2]], [3, [mat3]]
     ]),
-    mallaCompleta: [], avanceRelleno: [], avancePorPeriodo: new Map(), grafoPrerrequisitos: new Map()
+    mallaCompleta: [], 
+    avancePlanoLista: [], // Agregado
+    avancePorPeriodo: new Map<string, AvancePlano[]>(), // Agregado
+    grafoPrerrequisitos: new Map()
   };
 
   it('debe permitir seleccionar asignaturas sin requisitos (Nivel 1)', () => {
@@ -26,14 +29,11 @@ describe('ProyeccionManual', () => {
   });
 
   it('debe permitir seleccionar asignaturas con requisitos cumplidos', () => {
-    // Simulamos que aprobó M1
     const estadoConAprobada = { ...mockEstado, asignaturasAprobadas: new Set(['M1']) };
     
     const manual = new ProyeccionManual(estadoConAprobada);
     const resultado = manual.enviarAsignaturas();
 
-    // M1 ya no sale (está aprobada)
-    // M2 debería salir disponible (requisito M1 cumplido)
     expect(resultado.disponibles.map(a => a.codigo)).toContain('M2');
     expect(resultado.noDisponibles.map(a => a.codigo)).toContain('M3'); // M3 requiere M2
   });

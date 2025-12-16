@@ -103,7 +103,8 @@ export class ProyeccionController
     (
         @Req() request: Request,
         @Param('indiceCarrera') indiceCarrera: string,
-        @Query('idProyeccion') idProyeccion: string 
+        @Query('idProyeccion') idProyeccion: string,
+        @Query('semestreObjetivo') semestreObjetivo?: string
     )
     {
         const usuario = request.user as Usuario;
@@ -115,8 +116,11 @@ export class ProyeccionController
             throw new BadRequestException(`El índice de carrera ${index} no es válido.`);
         }
 
+        const semestreNum = semestreObjetivo ? Number(semestreObjetivo) : undefined;
+
         const carrera = usuario.carreras[index];
-        return this.proyeccion.obtenerAsignaturasProyeccionManual(parseInt(idProyeccion, 10), carrera.catalogo);
+        
+        return this.proyeccion.obtenerAsignaturasProyeccionManual(parseInt(idProyeccion, 10), carrera.catalogo, semestreNum);
     }
 
     @Get('/estadisticas/:periodo')

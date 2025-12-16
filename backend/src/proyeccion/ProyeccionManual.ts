@@ -4,21 +4,14 @@ import { EstadoAcademico } from "./interfaces/EstadoAcademico.js";
 export class ProyeccionManual
 {   
     private malla: Map<number, Asignatura[]>;
-    // private aparicionesPrerrequisitos: Map<string, Asignatura[]>; // Ya no se usa para priorizar aquí, pero está disponible si se requiere
     private asignaturasAprobadas: Set<string>; 
-    private periodoActual: string;
 
-    // --- CAMBIO: Ahora recibe el objeto de contexto unificado ---
     constructor(estado: EstadoAcademico) 
     {    
         this.asignaturasAprobadas = estado.asignaturasAprobadas;
-        this.periodoActual = estado.ultimoPeriodo; // O el periodo que definas como inicial
-        
-        // La malla ya viene agrupada por niveles desde el Facade, solo filtramos las aprobadas
         this.malla = this.eliminarAsignaturasAprobadasDeMalla(estado.mallaPorNiveles);
     }
 
-    // Elimina las asignaturas ya aprobadas de la malla para armar la proyección del sgte semestre
     private eliminarAsignaturasAprobadasDeMalla(mallaMap: Map<number, Asignatura[]>): Map<number, Asignatura[]> 
     {
         const nuevaMalla = new Map<number, Asignatura[]>();
@@ -36,11 +29,9 @@ export class ProyeccionManual
     private verificarPrerrequisitosCumplidos(asignatura: Asignatura): boolean 
     {
         if (!asignatura.prereq) return true;
-        // Check eficiente usando el Set de aprobadas
         return asignatura.prereq.split(',').every(prereq => this.asignaturasAprobadas.has(prereq));
     }
 
-    // Prepara un array de asignaturas disponibles para inscribir en el semestre a proyectar
     private prepararAsignaturasDisponibles(): Asignatura[]
     {
         let asignaturasElegibles: Asignatura[] = [];
