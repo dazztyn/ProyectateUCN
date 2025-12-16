@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Asignatura } from '../../ArchivosComunes/Asignatura';
 import { RamoInfo } from '../../ArchivosComunes/RamoInfo';
 import { AcademicUtilsService } from '../../ArchivosComunes/AcademicUtilsService';
@@ -34,7 +34,6 @@ export class MallaService
                 throw new Error('Malla no encontrada o Catalogo/Codigo de carrera incorrecto');
             }
 
-            // Usamos el servicio de utilidades para limpiar
             return this.academicUtils.limpiarPrerrequisitosInvalidos(data);
         } 
         catch (error) 
@@ -44,28 +43,19 @@ export class MallaService
         }
     }
  
-    //Sincronizar (API -> BD)
     async sincronizarMalla(codigoCarrera: string, catalogo: string): Promise<void> 
     {
-        // A. Descargamos la data fresca
         const mallaApi = await this.fetchMallaCarrera(codigoCarrera, catalogo);
-
-        // B. Convertimos de Interfaz (Asignatura) a Entidad (Asignaturas)
-        // Ojo con el cambio de nombre: prereq -> prerrequisitos
         const entidadesAGuardar = mallaApi.map(ramo => {
             return this.asignaturaRepo.create({
                 codigoAsignatura: ramo.codigo,
                 codigoCarrera: codigoCarrera,
-                nombreAsignatura: ramo.asignatura, // nombre en interfaz es 'asignatura'
+                nombreAsignatura: ramo.asignatura,
                 creditos: ramo.creditos,
                 nivel: ramo.nivel,
-                prerrequisitos: ramo.prereq // Mapeo manual
+                prerrequisitos: ramo.prereq
             });
         });
-
-        // C. Guardar (Upsert)
-        // TypeORM detecta por la PrimaryKey (codigoAsignatura). 
-        // Si existe, actualiza. Si no, inserta.
         if (entidadesAGuardar.length > 0) {
             await this.asignaturaRepo.save(entidadesAGuardar);
             console.log(`✅ Malla sincronizada: ${entidadesAGuardar.length} asignaturas guardadas.`);
@@ -74,23 +64,20 @@ export class MallaService
 
     async obtenerMallaRaw(codigoCarrera: string): Promise<Asignatura[]> 
     {
-        // Si tienes varias carreras, aquí podrías filtrar con un where: { codigoCarrera } si agregas esa columna.
         const asignaturasBD = await this.asignaturaRepo.find({
             where: { codigoCarrera: codigoCarrera } 
         }); 
 
-        // Convertimos Entidad -> Interfaz Plana
         return asignaturasBD.map(entidad => ({
             codigo: entidad.codigoAsignatura,
             asignatura: entidad.nombreAsignatura,
             creditos: entidad.creditos,
             nivel: entidad.nivel,
-            prereq: entidad.prerrequisitos // String
+            prereq: entidad.prerrequisitos
         }));
     }
 
-    // 3. NUEVO: Leer de BD (BD -> Interfaz)
-    async obtenerMallaDesdeBD(codigoCarrera: string) // Quité el Promise<Asignatura[]> estricto para permitir el formato rico
+    async obtenerMallaDesdeBD(codigoCarrera: string)
     {
         const listaPlana = await this.obtenerMallaRaw(codigoCarrera);
 
@@ -114,4 +101,27 @@ export class MallaService
         return Object.fromEntries(mallaAgrupada);
     }
     
+    async obtenerAsignatura(codigoAsignatura: string,  codigoCarrera: string)
+    {
+        const asignaturaEncontrada = await this.asignaturaRepo.findOne({
+            where: { 
+                codigoAsignatura: codigoAsignatura,
+                codigoCarrera: codigoCarrera
+            }
+        });
+        
+        if (!asignaturaEncontrada) 
+        {
+            throw new NotFoundException(`La asignatura con código ${codigoAsignatura} no existe en esta carrera.`);
+        }
+
+        return {
+            codigo: asignaturaEncontrada.codigoAsignatura,
+            asignatura: asignaturaEncontrada.nombreAsignatura,
+            creditos: asignaturaEncontrada.creditos,
+            nivel: asignaturaEncontrada.nivel,
+            prereq: asignaturaEncontrada.prerrequisitos
+        };
+    }
+
 }

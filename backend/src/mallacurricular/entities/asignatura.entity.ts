@@ -21,8 +21,6 @@ export class Asignaturas {
   @Column({ type: 'text', nullable: false })
   prerrequisitos: string;
 
- // --- NUEVA RELACIÓN ---
-  // Una Asignatura (plantilla) puede tener muchas instancias
   @OneToMany(() => InstanciaAsignatura, (instancia) => instancia.asignatura)
   instancias: InstanciaAsignatura[];
 }
