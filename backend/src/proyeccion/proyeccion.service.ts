@@ -122,17 +122,14 @@ export class ProyeccionService
 
         let ultimoPeriodoSimulado = estado.ultimoPeriodo;
 
-        // Ordenamos los semestres de la BD cronológicamente
         const semestresOrdenados = proyeccion.semestres.sort((a, b) => a.numero - b.numero);
 
         for (const semestre of semestresOrdenados) 
         {
-            // 1. Avanzamos el reloj del estado al periodo más futuro que haya guardado el usuario
             if (semestre.periodo > ultimoPeriodoSimulado) {
                 ultimoPeriodoSimulado = semestre.periodo;
             }
 
-            // 2. Agregamos los ramos guardados al Set de Aprobados
             if (semestre.instancias) {
                 for (const instancia of semestre.instancias) {
                     estado.asignaturasAprobadas.add(instancia.asignatura.codigoAsignatura);
@@ -140,18 +137,11 @@ export class ProyeccionService
             }
         }
 
-        // Actualizamos el último periodo en el estado para que los algoritmos 
-        // sepan desde dónde empezar a calcular el futuro.
         estado.ultimoPeriodo = ultimoPeriodoSimulado;
     }
 
-
-    /**
-     * Prepara datos para manual (Facade + Helper)
-     */
     async obtenerAsignaturasProyeccionManual(idProyeccion: number, catalogo:string)
     {
-        // A. Buscamos la proyección y sus datos
         const proyeccion = await this.proyeccionRepository.findOne({
             where: { idProyeccion },
             relations: ['semestres', 'semestres.instancias', 'semestres.instancias.asignatura']
@@ -159,21 +149,17 @@ export class ProyeccionService
 
         if (!proyeccion) throw new NotFoundException(`La proyección ${idProyeccion} no existe.`);
 
-        // B. Obtenemos el Estado Real (Base) usando los datos de la proyección
         const estado = await this.studentFacade.obtenerEstadoAcademico(
             proyeccion.rutUsuario, 
             proyeccion.codigoCarrera, 
             catalogo
         );
 
-        // C. FUSIÓN: Sumamos lo que ya editó manualmente
         this.fusionarEstadoConProyeccion(estado, proyeccion);
 
-        // D. Calculamos disponibles con el estado fusionado
         const proyeccionManual = new ProyeccionManual(estado);
         return proyeccionManual.enviarAsignaturas();
     }
-
 
     async crearProyeccionConAvance(rut: string, catalogo: string, codigoCarrera: string, proyeccionDto: CreacionProyeccion)
     {
@@ -212,56 +198,43 @@ export class ProyeccionService
 
         if (!proyeccionExistente) throw new NotFoundException("Proyección no encontrada");
 
-        // B. Obtener Estado Real
         const estado = await this.studentFacade.obtenerEstadoAcademico(
             proyeccionExistente.rutUsuario, 
             proyeccionExistente.codigoCarrera, 
             catalogoCarrera 
         );
 
-        // C. FUSIÓN: Greedy arrancará DESPUÉS de lo manual
         this.fusionarEstadoConProyeccion(estado, proyeccionExistente);
 
-        // D. Ejecutar Algoritmo
         const estrategia: IProyeccionStrategy = new GreedyProjectionStrategy(estado);
-        const mapaFuturo = estrategia.generar(estado); // Genera solo lo que falta
+        const mapaFuturo = estrategia.generar(estado);
 
-        // E. Guardado Transaccional
         const queryRunner = this.dataSource.createQueryRunner();
         await queryRunner.connect();
         await queryRunner.startTransaction();
 
         try {
-            // Calcular el número del siguiente semestre
-            // Buscamos el número más alto que ya exista en la BD
-            const ultimoSemestreDb = proyeccionExistente.semestres.sort((a,b) => b.numero - a.numero)[0];
-            let siguienteNumero = ultimoSemestreDb ? ultimoSemestreDb.numero : 0; // Si no hay semestres, parte de 0 (el mapper le sumará si corresponde)
 
-            // Ajuste de lógica de semestres (veranos) basado en el último periodo del estado fusionado
-            // Nota: Aquí depende de cómo 'futureToPersistence' maneje el inicio. 
-            // Si futureToPersistence incrementa de entrada, siguienteNumero está bien.
-            
-            // Convertimos el mapa futuro a DTOs
+            const ultimoSemestreDb = proyeccionExistente.semestres.sort((a,b) => b.numero - a.numero)[0];
+            let siguienteNumero = ultimoSemestreDb ? ultimoSemestreDb.numero : 0;
+
             const nuevosSemestresDto = this.mapper.futureToPersistence(
                 mapaFuturo, 
-                siguienteNumero + 1, // Le pasamos el siguiente
-                proyeccionExistente.codigoCarrera // IMPORTANTE: Para la PK compuesta
+                siguienteNumero + 1,
+                proyeccionExistente.codigoCarrera 
             );
 
-            for (const semDto of nuevosSemestresDto) {
-                // 1. Convertir DTO a Entidad para poder asignar relaciones
+            for (const semDto of nuevosSemestresDto) 
+            {
                 const nuevoSemestreEntidad = queryRunner.manager.create(Semestre, semDto);
 
-                // 2. Asignar la proyección padre
                 nuevoSemestreEntidad.proyeccion = proyeccionExistente; 
                 
-                // 3. Guardar (Cascada guarda instancias)
                 await queryRunner.manager.save(Semestre, nuevoSemestreEntidad);
             }
 
             await queryRunner.commitTransaction();
             
-            // Retornamos la proyección completa actualizada
             return this.obtenerProyeccionCompleta(idProyeccion);
 
         } catch (error) {
@@ -293,12 +266,12 @@ export class ProyeccionService
             .leftJoinAndSelect('instancia.asignatura', 'asignatura') 
             .select('asignatura.nombreAsignatura', 'nombre') 
             .addSelect('asignatura.codigoAsignatura', 'codigo') 
-            .addSelect('COUNT(instancia.id)', 'total') // Cuenta cuántas veces aparece
+            .addSelect('COUNT(instancia.id)', 'total')
             .where('semestre.periodo = :periodo', { periodo })
             .groupBy('asignatura.codigoAsignatura') 
             .addGroupBy('asignatura.nombreAsignatura') 
-            .orderBy('total', 'DESC') // Ordena: los más solicitados primero
-            .limit(20) // Top 20 asignaturas
+            .orderBy('total', 'DESC')
+            .limit(20)
             .getRawMany(); 
 
         return resultado;
