@@ -121,11 +121,13 @@ export class ProyeccionMapper {
             numero: semestre.numero,
             periodo: semestre.periodo,
             totalCreditos: semestre.totalCreditos,
-            // Mapeamos las instancias (asignaturas dentro del semestre)
-            asignaturas: semestre.instancias ? semestre.instancias.map(instancia => ({
-                codigo: instancia.asignatura.codigoAsignatura,
-                nombre: instancia.asignatura.nombreAsignatura,
-                creditos: instancia.asignatura.creditos,
+            editable: semestre.editable,
+            asignaturas: semestre.instancias ? semestre.instancias
+            .filter(instancia => instancia.asignatura != null)
+            .map(instancia => ({
+                codigo: instancia.asignatura?.codigoAsignatura || 'ERROR-DATA',
+                nombre: instancia.asignatura?.nombreAsignatura || 'Asignatura no encontrada',
+                creditos: instancia.asignatura?.creditos || 0,
                 estado: instancia.estado as 'APROBADO' | 'PENDIENTE' | 'REPROBADO'
             })) : []
         }));

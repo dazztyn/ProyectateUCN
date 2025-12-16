@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { Semestre } from './semestre.entity';
 import { Asignaturas } from '../../mallacurricular/entities/asignatura.entity';
 
@@ -14,5 +14,9 @@ export class InstanciaAsignatura {
   semestre: Semestre;
 
   @ManyToOne(() => Asignaturas, (asignatura) => asignatura.instancias)
+  @JoinColumn([
+      { name: 'codigoAsignatura', referencedColumnName: 'codigoAsignatura' },
+      { name: 'codigoCarrera', referencedColumnName: 'codigoCarrera' }
+  ])
   asignatura: Asignaturas;
 }
