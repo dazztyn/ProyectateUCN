@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { MallaService } from '../mallacurricular/malla/malla.service';
 import { AvanceService } from '../avance/avance/avance.service';
 import { AcademicUtilsService } from '../ArchivosComunes/AcademicUtilsService';
-import { EstadoAcademico } from './interfaces/EstadoAcademico';
+import { EstadoAcademico, AvancePlano } from './interfaces/EstadoAcademico';
 
 @Injectable()
 export class StudentDataFacade {
@@ -12,38 +12,60 @@ export class StudentDataFacade {
         private readonly academicUtils: AcademicUtilsService
     ) {}
 
-    /**
-     * Obtiene y prepara TODOS los datos necesarios para realizar una proyección.
-     * Realiza fetching en paralelo y pre-calcula grafos.
-     */
     async obtenerEstadoAcademico(rut: string, codigoCarrera: string, catalogo: string): Promise<EstadoAcademico> {
+
+        console.log("[Facade] Iniciando sincronización en segundo plano...");
         
-        // 1. Fetching en paralelo (Mejora de rendimiento: esperamos ambas a la vez)
-        const [avanceRaw, mallaRaw] = await Promise.all([
-            this.avanceService.fetchAvanceData(rut, codigoCarrera),
-            this.mallaService.fetchMallaCarrera(codigoCarrera, catalogo)
+        await Promise.all([
+            this.avanceService.sincronizarAvanceFull(rut, codigoCarrera, catalogo),
+            this.mallaService.sincronizarMalla(codigoCarrera, catalogo)
         ]);
 
-        // 2. Procesamiento de datos (Cruce de Avance con Malla)
-        const avanceRelleno = this.avanceService.rellenarListaDeAvance(avanceRaw, mallaRaw);
+        // =========================================================
+        // 2. FASE DE LECTURA (Leer de BD a velocidad luz ⚡)
+        // =========================================================
+        // Ya no dependemos de la respuesta HTTP, leemos directo del disco/memoria de la BD.
+        const [avancePorPeriodoMap, mallaRaw] = await Promise.all([
+            this.avanceService.obtenerAvanceDesdeBD(rut, codigoCarrera), 
+            this.mallaService.obtenerMallaRaw(codigoCarrera)
+        ]);
 
-        // 3. Agrupaciones y Cálculos
-        const avancePorPeriodo = this.avanceService.avanceSeparadoPorPeriodo(avanceRelleno);
+        // =========================================================
+        // 3. FASE DE PROCESAMIENTO (Cálculos en Memoria)
+        // =========================================================
+
+        // A. Convertir avancePorPeriodo a Map y Lista Plana
+        const avanceMap = new Map<string, AvancePlano[]>(Object.entries(avancePorPeriodoMap));
+
+        const avancePlanoLista = Object.values(avancePorPeriodoMap).flat() as AvancePlano[];
+
+        // B. Calcular Aprobados (Set para búsqueda O(1))
+        const asignaturasAprobadas = new Set<string>();
+        avancePlanoLista.forEach(ramo => {
+            // Tu lógica de negocio: ¿Qué cuenta como aprobado?
+            if (ramo.estado === 'APROBADO' || ramo.estado === 'INSCRITO' || ramo.estado === 'CONVALIDADO') {
+                asignaturasAprobadas.add(ramo.codigo);
+            }
+        });
+
+        // C. Calcular Último Periodo
+        // Obtenemos las llaves (ej: "202310", "202320") y las ordenamos
+        const periodos = Object.keys(avancePorPeriodoMap).sort();
+        const ultimoPeriodo = periodos.length > 0 ? periodos[periodos.length - 1] : '202300'; // Valor default seguro
+
+        // D. Procesar Malla (Agrupar y Grafos)
+        // Usamos los utils con la data plana que vino de la BD
         const mallaPorNiveles = this.academicUtils.agruparPor(mallaRaw, (a) => a.nivel);
-        const asignaturasAprobadas = this.academicUtils.obtenerCodigosAprobados(avanceRelleno);
-        
-        // 4. Grafos para algoritmos (Lo que antes hacía MallaService y ProyeccionFutura repetidamente)
         const grafoPrerrequisitos = this.academicUtils.construirGrafoDeApertura(mallaRaw);
 
-        // 5. Obtener último periodo
-        const ultimoPeriodo = this.avanceService.sacarUltimoPeriodo(avancePorPeriodo);
-
-        // 6. Retornar el paquete completo
+        // =========================================================
+        // 4. RETORNO
+        // =========================================================
         return {
             mallaCompleta: mallaRaw,
             mallaPorNiveles,
-            avanceRelleno,
-            avancePorPeriodo,
+            avancePorPeriodo: avanceMap,
+            avancePlanoLista: avancePlanoLista,
             asignaturasAprobadas,
             ultimoPeriodo,
             grafoPrerrequisitos

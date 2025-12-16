@@ -6,6 +6,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RolUsuario } from './entities/rol-usuario.entity.js';
 import { AvanceService } from '../../avance/avance/avance.service.js';
+import { MallaService } from '../../mallacurricular/malla/malla.service.js';
 
 @Injectable()
 export class AuthService 
@@ -15,6 +16,7 @@ export class AuthService
         @InjectRepository(RolUsuario)
         private readonly rolUsuarioRepository: Repository<RolUsuario>,
         private readonly avanceService: AvanceService,
+        private readonly mallaService: MallaService,
     ) {}
 
     async fetchloginData(email: string, password: string): Promise<Usuario> 
@@ -88,20 +90,19 @@ async login(email: string, password: string)
 
             if (alumno.carreras && alumno.carreras.length > 0) 
             {
-                await Promise.all(alumno.carreras.map(async (carrera) => 
-                {
-                    try 
-                    {
-                        console.log(`Sincronizando carrera ${carrera.codigo}...`);
-                        await this.avanceService.sincronizarAvanceFull(
-                            alumno.rut, 
-                            carrera.codigo, 
-                            carrera.catalogo
-                        );
-                    } 
-                    catch (syncError) 
-                    {
+                await Promise.all(alumno.carreras.map(async (carrera) => {
+                    try {
+                        console.log(`Sincronizando datos para carrera ${carrera.codigo}...`);
+                        
+                        // Ejecutamos AMBAS sincronizaciones en paralelo para esa carrera
+                        await Promise.all([
+                            this.avanceService.sincronizarAvanceFull(alumno.rut, carrera.codigo, carrera.catalogo),
+                            this.mallaService.sincronizarMalla(carrera.codigo, carrera.catalogo) // 👈 NUEVA LÍNEA
+                        ]);
+                        
+                    } catch (syncError) {
                         console.error(`Error sincronizando carrera ${carrera.codigo}:`, syncError);
+                        // No lanzamos error para permitir que el login continúe aunque falle la sync de fondo
                     }
                 }));
             }

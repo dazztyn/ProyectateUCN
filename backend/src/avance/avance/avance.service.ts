@@ -97,85 +97,97 @@ export class AvanceService
      */
     async sincronizarAvanceFull(rut: string, codigoCarrera: string, catalogo: string) {
         
-        // 1. Obtener datos CRUDOS de la API
+        // 1. Obtener datos API y Malla
         const rawAvance = await this.fetchAvanceData(rut, codigoCarrera);
-        
-        // 2. Obtener la MALLA para sacar los nombres
         const malla = await this.mallaService.fetchMallaCarrera(codigoCarrera, catalogo);
-
-        // 3. PROCESAR: Aquí usamos tu lógica existente.
-        // Esto nos devuelve una lista limpia de 'AvanceConAsignatura'
-        // que ya ignoró los 'excluded' y ya tiene el nombre del ramo.
         const avanceProcesado = this.rellenarListaDeAvance(rawAvance, malla);
 
-        // 4. PREPARAR BASE DE DATOS (UPSERT)
-        // Traemos lo que ya existe en BD para no duplicar
+        // 2. Obtener datos de BD
         const avanceEnBD = await this.avanceRealRepo.find({
             where: { rutUsuario: rut, codigoCarrera: codigoCarrera }
         });
 
-        const mapaBD = new Map<string, AvanceReal>();
+        // 3. Crear el "Mapa Maestro" 🗺️
+        // Este mapa contendrá la versión FINAL de cada ramo.
+        // Clave: "CODIGO-PERIODO" -> Valor: Entidad AvanceReal
+        const mapaMaestro = new Map<string, AvanceReal>();
+
+        // Llenamos el mapa con lo que ya existe en BD
         avanceEnBD.forEach(a => {
-            // Clave única: "DCCB-00107-202310"
-            const claveUnica = `${a.codigoAsignatura}-${a.periodo}`; 
-            mapaBD.set(claveUnica, a);
+            const clave = `${a.codigoAsignatura}-${a.periodo}`;
+            mapaMaestro.set(clave, a);
         });
 
-        const entidadesAGuardar: AvanceReal[] = [];
-
-        // 5. Recorrer la lista LIMPIA y convertirla a Entidades
+        // 4. Procesar la lista de la API
         for (const item of avanceProcesado) {
             
-            // Extraemos datos de tu objeto AvanceConAsignatura
-            const curso = item.getCourse(); // Esto es tipo Asignatura
+            const curso = item.getCourse();
             const codigo = curso.codigo;
-            const nombre = curso.asignatura; // ¡Aquí está el nombre real!
             const periodo = item.getPeriod();
-            const estado = item.getStatus();
+            const clave = `${codigo}-${periodo}`; // 🔑 La clave única
+
             const nrc = item.getNrc();
+            const estado = item.getStatus();
+            const nombre = curso.asignatura;
             const creditos = curso.creditos;
 
-            const claveBusqueda = `${codigo}-${periodo}`;
-            const entidadExistente = mapaBD.get(claveBusqueda);
+            // 👇 LA MAGIA: Buscamos en el Mapa Maestro (que se actualiza en tiempo real)
+            // Si ya procesamos un duplicado en este mismo bucle, lo encontraremos aquí.
+            let entidad = mapaMaestro.get(clave);
 
-            if (entidadExistente) {
-                // 🟩 CASO ACTUALIZAR
-                // TypeScript sabe que 'entidadExistente' NO es undefined dentro de este if
+            if (entidad) {
+                // === CASO: YA EXISTE (En BD o duplicado anterior en la lista API) ===
+                // Actualizamos los datos siempre (El último dato de la API manda)
                 
-                if (entidadExistente.estado !== estado || 
-                    entidadExistente.periodo !== periodo ||
-                    entidadExistente.nrc !== nrc ||
-                    entidadExistente.creditos !== creditos)
-                {
-                    entidadExistente.estado = estado;
-                    entidadExistente.periodo = periodo;
-                    entidadExistente.nrc = nrc;
-                    entidadExistente.creditos = creditos;
+                // Opcional: Lógica para preferir 'APROBADO' sobre 'REPROBADO' si es el mismo periodo
+                // Si la entidad que ya tenemos está APROBADA y la nueva es REPROBADA, quizás no queremos sobrescribir.
+                // Pero por ahora, dejemos que el último gane para simplificar.
+
+                const yaEstabaAprobado = entidad.estado === 'APROBADO';
+                const nuevoEsAprobado = estado === 'APROBADO';
+                
+                if (!yaEstabaAprobado || nuevoEsAprobado) {
                     
-                    entidadesAGuardar.push(entidadExistente);
+                    if(entidad.nrc !== nrc || 
+                        entidad.creditos !== creditos)
+                    {
+                        entidad.estado = estado;
+                        entidad.nrc = nrc;
+                        entidad.creditos = creditos;
+                        entidad.periodo = periodo;
+                    }
+                    
+                    // No necesitamos hacer push a un array todavía, el objeto está en el mapa
                 }
-            }
-            else 
-            {
-                // --- CREAR ---
-                const nuevo = this.avanceRealRepo.create({
+            } 
+            else {
+                // === CASO: TOTALMENTE NUEVO ===
+                entidad = this.avanceRealRepo.create({
                     rutUsuario: rut,
                     codigoCarrera: codigoCarrera,
-                    nrc: nrc,
                     codigoAsignatura: codigo,
                     nombreAsignatura: nombre,
-                    creditos: creditos,
                     periodo: periodo,
                     estado: estado,
+                    nrc: nrc,
+                    creditos: creditos
                 });
-                entidadesAGuardar.push(nuevo);
+                
+                // ¡IMPORTANTE! Lo agregamos al mapa inmediatamente.
+                // Así, si viene un duplicado en la siguiente iteración, caerá en el 'if' de arriba
+                // y no creará otro objeto nuevo.
+                mapaMaestro.set(clave, entidad);
             }
         }
 
-        // 6. Guardar cambios
-        if (entidadesAGuardar.length > 0) {
-            await this.avanceRealRepo.save(entidadesAGuardar);
-            console.log(`✅ Sincronización completa: ${entidadesAGuardar.length} registros actualizados.`);
+        // 5. Guardar el Mapa Maestro
+        // Convertimos los valores del mapa a un array y guardamos TODO.
+        // TypeORM es inteligente: si tiene ID hace update, si no, hace insert.
+        const listaFinalParaGuardar = Array.from(mapaMaestro.values());
+
+        if (listaFinalParaGuardar.length > 0) {
+            await this.avanceRealRepo.save(listaFinalParaGuardar);
+            console.log(`Sincronización completa: ${listaFinalParaGuardar.length} registros procesados.`);
         }
     }
 

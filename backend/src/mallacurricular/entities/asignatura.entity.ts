@@ -6,6 +6,9 @@ export class Asignaturas {
   @PrimaryColumn({ type: 'text', nullable: false })
   codigoAsignatura: string;
 
+  @PrimaryColumn({ type: 'text', nullable: false }) 
+  codigoCarrera: string;
+
   @Column({ type: 'text', nullable: false })
   nombreAsignatura: string;
 
