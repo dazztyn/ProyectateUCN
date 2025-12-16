@@ -5,6 +5,7 @@ export type AsignaturaEditor = {
   nombre: string;
   estado: 'APROBADO' | 'REPROBADO' | 'PENDIENTE'; 
   creditos: number; 
+
 };
 export type AsignaturaDisponible = {
     codigo: string;
@@ -20,6 +21,7 @@ export type SemestreEditor = {
   periodo: string;
   totalCreditos: number; 
   asignaturas: AsignaturaEditor[]; 
+  editable: boolean;
 };
 
 export type FullProyeccionResponse = {
@@ -37,6 +39,8 @@ export type Props = {
   selectedSemestreId: number | null; 
   onSelectSemestre: (semeestrePeriodo: number) => void; 
   semestreCredits: Record<string, number>;
+  onDeleteAsignatura: (semestreNumero: number, codigoAsignatura: string) => void;
+
 };
 
 export type AsignaturaRawDisponible = {

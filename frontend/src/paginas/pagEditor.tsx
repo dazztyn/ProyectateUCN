@@ -2,9 +2,11 @@ import Layout from '../componentes/componentesEditor/layoutWithBanner';
 import { useLocation, useNavigate } from 'react-router-dom';
 import React from 'react';
 import axios from "axios";
+import '../style/styleEdit.css';
 import { useState, useEffect } from 'react';
 import MallaEditorDisplay from '../componentes/componentesEditor/compMallaEditor';
 import CompAsignaturasDisponibles from '../componentes/componentesEditor/compAsignaturaBarra';
+import CompBarraControlesProyeccion from '../componentes/componentesEditor/compBotones';
 
 import type { 
   FullProyeccionResponse, 
@@ -37,25 +39,7 @@ const PagEditor = () => {
   const [access_token, setAccessToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  
-  const fetchUsuario = async (token: string, i: number) => {
-    try {
-      const res = await axios.post(
-        "http://localhost:3000/alumno",
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-    } catch (err) {
-      console.error(err);
-      navigate("/seleccion");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
-  useEffect(() => {
+    useEffect(() => {
     const state = location.state as
       | { indice: number; access_token: string }
       | undefined;
@@ -88,7 +72,56 @@ const PagEditor = () => {
       setSeleccionado(malla[0].numero);
     }
   }, [malla, seleccionado]);
+  const fetchUsuario = async (token: string, i: number) => {
+    try {
+      const res = await axios.post(
+        "http://localhost:3000/alumno",
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
+    } catch (err) {
+      console.error(err);
+      navigate("/seleccion");
+    } finally {
+      setLoading(false);
+    }
+  };
+  const handleDeleteAsignatura = (semestreNumero: number, codigoAsignatura: string) => {
+    setMalla(prevMalla => {
+        const updatedMalla = prevMalla.map(sem => {
+            if (sem.numero === semestreNumero) {
+                const updatedAsignaturas = sem.asignaturas.filter(a => a.codigo !== codigoAsignatura);
+                const totalCreditos = updatedAsignaturas.reduce((sum, a) => sum + a.creditos, 0);
+                return {
+                    ...sem,
+                    asignaturas: updatedAsignaturas,
+                    totalCreditos: totalCreditos
+                };
+            }
+            return sem;
+        });
+        return updatedMalla;
+    });
+  };
+  const handleAddSemestre = () => {
+    // Buscamos el número de semestre más alto en la malla actual.
+    const maxSemestre = malla.reduce((max, semestre) => 
+        Math.max(max, semestre.numero), 0);
+        
+    const newNumero = maxSemestre + 1;
+    
+    const newSemestre: SemestreEditor = {
+        numero: newNumero, 
+        periodo: `S${newNumero}`, 
+        totalCreditos: 0, 
+        asignaturas: [],
+        editable: true, 
+    };
+    setMalla(prevMalla => [...prevMalla, newSemestre]);
+    setSeleccionado(newNumero); 
+    console.log(`Semestre ${newNumero} creado exitosamente.`);
+};
   const semestreCredits = React.useMemo(() => {
     return calculateSemestreCredits(malla); 
   }, [malla]);
@@ -97,17 +130,6 @@ const PagEditor = () => {
     if (semestrePeriodo === seleccionado) return;
     setSeleccionado(semestrePeriodo);
     console.log("Semestre seleccionado:", semestrePeriodo);
-  }
-  
-  if (loading) return <p role="status">Cargando...</p>;
-  if (indice === null || !access_token)
-    return <p role="alert">No fue posible cargar la información.</p>;
-  if (malla.length === 0) {
-    return (
-      <Layout>
-        <p>Error: No se recibió información de la proyección. Intente de nuevo.</p>
-      </Layout>
-    );
   }
   const handleAddAsignatura = (asignatura: AsignaturaDisponible) => {
     if (seleccionado === null) {
@@ -142,14 +164,42 @@ const PagEditor = () => {
         return updatedMalla;
     });
 };
+  const handleSaveProyeccion = () => {
+      console.log("Guardando proyección...", malla);
+  };
+  const handleAutocompletar = () => {
+      console.log("Autocompletando proyección...");
+  }
+
+  
+  if (loading) return <p role="status">Cargando...</p>;
+  if (indice === null || !access_token)
+    return <p role="alert">No fue posible cargar la información.</p>;
+  if (malla.length === 0) {
+    return (
+      <Layout>
+        <p>Error: No se recibió información de la proyección. Intente de nuevo.</p>
+      </Layout>
+    );
+  }
+  
+
   return (
     <Layout>
+      <div className="container-edit">
         <MallaEditorDisplay 
         malla={malla}
         selectedSemestreId={seleccionado}
         onSelectSemestre={handleSelectSemestre}
+        onDeleteAsignatura={handleDeleteAsignatura}
         semestreCredits={semestreCredits}
         />
+        <div className="container-lateral">
+        <CompBarraControlesProyeccion 
+            onAddSemestre={handleAddSemestre}
+            onSaveProyeccion={handleSaveProyeccion}
+            onAutocompletar={handleAutocompletar}
+          />
         <CompAsignaturasDisponibles 
         selectedSemestreId={seleccionado} 
         onAddAsignatura={handleAddAsignatura} 
@@ -157,6 +207,8 @@ const PagEditor = () => {
         indiceCarrera={indice}
         idProyeccion={1}
         />
+        </div>
+      </div>
     </Layout>
     );
 };

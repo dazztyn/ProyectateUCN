@@ -3,6 +3,7 @@ import "../../style/styleSelectAsig.css";
 import ErrorMessage from '../../componentes/compMensajeError';
 import addIcon from '../../assets/addIcon.png';
 
+
 import { useState, useEffect, useMemo } from 'react';
 
 import type { 
@@ -90,7 +91,7 @@ const CompAsignaturasDisponibles: React.FC<Props> = ({ selectedSemestreId, onAdd
 
 
     if (loading) {
-        return <div className="loading-asignaturas">Cargando catálogo de asignaturas...</div>;
+        return <div className="asigcontainer">Cargando catálogo de asignaturas...</div>;
     }
 
     if (error) {
@@ -98,7 +99,7 @@ const CompAsignaturasDisponibles: React.FC<Props> = ({ selectedSemestreId, onAdd
     }
     
     if (allAsignaturas.length === 0) {
-        return <div className="info-asignaturas">No hay asignaturas en el catálogo de esta carrera.</div>
+        return <div className="asigcontainer">Advertencia! No hay asignaturas en el catálogo actualmente, pruebe a cambiar de semestre.</div>
     }
 
     return (
