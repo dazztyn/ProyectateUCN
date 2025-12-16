@@ -11,7 +11,7 @@ export class ProyeccionController
 {
     constructor(private proyeccion: ProyeccionService){}
 
-    @Post('/Proyeccion/:indiceCarrera')
+    @Post('/ProyeccionManual/:indiceCarrera')
     patchCrearProyeccion
     (
         @Req() request: Request,
@@ -42,7 +42,7 @@ export class ProyeccionController
     //     return this.proyeccion.obtenerProyeccionCompleta(parseInt(idProyeccion, 10));
     // }
 
-    @Post(':indiceCarrera')
+    @Post('/ProyeccionIdeal/:indiceCarrera')
     getProyeccionFutura
     (
         @Req() request: Request,
