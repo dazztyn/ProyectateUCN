@@ -2,7 +2,6 @@ import React from 'react';
 import "../../style/styleSelectAsig.css";
 import ErrorMessage from '../../componentes/compMensajeError';
 import addIcon from '../../assets/addIcon.png';
-import saveIcon from '../../assets/floppy-disc.png';
 
 import { useState, useEffect, useMemo } from 'react';
 
@@ -104,17 +103,6 @@ const CompAsignaturasDisponibles: React.FC<Props> = ({ selectedSemestreId, onAdd
 
     return (
         <div className="asigcontainer">
-            <div className="seccion-botones">
-            <button className = "boton-top">
-                Guardar semestre 
-                <img src={saveIcon} alt="icono guardar" className="icon-mini"/>
-            </button>
-            <button className = "boton-top">
-                Añadir Semestre 
-                <img src={addIcon} alt="icono añadir semestre a proyeccion" className="icon-mini"/>
-            </button>
-
-            </div>
              <h3>
                     Asignaturas Disponibles 
                 </h3>
@@ -125,7 +113,7 @@ const CompAsignaturasDisponibles: React.FC<Props> = ({ selectedSemestreId, onAdd
                 >
                     <div className="asig-info">
                         <h3>{asig.nombre}</h3>
-                        <p>{asig.codigo} |Créditos: {asig.creditos} | Nivel: {asig.nivel}</p>
+                        <p>{asig.codigo} | Créditos: {asig.creditos} | Nivel: {asig.nivel}</p>
                     </div>
                     
                     {!asig.puedeAgregar && (

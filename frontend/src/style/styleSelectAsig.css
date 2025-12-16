@@ -10,40 +10,7 @@
   padding: 0.5rem;
   background-color: #91a0c3;
 }
-.seccion-botones{
-  display: flex;
-  position-anchor: inherit;
-  flex-direction: column;
-  width: 100%;
-  height: 60vh;
-  border-radius: 8px;
-  background-color: #065d6d;
-  gap: 0.5rem;
-  justify-content: space-evenly;
-  padding: 0.5rem;
-  
-}
-.boton-top{
-  height: 3rem;
-  width: 100%;
-  display: flex;
-  padding-top: 0.5rem;
-  align-items: center;
-  justify-content: space-between;
-  background-color: #2D8191;
-  border-style: solid;
-  border-color:#e5e7eb;
-  border-width: 3px;
-  font-weight: bolder;
-  color: white;
-  border: none;
-  transition: 0.2s;
-}
-.boton-top:hover{
-  background-color: #065d6d;
-  font-weight: bolder;
-  border-width: 8px;
-}
+
 .asigcard{
   display: flex;
   height: 4rem;
@@ -103,11 +70,7 @@
   height: 50px;
   filter: invert(1);
 }
-.icon-mini{
-  width: 30px;
-  height: 30px;
-  filter: invert(1);
-}
+
 .asig-motivo-bloqueo {
   display: flex;
   flex-direction: column;

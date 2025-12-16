@@ -43,8 +43,8 @@ const CompSelectProyeccion: React.FC<Props> = ({ indice, access_token})  => {
 
     const endpoint =
     selectedSection === "Personalizable"
-      ? `http://localhost:3000/proyeccion/Proyeccion/${indice}`
-      : `http://localhost:3000/proyeccion/${indice}`;
+      ? `http://localhost:3000/proyeccion/ProyeccionManual/${indice}`
+      : `http://localhost:3000/proyeccion/ProyeccionIdeal/${indice}`;
     try {
       const resp = await fetch(
         endpoint,
