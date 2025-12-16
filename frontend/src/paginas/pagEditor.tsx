@@ -32,7 +32,8 @@ const PagEditor = () => {
 
   const fullResponse = (location.state?.data as FullProyeccionResponse) || {};
   const initialMalla: MallaEditorData = fullResponse.semestres || [];
-  
+  const [proyeccionId, setProyeccionId] = useState<number | null>(fullResponse.id || null);
+  const [proyeccionNombre, setProyeccionNombre] = useState<string>(fullResponse.nombre || "Sin Nombre");
   const [malla, setMalla] = useState<MallaEditorData>(initialMalla);
   const [seleccionado, setSeleccionado] = React.useState<number | null>(null);
   const [indice, setIndice] = useState<number | null>(null);
@@ -72,6 +73,12 @@ const PagEditor = () => {
       setSeleccionado(malla[0].numero);
     }
   }, [malla, seleccionado]);
+  useEffect(() => {
+    if (fullResponse.id) {
+        setProyeccionId(fullResponse.id);
+        setProyeccionNombre(fullResponse.nombre);
+    }
+  }, [fullResponse]);
   const fetchUsuario = async (token: string, i: number) => {
     try {
       const res = await axios.post(
@@ -167,9 +174,50 @@ const PagEditor = () => {
   const handleSaveProyeccion = () => {
       console.log("Guardando proyección...", malla);
   };
-  const handleAutocompletar = () => {
-      console.log("Autocompletando proyección...");
-  }
+  const handleAutocompletar = async () => {
+    if (!access_token || indice === null || !proyeccionId) {
+        alert("Faltan datos para realizar la operación.");
+        return;
+    }
+
+    const confirmar = window.confirm(
+        "¿Estás seguro? Se autocompletará tu proyección con el camino ideal y se perderán los cambios no guardados en los semestres editables."
+    );
+    if (!confirmar) return;
+
+    setLoading(true);
+
+    try {
+        const url = `http://localhost:3000/proyeccion/autocompletar/${indice}?idProyeccion=${proyeccionId}`;
+        
+        const response = await fetch(url, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${access_token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error("Error al intentar autocompletar la proyección.");
+        }
+
+        const data: FullProyeccionResponse = await response.json();
+
+        setMalla(data.semestres);
+        if (data.semestres.length > 0) {
+            setSeleccionado(data.semestres[0].numero);
+        }
+
+        alert("Proyección autocompletada con éxito.");
+
+    } catch (err) {
+        console.error("Error en Autocompletar:", err);
+        alert("Hubo un fallo al obtener la proyección ideal.");
+    } finally {
+        setLoading(false);
+    }
+};
 
   
   if (loading) return <p role="status">Cargando...</p>;
@@ -177,7 +225,7 @@ const PagEditor = () => {
     return <p role="alert">No fue posible cargar la información.</p>;
   if (malla.length === 0) {
     return (
-      <Layout>
+      <Layout nombreProyeccion = "error">
         <p>Error: No se recibió información de la proyección. Intente de nuevo.</p>
       </Layout>
     );
@@ -185,7 +233,7 @@ const PagEditor = () => {
   
 
   return (
-    <Layout>
+    <Layout nombreProyeccion={proyeccionNombre}>
       <div className="container-edit">
         <MallaEditorDisplay 
         malla={malla}
@@ -205,7 +253,8 @@ const PagEditor = () => {
         onAddAsignatura={handleAddAsignatura} 
         access_token={access_token} 
         indiceCarrera={indice}
-        idProyeccion={1}
+        idProyeccion={proyeccionId || 0}
+        malla ={malla}
         />
         </div>
       </div>
