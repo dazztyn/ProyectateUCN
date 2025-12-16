@@ -8,7 +8,7 @@ interface LayoutWithBannerProps {
 const LayoutWithBanner: React.FC<LayoutWithBannerProps> = ({ children }) => (
   <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
     <BarraSuperior />
-    <main style={{ flex: 1, width: "100%", padding: "2rem", boxSizing: "border-box" }}>
+    <main style={{ flex: 1, width: "100%", padding: "2rem", boxSizing: "border-box", flexDirection: "row", display: "flex", gap: "1rem" }}>
       {children}
     </main>
   </div>

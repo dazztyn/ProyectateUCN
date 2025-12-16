@@ -1,26 +1,53 @@
-export type Asignatura = {
-  codigoAsignatura: string;
-  nombreAsignatura: string;
-  creditos: number;
-  nivel: number;
-  prerrequisitos: string;
+
+
+export type AsignaturaEditor = {
+  codigo: string;
+  nombre: string;
+  estado: 'APROBADO' | 'REPROBADO' | 'PENDIENTE'; 
+  creditos: number; 
 };
-export type Semestre = {
-  numero: number;
-  asignaturas: Asignatura[];
+export type AsignaturaDisponible = {
+    codigo: string;
+    nombre: string;
+    creditos: number;
+    nivel: number;
+    puedeAgregar: boolean; 
+    prereq: string;
+    motivoNoDisponible?: string; 
 };
+export type SemestreEditor = {
+  numero: number; 
+  periodo: string;
+  totalCreditos: number; 
+  asignaturas: AsignaturaEditor[]; 
+};
+
+export type FullProyeccionResponse = {
+  id: number;
+  rut: string;
+  nombre: string;
+  esIdeal: boolean;
+  semestres: SemestreEditor[]; 
+};
+
+export type MallaEditorData = SemestreEditor[];
 
 export type Props = {
-  malla: Record<string, Asignatura[]>;
-  selectedSemestreId: number | null; 
-  onSelectSemestre: (semestreNumero: number) => void; 
-  semestreCredits: Record<string, number>;
+  malla: MallaEditorData;
+  selectedSemestreId: number | null; 
+  onSelectSemestre: (semeestrePeriodo: number) => void; 
+  semestreCredits: Record<string, number>;
 };
 
-export type Proyeccion = Record<string, Asignatura[]>;
+export type AsignaturaRawDisponible = {
+    codigo: string;
+    asignatura: string; 
+    creditos: number;
+    nivel: number;
+    prereq: string;
+};
 
-export type AsignaturaDisponible = Asignatura & {
-  id: number; 
-  puedeAgregar: boolean; 
-  motivoNoDisponible?: string; 
+export type AsignaturasDisponiblesResponse = {
+    disponibles: AsignaturaRawDisponible[];
+    noDisponibles: AsignaturaRawDisponible[];
 };

@@ -1,9 +1,8 @@
 .malla-edit-container {
   display: flex;      
-  height : auto;
+  height : 100%;
   overflow-x: auto;
-  width: 100%;
-  height: 50vh;
+  width: 70%;
   border-radius: 8px;
   gap: 0.5rem;                    
   padding: 0.5rem;

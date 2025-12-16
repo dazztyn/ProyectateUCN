@@ -1,18 +1,22 @@
 import "../style/styleSeleccionProy.css";
 import flecha from "../assets/arrow-down.png"
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import ErrorMessage from '../componentes/compMensajeError';
 
 import type { 
-  Props
-} from "../types/dataTypesSimple";
+  Props,
+  ProyeccionGuardada
+} from "../types/dataTypesProyeccion";
 const CompSelectProyeccion: React.FC<Props> = ({ indice, access_token})  => {
   const [open, setOpen] = useState(false);
   const toggleOpen = () => setOpen(o => !o);
 
   const [nombreProy, setNombreProy] = useState("");
+  const [proyecciones, setProyecciones] = useState<ProyeccionGuardada[]>([]);
+  const [loadingProyecciones, setLoadingProyecciones] = useState(true);
+  const [selectedProyeccionId, setSelectedProyeccionId] = useState<number | null>(null);
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
 
   const navigate = useNavigate();
@@ -39,7 +43,7 @@ const CompSelectProyeccion: React.FC<Props> = ({ indice, access_token})  => {
 
     const endpoint =
     selectedSection === "Personalizable"
-      ? "http://localhost:3000/proyeccion/Proyeccion"
+      ? `http://localhost:3000/proyeccion/Proyeccion/${indice}`
       : `http://localhost:3000/proyeccion/${indice}`;
     try {
       const resp = await fetch(
@@ -54,16 +58,57 @@ const CompSelectProyeccion: React.FC<Props> = ({ indice, access_token})  => {
         }
       );
 
-      if (!resp.ok) throw new Error("Error al crear la proyección");
+      if (!resp.ok) throw new Error("Error al crear la proyección, posible nombre duplicado");
 
       const data = await resp.json();
 
       navigate(`/editor`, {state: {data}});
       
     } catch (e) {
-      setError("No se pudo crear la proyección");
+      setError("No se pudo crear la proyección, posible nombre duplicado");
     }
   };
+  const handleGoToExistingProjection = async () => {
+    if (!selectedProyeccionId) {
+      //Aquí enviar ID de proyección seleccionada
+      setError("Por favor, seleccione una proyección de la lista.");
+      return;
+    }
+  }
+  useEffect(() => {
+    const fetchProyecciones = async () => {
+      setLoadingProyecciones(true);
+      setError(null);
+      try {
+        const url = `http://localhost:3000/proyeccion/obtenerProyecciones/${indice}`;
+        const resp = await fetch(url, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+          },
+        });
+
+        if (!resp.ok) throw new Error("Error al cargar las proyecciones existentes");
+
+        const data: ProyeccionGuardada[] = await resp.json();
+        setProyecciones(data);
+        
+        if (data.length > 0) {
+            setSelectedProyeccionId(data[0].id);
+        }
+
+      } catch (e) {
+        setError(`Error: No se pudieron cargar las proyecciones.`);
+        console.error("Error al obtener proyecciones:", e);
+      } finally {
+        setLoadingProyecciones(false);
+      }
+    };
+
+    if (indice !== null && access_token) {
+        fetchProyecciones();
+    }
+  }, [indice, access_token]);
   return (
     <div className="main-container">
       <div className="container-seleccion-general">
@@ -71,7 +116,11 @@ const CompSelectProyeccion: React.FC<Props> = ({ indice, access_token})  => {
         {/* EXISTENTES */}
         <div className="titulo-seleccion-proy">Proyección Existente</div>
         <div className="bloque-existentes" onClick={toggleOpen}>
-          Seleccione una proyección guardada
+          {loadingProyecciones 
+             ? 'Cargando proyecciones...' 
+             : selectedProyeccionId 
+                ? proyecciones.find(p => p.id === selectedProyeccionId)?.nombre 
+                : 'Seleccione una proyección guardada'}
           <img
             src={flecha}
             alt="flecha"
@@ -79,11 +128,29 @@ const CompSelectProyeccion: React.FC<Props> = ({ indice, access_token})  => {
           />
         </div>
         <ul className={`lista-proyecciones ${!open ? "hidden" : ""}`}>
-          <li>Proyección 1</li>
-          <li>Proyección 2</li>
-          <li>Proyección 3</li>
+          {loadingProyecciones && <li>Cargando...</li>}
+          {!loadingProyecciones && proyecciones.length === 0 && <li>No hay proyecciones guardadas.</li>}
+          
+          {proyecciones.map(proy => (
+            <li 
+              key={proy.id} 
+              className={selectedProyeccionId === proy.id ? 'seleccionada' : ''}
+              onClick={() => {
+                setSelectedProyeccionId(proy.id);
+                setOpen(false); 
+              }}
+            >
+              {proy.nombre} {proy.esIdeal ? "(Mejor Caso)" : ""}
+            </li>
+          ))}
         </ul>
-        <div className="botonGo-proy">Ir a Proyección Seleccionada</div>
+        <div 
+            className="botonGo-proy" 
+            onClick={handleGoToExistingProjection}
+            style={{ opacity: selectedProyeccionId && !loadingProyecciones ? 1 : 0.5, cursor: selectedProyeccionId ? 'pointer' : 'not-allowed' }}
+        >
+          Ir a Proyección Seleccionada
+        </div>
 
         {/* NUEVA */}
         <div className="titulo-seleccion-proy">Proyección Nueva</div>

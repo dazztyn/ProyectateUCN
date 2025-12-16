@@ -116,6 +116,7 @@ export class ProyeccionMapper {
             asignaturas: semestre.instancias ? semestre.instancias.map(instancia => ({
                 codigo: instancia.asignatura.codigoAsignatura,
                 nombre: instancia.asignatura.nombreAsignatura,
+                creditos: instancia.asignatura.creditos,
                 estado: instancia.estado as 'APROBADO' | 'PENDIENTE' | 'REPROBADO'
             })) : []
         }));

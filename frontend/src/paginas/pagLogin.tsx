@@ -69,9 +69,7 @@ const Login: React.FC = () => {
           <button type="submit" className="login-button" aria-label="Ingresar al sistema">Ingresar Datos</button>
         </form>
 
-        {error && <ErrorMessage message={error} onClose={() => setError(null)
-          
-        }/>}
+        {error && <ErrorMessage message={error} onClose={() => setError(null)}/>}
       </div>
     </div>
   );
