@@ -5,7 +5,6 @@ import { Repository } from 'typeorm';
 // Entidades
 import { Proyeccion } from './entities/proyeccion.entity';
 import { Semestre } from './entities/semestre.entity';
-import { Asignaturas } from './entities/asignatura.entity';
 
 // DTOs
 import { CreacionProyeccion } from './DtoProyeccion/CreacionProyeccion';
@@ -38,8 +37,6 @@ export class ProyeccionService
         private proyeccionRepository: Repository<Proyeccion>,
         @InjectRepository(Semestre)
         private semestreRepository: Repository<Semestre>,
-        @InjectRepository(Asignaturas)
-        private asignaturaRepository: Repository<Asignatura>,
         @InjectRepository(InstanciaAsignatura) private instanciaRepository: Repository<InstanciaAsignatura>
         
     ) {}
@@ -57,16 +54,7 @@ export class ProyeccionService
         try 
         {
 
-            const catalogoEntidades = this.mapper.toPersistenceCatalog(estado.mallaCompleta);
-
-            await queryRunner.manager.createQueryBuilder()
-                .insert()
-                .into(Asignaturas)
-                .values(catalogoEntidades)
-                .orIgnore()
-                .execute();
-
-            const semestresAvance = this.mapper.avanceToPersistence(estado.avancePorPeriodo);
+            const semestresAvance = this.mapper.avanceToPersistence(estado.avancePorPeriodo, codigoCarrera);
 
             const ultimoSemestreAvance = semestresAvance[semestresAvance.length - 1];
             let siguienteNumero = ultimoSemestreAvance.numero;
@@ -75,7 +63,7 @@ export class ProyeccionService
                 siguienteNumero++;
             }
             
-            const semestresFuturo = this.mapper.futureToPersistence(mapaFuturo, siguienteNumero);
+            const semestresFuturo = this.mapper.futureToPersistence(mapaFuturo, siguienteNumero, codigoCarrera);
             const todosLosSemestres = semestresAvance.concat(semestresFuturo);
 
             const nuevaProyeccion = queryRunner.manager.create(Proyeccion, {
@@ -145,11 +133,7 @@ export class ProyeccionService
         const estado = await this.studentFacade.obtenerEstadoAcademico(rut, codigoCarrera, catalogo);
 
         // Mapper: Convertir solo avance
-        const semestresDto = this.mapper.avanceToPersistence(estado.avancePorPeriodo);
-        
-        // Repo: Guardar catálogo y proyección
-        const catalogoEntidades = this.mapper.toPersistenceCatalog(estado.mallaCompleta);
-        await this.guardarCatalogoAsignaturas(catalogoEntidades);
+        const semestresDto = this.mapper.avanceToPersistence(estado.avancePorPeriodo, codigoCarrera);
 
         const nuevaProyeccion = this.proyeccionRepository.create({
             rutUsuario: rut,
@@ -182,66 +166,7 @@ export class ProyeccionService
         if (!proyeccion) throw new NotFoundException(`Proyección ${idProyeccion} no encontrada.`);
 
         return this.mapper.toResponse(proyeccion);
-    } 
-
-    private async guardarCatalogoAsignaturas(asignaturasDto: any[]) 
-    {
-        const entidades = this.asignaturaRepository.create(asignaturasDto);
-        await this.asignaturaRepository.createQueryBuilder()
-            .insert().into(Asignaturas).values(entidades)
-            .orIgnore().execute();
     }
-
-    // private async guardarProyeccionCompleta(
-    //     avanceMap: Map<string, AvanceConAsignatura[]>, 
-    //     futuroMap: Map<string, Asignatura[]>, 
-    //     rut: string, 
-    //     dto: CreacionProyeccion
-    // ): Promise<number> {
-        
-    //     // 1. Usar Mapper para convertir el Avance
-    //     const semestresAvance = this.mapper.avanceToPersistence(avanceMap);
-
-    //     // 2. Calcular número de semestre para continuar
-    //     const ultimoSemestreAvance = semestresAvance[semestresAvance.length - 1];
-    //     let siguienteNumero = ultimoSemestreAvance.numero;
-        
-    //     // (Tu lógica original de saltar veranos para el contador)
-    //     const tipoSemestre = ultimoSemestreAvance.periodo.slice(4, 6);
-    //     if (tipoSemestre !== '15' && tipoSemestre !== '25') {
-    //         siguienteNumero++;
-    //     }
-
-    //     // 3. Usar Mapper para convertir el Futuro
-    //     const semestresFuturo = this.mapper.futureToPersistence(futuroMap, siguienteNumero);
-
-    //     // 4. Unir y Guardar
-    //     const todosLosSemestres = semestresAvance.concat(semestresFuturo);
-        
-    //     const entidad = this.proyeccionRepository.create({
-    //         rutUsuario: rut,
-    //         ideal: dto.ideal,
-    //         nombreProyeccion: dto.nombreProyeccion,
-    //         semestres: todosLosSemestres,
-    //     });
-    //     try
-    //     {
-    //         const guardada = await this.proyeccionRepository.save(entidad);
-    //         return guardada.idProyeccion;
-    //     }
-    //     catch (error) 
-    //     {
-    //         if (error.code === '23505') 
-    //         {
-    //             throw new ConflictException(
-    //                 `Ya existe una proyección con el nombre "${dto.nombreProyeccion}". Por favor elige otro.`
-    //             );
-    //         }
-        
-    //         console.error(error);
-    //         throw new InternalServerErrorException('Error al guardar la proyección');
-    //     }
-    // }
 
     async obtenerEstadisticas(periodo: string) 
     {

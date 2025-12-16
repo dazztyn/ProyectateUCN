@@ -26,6 +26,6 @@ export class AvanceController
         }
         
         const carrera = usuario.carreras[index];
-        return this.avance.getAvance(usuario.rut, carrera.codigo, carrera.catalogo);
+        return this.avance.obtenerAvanceDesdeBD(usuario.rut, carrera.codigo);
     }
 }

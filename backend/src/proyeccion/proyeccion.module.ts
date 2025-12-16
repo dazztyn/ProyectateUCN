@@ -6,7 +6,7 @@ import { MallaModule } from '../mallacurricular/malla/malla.module.js';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Proyeccion } from './entities/proyeccion.entity.js';
 import { Semestre } from './entities/semestre.entity.js';
-import { Asignaturas } from './entities/asignatura.entity.js';
+import { Asignaturas } from '../mallacurricular/entities/asignatura.entity.js';
 import { InstanciaAsignatura } from './entities/InstanciaAsignatura.entity.js';
 import { AcademicUtilsService } from '../ArchivosComunes/AcademicUtilsService.js';
 import { StudentDataFacade } from './StudentDataFacade.js';

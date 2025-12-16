@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { Semestre } from './semestre.entity';
-import { Asignaturas } from './asignatura.entity';
+import { Asignaturas } from '../../mallacurricular/entities/asignatura.entity';
 
 @Entity('instancias_asignaturas')
 export class InstanciaAsignatura {

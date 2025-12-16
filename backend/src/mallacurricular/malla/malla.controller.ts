@@ -28,6 +28,6 @@ export class MallaController
 
         const carrera = usuario.carreras[index];
 
-        return this.malla.getMalla(carrera.codigo, carrera.catalogo);
+        return this.malla.obtenerMallaDesdeBD(carrera.codigo);
     }
 }

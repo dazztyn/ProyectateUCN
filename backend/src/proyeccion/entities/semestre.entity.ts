@@ -7,6 +7,9 @@ export class Semestre {
   @PrimaryGeneratedColumn()
   idSemestre: number;
 
+  @Column({ type: 'boolean', nullable: false })
+  editable: boolean;
+
   @Column({ type: 'int', nullable: false })
   numero: number;
 

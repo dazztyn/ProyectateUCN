@@ -5,6 +5,8 @@ import { ErrorResponse } from '../../ArchivosComunes/ErrorResponse.js';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RolUsuario } from './entities/rol-usuario.entity.js';
+import { AvanceService } from '../../avance/avance/avance.service.js';
+import { MallaService } from '../../mallacurricular/malla/malla.service.js';
 
 @Injectable()
 export class AuthService 
@@ -13,6 +15,8 @@ export class AuthService
         private readonly jwtService: JwtService,
         @InjectRepository(RolUsuario)
         private readonly rolUsuarioRepository: Repository<RolUsuario>,
+        private readonly avanceService: AvanceService,
+        private readonly mallaService: MallaService,
     ) {}
 
     async fetchloginData(email: string, password: string): Promise<Usuario> 
@@ -83,6 +87,26 @@ async login(email: string, password: string)
         try
         {
             const alumno = await this.fetchloginData(email, password);
+
+            if (alumno.carreras && alumno.carreras.length > 0) 
+            {
+                await Promise.all(alumno.carreras.map(async (carrera) => {
+                    try {
+                        console.log(`Sincronizando datos para carrera ${carrera.codigo}...`);
+                        
+                        // Ejecutamos AMBAS sincronizaciones en paralelo para esa carrera
+                        await Promise.all([
+                            this.avanceService.sincronizarAvanceFull(alumno.rut, carrera.codigo, carrera.catalogo),
+                            this.mallaService.sincronizarMalla(carrera.codigo, carrera.catalogo) // 👈 NUEVA LÍNEA
+                        ]);
+                        
+                    } catch (syncError) {
+                        console.error(`Error sincronizando carrera ${carrera.codigo}:`, syncError);
+                        // No lanzamos error para permitir que el login continúe aunque falle la sync de fondo
+                    }
+                }));
+            }
+
             const payload = {
                 rut: alumno.rut, 
                 carreras: alumno.carreras,

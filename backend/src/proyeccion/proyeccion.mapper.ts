@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { Asignatura } from '../ArchivosComunes/Asignatura.js';
-import { AvanceConAsignatura } from '../avance/avance/AvanceConAsignatura.js';
+import { AvancePlano } from './interfaces/EstadoAcademico.js';
 import { CreacionSemestre } from './DtoProyeccion/CreacionSemestre.js';
 import { CreacionInstanciaAsignatura } from './DtoProyeccion/CreacionInstanciaAsignatura.js';
-import { CreacionAsignatura } from './DtoProyeccion/CreacionAsignatura.js';
+import { CreacionAsignatura } from '../mallacurricular/dtoMallaCurricular/CreacionAsignatura.js';
 import { Proyeccion } from './entities/proyeccion.entity';
 import { ResponseProyeccionDto, ResponseSemestreDto } from './DtoProyeccion/ResponseProyeccion.dto';
 import { ResponseProyeccionResumenDto } from './DtoProyeccion/ResponseProyeccionResumenDto.js';
@@ -13,13 +13,14 @@ export class ProyeccionMapper {
     /**
      * Convierte la Malla (Asignatura[]) a DTOs para guardar en BD (CreacionAsignatura[])
      */
-    toPersistenceCatalog(malla: Asignatura[]): CreacionAsignatura[] {
+    toPersistenceCatalog(malla: Asignatura[], codigoCarrera: string): CreacionAsignatura[] {
         return malla.map(asig => ({
             codigoAsignatura: asig.codigo,
+            codigoCarrera: codigoCarrera,
             nombreAsignatura: asig.asignatura,
             creditos: asig.creditos,
             nivel: asig.nivel,
-            prerrequisitos: asig.prereq
+            prerrequisitos: Array.isArray(asig.prereq) ? asig.prereq.join(',') : asig.prereq
         }));
     }
 
@@ -27,7 +28,7 @@ export class ProyeccionMapper {
      * Convierte el Mapa de Avance Histórico a un Array de Semestres para TypeORM.
      * Incluye la lógica de numeración de semestres (saltando veranos y invierno 25/15).
      */
-    avanceToPersistence(avanceMap: Map<string, AvanceConAsignatura[]>): CreacionSemestre[] {
+    avanceToPersistence(avanceMap: Map<string, AvancePlano[]>, codigoCarrera: string): CreacionSemestre[] {
         let numeroSemestre = 1;
         const arraySemestres: CreacionSemestre[] = [];
 
@@ -39,18 +40,21 @@ export class ProyeccionMapper {
             
             let creditosTotales = 0;
             const instancias: CreacionInstanciaAsignatura[] = asignaturas.map(item => {
-                const asig = item.getCourse();
-                creditosTotales += asig.creditos;
-
+                creditosTotales += item.creditos;
                 return {
-                    estado: item.getStatus(),
-                    asignatura: { codigoAsignatura: asig.codigo }
+                    estado: item.estado, 
+                    asignatura: 
+                    { 
+                        codigoAsignatura: item.codigo,
+                        codigoCarrera: codigoCarrera
+                    } 
                 };
             });
 
             arraySemestres.push({
                 numero: numeroSemestre,
                 periodo: periodo,
+                editable: false,
                 totalCreditos: creditosTotales,
                 instancias: instancias
             });
@@ -68,7 +72,7 @@ export class ProyeccionMapper {
      * Convierte el Mapa de Proyección Futura a un Array de Semestres para TypeORM.
      * Continúa la numeración desde el último semestre del avance.
      */
-    futureToPersistence(futureMap: Map<string, Asignatura[]>, ultimoNumeroSemestre: number): CreacionSemestre[] {
+    futureToPersistence(futureMap: Map<string, Asignatura[]>, ultimoNumeroSemestre: number, codigoCarrera: string): CreacionSemestre[] {
         let numeroSemestre = ultimoNumeroSemestre;
         const arraySemestres: CreacionSemestre[] = [];
         
@@ -83,13 +87,18 @@ export class ProyeccionMapper {
                 creditosTotales += asig.creditos;
                 return {
                     estado: 'PENDIENTE', // En el futuro asumimos pendiente
-                    asignatura: { codigoAsignatura: asig.codigo }
+                    asignatura: 
+                    {
+                        codigoAsignatura: asig.codigo,
+                        codigoCarrera: codigoCarrera 
+                    }
                 };
             });
 
             arraySemestres.push({
                 numero: numeroSemestre,
                 periodo: periodo,
+                editable: true,
                 totalCreditos: creditosTotales,
                 instancias: instancias
             });

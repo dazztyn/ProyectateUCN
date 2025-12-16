@@ -7,11 +7,15 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './jwt.strategy.js';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { RolUsuario } from './entities/rol-usuario.entity.js';
+import { AvanceModule } from '../../avance/avance/avance.module';
+import { MallaModule } from '../../mallacurricular/malla/malla.module';
 
 @Module({
   imports: [
     ConfigModule,
     PassportModule,
+    AvanceModule,
+    MallaModule,
     TypeOrmModule.forFeature([RolUsuario]),
     JwtModule.registerAsync({
       imports: [ConfigModule],

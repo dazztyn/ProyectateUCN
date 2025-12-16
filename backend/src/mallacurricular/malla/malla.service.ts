@@ -2,11 +2,17 @@ import { Injectable } from '@nestjs/common';
 import { Asignatura } from '../../ArchivosComunes/Asignatura';
 import { RamoInfo } from '../../ArchivosComunes/RamoInfo';
 import { AcademicUtilsService } from '../../ArchivosComunes/AcademicUtilsService';
+import { Asignaturas } from '../entities/asignatura.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class MallaService 
 {
-    constructor(private readonly academicUtils: AcademicUtilsService) {}
+    constructor(private readonly academicUtils: AcademicUtilsService,
+        @InjectRepository(Asignaturas)
+        private readonly asignaturaRepo: Repository<Asignaturas>,
+    ) {}
 
     async fetchMallaCarrera(codigoCarrera: string, catalogo: string): Promise<Asignatura[]>
     {
@@ -37,48 +43,75 @@ export class MallaService
             throw error;
         }
     }
-    
-    private agregarListaDeAsignaturasQueAbre(mallaPorNiveles: Map<number, Asignatura[]>, mallaCompleta: Asignatura[])
+ 
+    //Sincronizar (API -> BD)
+    async sincronizarMalla(codigoCarrera: string, catalogo: string): Promise<void> 
     {
-        let nuevaMalla: Map<number, RamoInfo[]> = new Map<number, RamoInfo[]>();
+        // A. Descargamos la data fresca
+        const mallaApi = await this.fetchMallaCarrera(codigoCarrera, catalogo);
 
-        // Usamos utils para obtener los grafos pre-calculados
-        const grafoApertura = this.academicUtils.construirGrafoDeApertura(mallaCompleta);
-        const grafoPrerrequisitos = this.academicUtils.obtenerObjetosPrerrequisitos(mallaCompleta);
+        // B. Convertimos de Interfaz (Asignatura) a Entidad (Asignaturas)
+        // Ojo con el cambio de nombre: prereq -> prerrequisitos
+        const entidadesAGuardar = mallaApi.map(ramo => {
+            return this.asignaturaRepo.create({
+                codigoAsignatura: ramo.codigo,
+                codigoCarrera: codigoCarrera,
+                nombreAsignatura: ramo.asignatura, // nombre en interfaz es 'asignatura'
+                creditos: ramo.creditos,
+                nivel: ramo.nivel,
+                prerrequisitos: ramo.prereq // Mapeo manual
+            });
+        });
 
-        let nuevaListaRamos: RamoInfo[] = [];
-
-        for (const [nivel, asignaturas] of mallaPorNiveles.entries())
-        {
-            for(let asig of asignaturas)
-            {
-                const nuevoRamo = new RamoInfo(asig.codigo, asig.asignatura, asig.creditos, asig.nivel);
-                
-                // Obtenemos la info directamente de los mapas generados por utils
-                const listaDeAsignaturasQueAbre = grafoApertura.get(asig.codigo) || [];
-                const listaPrerrequisitos = grafoPrerrequisitos.get(asig.codigo) || [];
-                
-                nuevoRamo.rellenarAsignaturasQueAbre(listaDeAsignaturasQueAbre);
-                nuevoRamo.rellenarPrerrequisitos(listaPrerrequisitos);
-                
-                nuevaListaRamos.push(nuevoRamo);
-            }
-            nuevaMalla.set(nivel, nuevaListaRamos);
-            nuevaListaRamos = [];
+        // C. Guardar (Upsert)
+        // TypeORM detecta por la PrimaryKey (codigoAsignatura). 
+        // Si existe, actualiza. Si no, inserta.
+        if (entidadesAGuardar.length > 0) {
+            await this.asignaturaRepo.save(entidadesAGuardar);
+            console.log(`✅ Malla sincronizada: ${entidadesAGuardar.length} asignaturas guardadas.`);
         }
-        return nuevaMalla;
     }
 
-    async getMalla(codigoCarrera: string, catalogo: string)
+    async obtenerMallaRaw(codigoCarrera: string): Promise<Asignatura[]> 
     {
-        const malla = await this.fetchMallaCarrera(codigoCarrera, catalogo);
+        // Si tienes varias carreras, aquí podrías filtrar con un where: { codigoCarrera } si agregas esa columna.
+        const asignaturasBD = await this.asignaturaRepo.find({
+            where: { codigoCarrera: codigoCarrera } 
+        }); 
 
-        // Usamos utils para agrupar por nivel
-        let mallaSeparada = this.academicUtils.agruparPor(malla, (a) => a.nivel);
-    
-        // Pasamos tanto la malla agrupada como la completa para los cálculos de grafos
-        const mallaInfo = this.agregarListaDeAsignaturasQueAbre(mallaSeparada, malla);
-
-        return Object.fromEntries(mallaInfo);
+        // Convertimos Entidad -> Interfaz Plana
+        return asignaturasBD.map(entidad => ({
+            codigo: entidad.codigoAsignatura,
+            asignatura: entidad.nombreAsignatura,
+            creditos: entidad.creditos,
+            nivel: entidad.nivel,
+            prereq: entidad.prerrequisitos // String
+        }));
     }
+
+    // 3. NUEVO: Leer de BD (BD -> Interfaz)
+    async obtenerMallaDesdeBD(codigoCarrera: string) // Quité el Promise<Asignatura[]> estricto para permitir el formato rico
+    {
+        const listaPlana = await this.obtenerMallaRaw(codigoCarrera);
+
+        const grafoApertura = this.academicUtils.construirGrafoDeApertura(listaPlana);
+
+        const listaEnriquecida = listaPlana.map(ramo => {
+            
+            const prereqArray = ramo.prereq && ramo.prereq.length > 0 
+                ? ramo.prereq.split(',') 
+                : [];
+
+            return {
+                ...ramo, 
+                prereq: prereqArray,
+                asignaturasQueAbre: grafoApertura.get(ramo.codigo) || []
+            };
+        });
+
+        const mallaAgrupada = this.academicUtils.agruparPor(listaEnriquecida, (ramo) => ramo.nivel);
+
+        return Object.fromEntries(mallaAgrupada);
+    }
+    
 }
