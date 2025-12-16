@@ -156,6 +156,120 @@ export class ProyeccionService
         }
     }
 
+    /**
+     * Toma una proyección existente (manual o incompleta) y la rellena hasta el final
+     * usando el algoritmo Greedy.
+     */
+    async autocompletarProyeccion(idProyeccion: number, catalogoCarrera: string)
+    {
+        // 1. Recuperar la Proyección Manual desde la BD
+        // Necesitamos cargar las relaciones para ver qué puso el usuario
+        const proyeccionExistente = await this.proyeccionRepository.findOne({
+            where: { idProyeccion },
+            relations: ['semestres', 'semestres.instancias', 'semestres.instancias.asignatura']
+        });
+
+        if (!proyeccionExistente) throw new NotFoundException("Proyección no encontrada");
+
+        // 2. Obtener el Estado Académico REAL (Base)
+        // Esto trae su historial real (Avance) y la Malla
+        const estado = await this.studentFacade.obtenerEstadoAcademico(
+            proyeccionExistente.rutUsuario, 
+            proyeccionExistente.codigoCarrera, 
+            catalogoCarrera // Ojo: Aquí deberías tener el catálogo guardado en la proyección o sacarlo de algún lado
+        );
+
+        // =====================================================================
+        // 🧠 EL TRUCO: FUSIONAR REALIDAD + FICCIÓN MANUAL
+        // =====================================================================
+        
+        // Vamos a modificar el 'estado' en memoria para engañar al algoritmo Greedy
+        
+        let ultimoPeriodoManual = estado.ultimoPeriodo;
+
+        if (proyeccionExistente.semestres) {
+            // Ordenamos los semestres manuales cronológicamente
+            const semestresOrdenados = proyeccionExistente.semestres.sort((a, b) => a.numero - b.numero);
+
+            for (const semestre of semestresOrdenados) {
+                // Actualizamos el último periodo para que Greedy arranque DESPUÉS de esto
+                // (Solo si el semestre manual es futuro respecto al avance real)
+                if (semestre.periodo > ultimoPeriodoManual) {
+                    ultimoPeriodoManual = semestre.periodo;
+                }
+
+                // Agregamos los ramos manuales al Set de "Aprobados"
+                // Así Greedy sabe que prerequisitos ya se cumplieron y no sugiere estos ramos de nuevo.
+                if (semestre.instancias) {
+                    for (const instancia of semestre.instancias) {
+                        estado.asignaturasAprobadas.add(instancia.asignatura.codigoAsignatura);
+                    }
+                }
+            }
+        }
+
+        // Le decimos al estado: "Tu punto de partida ahora es el final de lo que el usuario editó"
+        estado.ultimoPeriodo = ultimoPeriodoManual;
+
+        // =====================================================================
+        // 3. EJECUTAR ALGORITMO (AUTOCOMPLETADO)
+        // =====================================================================
+        
+        // Ahora Greedy cree que el alumno ya cursó lo manual y calculará el resto
+        const estrategia: IProyeccionStrategy = new GreedyProjectionStrategy(estado);
+        const mapaFuturo = estrategia.generar(estado); // Genera solo lo que falta
+
+        // =====================================================================
+        // 4. GUARDAR LOS NUEVOS SEMESTRES
+        // =====================================================================
+
+        // Calculamos el número de semestre para continuar la numeración
+        const ultimoSemestreDb = proyeccionExistente.semestres.sort((a,b) => b.numero - a.numero)[0];
+        let siguienteNumero = ultimoSemestreDb ? ultimoSemestreDb.numero : 1;
+        
+        // Ajuste de lógica de saltar semestre si corresponde (tu lógica de veranos)
+        const tipoSemestre = ultimoPeriodoManual.slice(4, 6);
+        if (tipoSemestre !== '15' && tipoSemestre !== '25') {
+            siguienteNumero++;
+        }
+
+        // Convertimos el mapa del algoritmo a Entidades (usando tu Mapper)
+        // OJO: Aquí pasamos el codigoCarrera que recuperamos de la proyección misma
+        const nuevosSemestres = this.mapper.futureToPersistence(
+            mapaFuturo, 
+            siguienteNumero, 
+            proyeccionExistente.codigoCarrera
+        );
+
+        // Guardamos los nuevos semestres y los vinculamos a la proyección existente
+        // No borramos lo anterior, solo ANEXAMOS lo nuevo.
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+
+        try {
+            for (const semDto of nuevosSemestres) {
+
+                const nuevoSemestreEntidad = queryRunner.manager.create(Semestre, semDto);
+
+                nuevoSemestreEntidad.proyeccion = proyeccionExistente; 
+                
+                await queryRunner.manager.save(Semestre, nuevoSemestreEntidad);
+            }
+
+            await queryRunner.commitTransaction();
+            
+            return this.obtenerProyeccionCompleta(idProyeccion);
+
+        } catch (error) {
+            await queryRunner.rollbackTransaction();
+            console.error(error);
+            throw new InternalServerErrorException("Error al autocompletar la proyección");
+        } finally {
+            await queryRunner.release();
+        }
+    }
+
     async obtenerProyeccionCompleta(idProyeccion: number)
     {
         const proyeccion = await this.proyeccionRepository.findOne({

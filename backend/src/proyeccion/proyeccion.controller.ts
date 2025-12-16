@@ -55,6 +55,28 @@ export class ProyeccionController
         return this.proyeccion.proyeccionFutura(usuario.rut, carrera.codigo, carrera.catalogo, proyeccion);
     }
 
+    @Patch('/autocompletar/:idProyeccion/:indiceCarrera')
+    autocompletarProyeccion
+    (
+        @Req() request: Request,
+        @Param('idProyeccion') idProyeccion: string,
+        @Param('indiceCarrera') indiceCarrera: string
+    )
+    {
+        const usuario = request.user as Usuario;
+
+        const index = parseInt(indiceCarrera, 10);
+
+        if (isNaN(index) || !usuario.carreras || !usuario.carreras[index]) 
+        {
+            throw new BadRequestException(`El índice de carrera ${index} no es válido.`);
+        }
+
+        const carrera = usuario.carreras[index];
+
+        return this.proyeccion.autocompletarProyeccion(parseInt(idProyeccion, 10), carrera.catalogo);
+    }
+
     @Get('/obtenerProyecciones/:indiceCarrera')
     obtenerProyecciones
     (

@@ -12,15 +12,8 @@ export class StudentDataFacade {
         private readonly academicUtils: AcademicUtilsService
     ) {}
 
-    async obtenerEstadoAcademico(rut: string, codigoCarrera: string, catalogo: string): Promise<EstadoAcademico> {
-
-        console.log("[Facade] Iniciando sincronización en segundo plano...");
-        
-        await Promise.all([
-            this.avanceService.sincronizarAvanceFull(rut, codigoCarrera, catalogo),
-            this.mallaService.sincronizarMalla(codigoCarrera, catalogo)
-        ]);
-
+    async obtenerEstadoAcademico(rut: string, codigoCarrera: string, catalogo: string): Promise<EstadoAcademico> 
+    {
         // =========================================================
         // 2. FASE DE LECTURA (Leer de BD a velocidad luz ⚡)
         // =========================================================
