@@ -373,25 +373,6 @@ export class ProyeccionService
         return this.mapper.toResponse(proyeccion);
     }
 
-    async obtenerEstadisticas(periodo: string) 
-    {
-        const resultado = await this.instanciaRepository
-            .createQueryBuilder('instancia')
-            .leftJoin('instancia.semestre', 'semestre') 
-            .leftJoinAndSelect('instancia.asignatura', 'asignatura') 
-            .select('asignatura.nombreAsignatura', 'nombre') 
-            .addSelect('asignatura.codigoAsignatura', 'codigo') 
-            .addSelect('COUNT(instancia.id)', 'total')
-            .where('semestre.periodo = :periodo', { periodo })
-            .groupBy('asignatura.codigoAsignatura') 
-            .addGroupBy('asignatura.nombreAsignatura') 
-            .orderBy('total', 'DESC')
-            .limit(20)
-            .getRawMany(); 
-
-        return resultado;
-    }
-
     private fusionarEstadoConProyeccion(estado: EstadoAcademico, proyeccion: Proyeccion, hastaSemestreNumero?: number): void 
     {
         if (!proyeccion.semestres || proyeccion.semestres.length === 0) return;

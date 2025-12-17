@@ -199,13 +199,4 @@ export class ProyeccionController
         );
     }
 
-    @Get('/estadisticas/:periodo')
-    getEstadisticas
-    (
-        @Param('periodo') periodo: string
-    ) 
-    {
-        return this.proyeccion.obtenerEstadisticas(periodo);
-    }
-
 }

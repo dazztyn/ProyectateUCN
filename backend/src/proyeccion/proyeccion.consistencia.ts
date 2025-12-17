@@ -106,9 +106,7 @@ export class ProyeccionConsistencyService {
             await queryRunner.release();
         }
     }
-
-    // --- MÉTODOS PRIVADOS (Encapsulamiento de lógica pura) ---
-
+    
     private calcularNivelMasAtrasado(malla: Asignatura[], aprobados: Set<string>): number {
         for (const ramo of malla) {
             if (!aprobados.has(ramo.codigo)) return ramo.nivel;
