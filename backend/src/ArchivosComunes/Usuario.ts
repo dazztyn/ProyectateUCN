@@ -1,4 +1,4 @@
-import { Carrera } from "src/ArchivosComunes/Carrera";
+import { Carrera } from "../ArchivosComunes/Carrera";
 
 export interface Usuario
 {

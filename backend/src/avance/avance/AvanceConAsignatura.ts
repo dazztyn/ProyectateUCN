@@ -1,4 +1,4 @@
-import { Asignatura } from "src/ArchivosComunes/Asignatura.js";
+import { Asignatura } from "../../ArchivosComunes/Asignatura.js";
 
 
 export class AvanceConAsignatura
