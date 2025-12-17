@@ -21,7 +21,38 @@ const CompSelectProyeccion: React.FC<Props> = ({ indice, access_token})  => {
 
   const navigate = useNavigate();
   const [error, setError] = React.useState<string | null>(null);
+  const handleDeleteProjection = async (e: React.MouseEvent, proyeccionId: number) => {
+  e.stopPropagation();
 
+  const proy = proyecciones.find(p => p.id === proyeccionId);
+  const confirmar = window.confirm(`¿Estás seguro de que deseas eliminar la proyección "${proy?.nombre}"?`);
+  
+  if (!confirmar) return;
+
+  setError(null);
+  try {
+    const resp = await fetch(
+      `http://localhost:3000/proyeccion/eliminarProyeccion/${proyeccionId}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+        },
+      }
+    );
+
+    if (!resp.ok) throw new Error("No se pudo eliminar la proyección");
+    setProyecciones(prev => prev.filter(p => p.id !== proyeccionId));
+
+    if (selectedProyeccionId === proyeccionId) {
+      setSelectedProyeccionId(null);
+    }
+
+  } catch (e) {
+    console.error(e);
+    setError("Error al intentar eliminar la proyección.");
+  }
+};
   const handleCreateProjection = async () => {
     setError('');
 
@@ -158,17 +189,28 @@ const CompSelectProyeccion: React.FC<Props> = ({ indice, access_token})  => {
           {!loadingProyecciones && proyecciones.length === 0 && <li>No hay proyecciones guardadas.</li>}
           
           {proyecciones.map(proy => (
-            <li 
-              key={proy.id} 
-              className={selectedProyeccionId === proy.id ? 'seleccionada' : ''}
-              onClick={() => {
-                setSelectedProyeccionId(proy.id);
-                setOpen(false); 
-              }}
-            >
-              {proy.nombre} {proy.esIdeal ? "(Mejor Caso)" : ""}
-            </li>
-          ))}
+  <li 
+    key={proy.id} 
+    className={`item-proyeccion-lista ${selectedProyeccionId === proy.id ? 'seleccionada' : ''}`}
+    onClick={() => {
+      setSelectedProyeccionId(proy.id);
+      setOpen(false); 
+    }}
+  >
+    <span className="texto-proy-item">
+      {proy.nombre} {proy.esIdeal ? "(Mejor Caso)" : ""}
+    </span>
+
+    {/* BOTÓN DE ELIMINAR */}
+    <button 
+      className="btn-delete-lista" 
+      onClick={(e) => handleDeleteProjection(e, proy.id)}
+      title="Eliminar proyección"
+    >
+      🗑️
+    </button>
+  </li>
+))}
         </ul>
         <div 
             className="botonGo-proy" 

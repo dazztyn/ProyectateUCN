@@ -227,6 +227,21 @@ const PagEditor = () => {
   }, [malla]);
 
   const handleAddAsignatura = (asignatura: AsignaturaDisponible) => {
+
+    const semActual = malla.find(s => s.numero === seleccionado);
+    if (!semActual || !semActual.editable) {
+        alert("No puedes añadir asignaturas a un semestre que no es editable.");
+        return;
+    }
+    if (tipoBusqueda !== 'NORMAL') {
+
+        const confirmar = window.confirm(
+            `Estás añadiendo "${asignatura.nombre}" bajo una excepción. Solo se permite una por semestre. ¿Deseas continuar?`
+        );
+        if (!confirmar) return;
+        setTipoBusqueda('NORMAL');
+    }
+
     if (seleccionado === null) {
         alert("Primero selecciona un semestre para agregar la asignatura.");
         return;
