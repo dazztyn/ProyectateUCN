@@ -14,8 +14,6 @@ import { AsignaturaInputDto } from './DtoProyeccion/GuardarSemestreDto';
 // Patrones
 import { StudentDataFacade } from './StudentDataFacade';
 import { ProyeccionMapper } from './proyeccion.mapper';
-import { IProyeccionStrategy } from './strategies/IProyeccionStrategy';
-import { GreedyProjectionStrategy } from './strategies/GreedyProjectionStrategy';
 import { ProyeccionManual } from './ProyeccionManual';
 import { ProyeccionConsistencyService } from './proyeccion.consistencia'; // 👈 Nuevo
 import { ProyeccionStrategyFactory } from './strategies/proyeccion-strategy.factory';
@@ -24,7 +22,7 @@ import { ProyeccionStrategyFactory } from './strategies/proyeccion-strategy.fact
 import { Asignatura } from '../ArchivosComunes/Asignatura';
 
 // para stats
-import { InstanciaAsignatura } from './entities/InstanciaAsignatura.entity.js';
+import { InstanciaAsignatura } from './entities/InstanciaAsignatura.entity';
 
 //para transacciones
 import { DataSource } from 'typeorm';
