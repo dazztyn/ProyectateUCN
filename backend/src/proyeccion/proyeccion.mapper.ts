@@ -10,9 +10,6 @@ import { ResponseProyeccionResumenDto } from './DtoProyeccion/ResponseProyeccion
 @Injectable()
 export class ProyeccionMapper {
 
-    /**
-     * Convierte la Malla (Asignatura[]) a DTOs para guardar en BD (CreacionAsignatura[])
-     */
     toPersistenceCatalog(malla: Asignatura[], codigoCarrera: string): CreacionAsignatura[] {
         return malla.map(asig => ({
             codigoAsignatura: asig.codigo,
@@ -24,15 +21,10 @@ export class ProyeccionMapper {
         }));
     }
 
-    /**
-     * Convierte el Mapa de Avance Histórico a un Array de Semestres para TypeORM.
-     * Incluye la lógica de numeración de semestres (saltando veranos y invierno 25/15).
-     */
     avanceToPersistence(avanceMap: Map<string, AvancePlano[]>, codigoCarrera: string): CreacionSemestre[] {
         let numeroSemestre = 1;
         const arraySemestres: CreacionSemestre[] = [];
 
-        // Ordenamos por periodo para asegurar secuencia cronológica
         const periodosOrdenados = Array.from(avanceMap.keys()).sort();
 
         for (const periodo of periodosOrdenados) {
@@ -59,7 +51,6 @@ export class ProyeccionMapper {
                 instancias: instancias
             });
 
-            // Lógica de incremento de semestre (No incrementa en veranos 15/25)
             const tipoSemestre = periodo.slice(4, 6);
             if (tipoSemestre !== '15' && tipoSemestre !== '25') {
                 numeroSemestre++;
@@ -68,15 +59,11 @@ export class ProyeccionMapper {
         return arraySemestres;
     }
 
-    /**
-     * Convierte el Mapa de Proyección Futura a un Array de Semestres para TypeORM.
-     * Continúa la numeración desde el último semestre del avance.
-     */
     futureToPersistence(futureMap: Map<string, Asignatura[]>, ultimoNumeroSemestre: number, codigoCarrera: string): CreacionSemestre[] {
         let numeroSemestre = ultimoNumeroSemestre;
         const arraySemestres: CreacionSemestre[] = [];
         
-        // Ordenamos por periodo
+ 
         const periodosOrdenados = Array.from(futureMap.keys()).sort();
 
         for (const periodo of periodosOrdenados) {
@@ -86,7 +73,7 @@ export class ProyeccionMapper {
             const instancias: CreacionInstanciaAsignatura[] = asignaturas.map(asig => {
                 creditosTotales += asig.creditos;
                 return {
-                    estado: 'PENDIENTE', // En el futuro asumimos pendiente
+                    estado: 'PENDIENTE',
                     asignatura: 
                     {
                         codigoAsignatura: asig.codigo,
@@ -108,11 +95,8 @@ export class ProyeccionMapper {
         return arraySemestres;
     }
 
-    /**
-     * Convierte una Entidad de BD a un DTO de Respuesta limpio para el Frontend
-     */
+
     toResponse(entidad: Proyeccion): ResponseProyeccionDto {
-        // Ordenamos semestres por si la BD los trae desordenados
         const semestresOrdenados = entidad.semestres 
             ? entidad.semestres.sort((a, b) => a.numero - b.numero) 
             : [];
@@ -141,9 +125,7 @@ export class ProyeccionMapper {
         };
     }
 
-    /**
-     * Versión para listas (Arrays)
-     */
+
     toResponseList(entidades: Proyeccion[]): ResponseProyeccionDto[] {
         return entidades.map(entidad => this.toResponse(entidad));
     }

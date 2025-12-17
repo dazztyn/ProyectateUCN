@@ -1,6 +1,5 @@
 
 import { Module } from '@nestjs/common';
-import { AlumnoModule } from './alumno/alumno/alumno.module.js';
 import { MallaModule } from './mallacurricular/malla/malla.module.js';
 import { AuthModule } from './auth/auth/auth.module.js';
 import { AvanceModule } from './avance/avance/avance.module.js';
@@ -27,7 +26,6 @@ import { ProyeccionModule } from './proyeccion/proyeccion.module.js';
         migrations: ['dist/migrations/*.js'],
       }),
     }),
-    AlumnoModule,
     MallaModule,
     AuthModule,
     AvanceModule,

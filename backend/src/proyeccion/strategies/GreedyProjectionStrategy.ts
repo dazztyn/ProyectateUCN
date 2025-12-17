@@ -6,16 +6,14 @@ export class GreedyProjectionStrategy implements IProyeccionStrategy
 {
     
     private malla: Map<number, Asignatura[]>;
-    // Usamos el grafo que ya viene calculado en el EstadoAcademico
     private grafoPrerrequisitos: Map<string, Asignatura[]>;
     private asignaturasAprobadas: Set<string>;
     private periodoActual: string;
 
-    // Ya no pasamos todo suelto, pasamos el objeto de contexto
     constructor(estado: EstadoAcademico) 
     {
         this.asignaturasAprobadas = new Set(estado.asignaturasAprobadas);
-        this.grafoPrerrequisitos = estado.grafoPrerrequisitos; // Usamos el grafo del facade
+        this.grafoPrerrequisitos = estado.grafoPrerrequisitos; 
         this.periodoActual = estado.ultimoPeriodo;
         this.malla = this.eliminarAsignaturasAprobadasDeMalla(estado.mallaPorNiveles);
     }
@@ -35,12 +33,11 @@ export class GreedyProjectionStrategy implements IProyeccionStrategy
             }
             else 
             {
-                // Si no podemos inscribir nada pero queda malla, hay un bloqueo (ciclo o error de datos)
+                
                 console.warn("Bloqueo detectado o fin de asignaturas disponibles.");
                 break;
             }
 
-            // Simular aprobación
             asignaturasDelSemestre.forEach(a => this.asignaturasAprobadas.add(a.codigo));
             this.malla = this.eliminarAsignaturasAprobadasDeMalla(this.malla);
         }
@@ -57,7 +54,7 @@ export class GreedyProjectionStrategy implements IProyeccionStrategy
         if (semestresPendientes.length === 0) return [];
 
         const semestreMasAtrasado = semestresPendientes[0];
-        // Tu lógica de mirar 2 semestres adelante
+
         const limiteSemestre = semestreMasAtrasado + 2; 
 
         let asignaturasElegibles: Asignatura[] = [];
@@ -75,7 +72,7 @@ export class GreedyProjectionStrategy implements IProyeccionStrategy
         for (const asignatura of priorizadas) 
         {
             if (creditosInscritos + asignatura.creditos <= 31) 
-            { // Límite hardcodeado (podría ser configurable)
+            {
                 semestrePlanificado.push(asignatura);
                 creditosInscritos += asignatura.creditos;
             }
@@ -89,7 +86,6 @@ export class GreedyProjectionStrategy implements IProyeccionStrategy
         return asignaturas.sort((a, b) => 
         {
             if (a.nivel !== b.nivel) return a.nivel - b.nivel;
-            // Usamos el tamaño del array de dependencias como "peso"
             const pesoA = this.grafoPrerrequisitos.get(a.codigo)?.length || 0;
             const pesoB = this.grafoPrerrequisitos.get(b.codigo)?.length || 0;
             return pesoB - pesoA;
@@ -99,7 +95,6 @@ export class GreedyProjectionStrategy implements IProyeccionStrategy
     private verificarPrerrequisitos(asignatura: Asignatura): boolean 
     {
         if (!asignatura.prereq) return true;
-        // Check simple contra el Set de aprobadas
         return asignatura.prereq.split(',').every(p => this.asignaturasAprobadas.has(p));
     }
 

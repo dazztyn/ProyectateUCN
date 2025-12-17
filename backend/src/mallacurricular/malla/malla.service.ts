@@ -58,7 +58,6 @@ export class MallaService
         });
         if (entidadesAGuardar.length > 0) {
             await this.asignaturaRepo.save(entidadesAGuardar);
-            console.log(`✅ Malla sincronizada: ${entidadesAGuardar.length} asignaturas guardadas.`);
         }
     }
 

@@ -12,10 +12,9 @@ import { ProyeccionConsistencyService } from './proyeccion.consistencia';
 import { ProyeccionStrategyFactory } from './strategies/proyeccion-strategy.factory';
 
 describe('ProyeccionService', () => {
+  
   let service: ProyeccionService;
   let facade: StudentDataFacade;
-  
-  // Variables para los Mocks
   let mockProyeccionRepo: any;
   let mockSemestreRepo: any;
   let mockInstanciaRepo: any;
@@ -24,7 +23,7 @@ describe('ProyeccionService', () => {
   let mockStrategyFactory: any;
   let mockMapper: any;
 
-  // --- CONFIGURACIÓN DE DATOS FALSOS (MOCKS) ---
+
 
   const mockFacade = {
     obtenerEstadoAcademico: jest.fn().mockResolvedValue({
@@ -46,33 +45,30 @@ describe('ProyeccionService', () => {
     toSummaryResponseList: jest.fn()
   };
 
-  // 🛡️ EL MOCK DEL QUERY RUNNER BLINDADO 🛡️
   mockQueryRunner = {
     connect: jest.fn(),
     startTransaction: jest.fn(),
     commitTransaction: jest.fn(),
     rollbackTransaction: jest.fn(),
     release: jest.fn(),
-    // El manager es lo que se usa DENTRO de la transacción
+ 
     manager: {
       create: jest.fn().mockImplementation((entity, dto) => dto),
-      // Save devuelve lo que recibe + un ID simulado
+
       save: jest.fn().mockImplementation(entity => Promise.resolve({ ...entity, id: 1, idProyeccion: 1 })),
       remove: jest.fn(),
-      
-      // Si el código usa manager.findOne() directo:
+ 
       findOne: jest.fn().mockResolvedValue({ id: 1, codigo: 'MAT101', creditos: 5 }),
       
-      // Si el código usa manager.getRepository(...)
+
       getRepository: jest.fn().mockReturnValue({
-          count: jest.fn().mockResolvedValue(1),     // "Sí, la asignatura existe"
-          findOne: jest.fn().mockResolvedValue({ id: 1, codigo: 'MAT101' }), // "Sí, encontré el objeto"
+          count: jest.fn().mockResolvedValue(1), 
+          findOne: jest.fn().mockResolvedValue({ id: 1, codigo: 'MAT101' }), 
           create: jest.fn(d => d),
           save: jest.fn(d => Promise.resolve({ ...d, id: 1 })),
           find: jest.fn().mockResolvedValue([])
       }),
 
-      // Si usa QueryBuilder dentro de la transacción
       createQueryBuilder: jest.fn(() => ({
           insert: jest.fn().mockReturnThis(),
           into: jest.fn().mockReturnThis(),
@@ -97,14 +93,11 @@ describe('ProyeccionService', () => {
   };
 
   beforeEach(async () => {
-    // 1. Limpiamos contadores antes de cada test
     jest.clearAllMocks();
-
-    // 2. Configuración inicial de repositorios (lo que se usa FUERA de la transacción)
     mockProyeccionRepo = {
         create: jest.fn().mockImplementation(dto => dto),
         save: jest.fn().mockResolvedValue({ idProyeccion: 1 }),
-        findOne: jest.fn(), // Se configura en cada test específico
+        findOne: jest.fn(), 
         find: jest.fn().mockResolvedValue([])
     };
 
@@ -121,7 +114,7 @@ describe('ProyeccionService', () => {
                 count: jest.fn().mockResolvedValue(1) 
             })
         },
-        // Mock necesario para obtenerEstadisticas
+
         createQueryBuilder: jest.fn(() => ({
             leftJoin: jest.fn().mockReturnThis(),
             leftJoinAndSelect: jest.fn().mockReturnThis(),
@@ -156,11 +149,11 @@ describe('ProyeccionService', () => {
     facade = module.get<StudentDataFacade>(StudentDataFacade);
   });
 
-  // --- TESTS ---
+
 
   describe('proyeccionFutura', () => {
     it('debe orquestar la generación automática', async () => {
-      // Configuramos para que al final del proceso encuentre la proyección creada
+
       mockProyeccionRepo.findOne.mockResolvedValue({ 
           idProyeccion: 1, 
           rutUsuario: '111', 
@@ -189,14 +182,10 @@ describe('ProyeccionService', () => {
     it('debe guardar un semestre editado manualmente y validar consistencia', async () => {
       const mockAsignaturasDto = [{ codigo: 'MAT101', creditos: 5, nombre: 'Calc' }];
       
-      // A. Mock Proyección inicial
       mockProyeccionRepo.findOne.mockResolvedValueOnce({ idProyeccion: 1, codigoCarrera: '8606' });
-      
-      // B. Mock Semestre (findOne FUERA de la transacción, si aplica)
-      // Si tu código busca el semestre antes de la transacción:
+
       mockSemestreRepo.findOne.mockResolvedValueOnce(null);
 
-      // C. Mock Respuesta final (obtenerProyeccionCompleta usa findOne)
       mockProyeccionRepo.findOne.mockResolvedValueOnce({ idProyeccion: 1, semestres: [] });
       mockMapper.toResponse.mockReturnValue({ id: 1 });
 

@@ -19,19 +19,14 @@ export class Semestre {
   @Column({ type: 'int', nullable: false })
   totalCreditos: number;
 
-  // --- RELACIÓN CON PROYECCION ---
-  // Muchos Semestres pertenecen a una Proyeccion.
-  // Este es el lado que tendrá la columna de la llave foránea ('proyeccionIdProyeccion').
   @ManyToOne(() => Proyeccion, (proyeccion) => proyeccion.semestres,
   {
     onDelete: 'CASCADE',
   })
   proyeccion: Proyeccion;
 
-// --- RELACIÓN MODIFICADA ---
-  // Un Semestre ahora tiene muchas "Instancias" de asignaturas
   @OneToMany(() => InstanciaAsignatura, (instancia) => instancia.semestre, {
-    cascade: true, // 👈 Mantenemos la cascada aquí
+    cascade: true, 
   })
   instancias: InstanciaAsignatura[];
 }

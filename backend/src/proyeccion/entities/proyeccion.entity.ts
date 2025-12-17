@@ -1,8 +1,8 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, Unique } from 'typeorm';
-import { Semestre } from './semestre.entity'; // Importa la entidad hija
+import { Semestre } from './semestre.entity'; 
 
-@Entity('proyecciones') // Nombre de la tabla en la base de datos
-@Unique(['rutUsuario', 'nombreProyeccion', 'codigoCarrera']) // Asegura que no haya proyecciones duplicadas por usuario, nombre y carrera
+@Entity('proyecciones') 
+@Unique(['rutUsuario', 'nombreProyeccion', 'codigoCarrera']) 
 export class Proyeccion {
   @PrimaryGeneratedColumn()
   idProyeccion: number;
@@ -19,10 +19,6 @@ export class Proyeccion {
   @Column({ type: 'text', nullable: false })
   nombreProyeccion: string;
 
-  // --- RELACIÓN ---
-  // Una Proyeccion tiene muchos Semestres.
-  // El segundo argumento '(semestre) => semestre.proyeccion' le indica a TypeORM
-  // que en la entidad 'Semestre' hay una propiedad 'proyeccion' que nos conecta de vuelta.
   @OneToMany(() => Semestre, (semestre) => semestre.proyeccion, 
   {
     cascade: true,

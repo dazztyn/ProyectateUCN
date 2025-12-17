@@ -1,5 +1,5 @@
 import { Asignatura } from '../../ArchivosComunes/Asignatura.js';
-import { AvanceConAsignatura } from '../../avance/avance/AvanceConAsignatura.js';
+
 
 export interface AvancePlano 
 {
