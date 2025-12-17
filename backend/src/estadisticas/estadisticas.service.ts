@@ -10,7 +10,6 @@ export class EstadisticasService {
     private readonly instanciaRepo: Repository<InstanciaAsignatura>,
   ) {}
 
-  // 1. ASIGNATURAS MÁS DEMANDADAS (Más inscritos en X semestre)
   async obtenerMasDemandadas(codigoCarrera: string, periodo: string, limite: number = 10) {
     const resultados = await this.instanciaRepo.createQueryBuilder('instancia')
       .innerJoin('instancia.asignatura', 'asignatura')
@@ -35,7 +34,6 @@ export class EstadisticasService {
     }));
   }
 
-  // 2. RANKING REPROBACIÓN 
   async obtenerRankingReprobacion(codigoCarrera: string, limite: number = 10, periodo?: string) {
     const query = this.instanciaRepo.createQueryBuilder('instancia')
       .innerJoin('instancia.asignatura', 'asignatura')
