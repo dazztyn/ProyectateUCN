@@ -1,5 +1,5 @@
 import { BadRequestException, Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
-import { MallaService } from './malla.service.js';
+import { MallaService } from './malla.service';
 import { AuthGuard } from '@nestjs/passport';
 import type { Request } from 'express';
 import { Usuario } from '../../ArchivosComunes/Usuario.js';

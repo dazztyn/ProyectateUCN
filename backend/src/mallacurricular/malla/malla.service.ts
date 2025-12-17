@@ -1,6 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Asignatura } from '../../ArchivosComunes/Asignatura';
-import { RamoInfo } from '../../ArchivosComunes/RamoInfo';
 import { AcademicUtilsService } from '../../ArchivosComunes/AcademicUtilsService';
 import { Asignaturas } from '../entities/asignatura.entity';
 import { InjectRepository } from '@nestjs/typeorm';

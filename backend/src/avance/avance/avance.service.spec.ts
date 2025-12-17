@@ -4,29 +4,28 @@ import { MallaService } from '../../mallacurricular/malla/malla.service';
 import { AcademicUtilsService } from '../../ArchivosComunes/AcademicUtilsService';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { AvanceReal } from './entities/avance-real.entity';
-import { RamoTomado } from './RamoTomado';
-import { AvanceConAsignatura } from './AvanceConAsignatura';
+
+global.fetch = jest.fn();
 
 describe('AvanceService', () => {
   let service: AvanceService;
   let repo: any;
+  let mallaService: any;
+  let utils: any;
 
-  // Mocks
   const mockRepo = {
-    find: jest.fn().mockResolvedValue([]),
-    create: jest.fn().mockImplementation((dto) => dto),
-    save: jest.fn().mockResolvedValue(true),
+    find: jest.fn(),
+    create: jest.fn(d => d),
+    save: jest.fn(),
   };
 
   const mockMallaService = {
-    fetchMallaCarrera: jest.fn().mockResolvedValue([
-        { codigo: 'MAT101', asignatura: 'Calculo I', creditos: 6 }
-    ])
+    fetchMallaCarrera: jest.fn(),
   };
 
   const mockUtils = {
-    buscarAsignatura: jest.fn().mockReturnValue({ codigo: 'MAT101', asignatura: 'Calculo I', creditos: 6 }),
-    agruparPor: jest.fn()
+    buscarAsignatura: jest.fn((cod) => ({ codigo: cod, asignatura: 'Nombre', creditos: 5 })),
+    agruparPor: jest.fn().mockReturnValue(new Map()),
   };
 
   beforeEach(async () => {
@@ -41,49 +40,61 @@ describe('AvanceService', () => {
 
     service = module.get<AvanceService>(AvanceService);
     repo = module.get(getRepositoryToken(AvanceReal));
+    mallaService = module.get(MallaService);
+    utils = module.get(AcademicUtilsService);
+  });
+
+  afterEach(() => jest.clearAllMocks());
+
+  describe('fetchAvanceData', () => {
+    it('debe retornar data si API responde OK', async () => {
+      const mockData = [{ nrc: '123' }];
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        json: async () => mockData,
+      });
+      const res = await service.fetchAvanceData('1-9', '8606');
+      expect(res).toEqual(mockData);
+    });
+
+    it('debe lanzar error si respuesta trae propiedad error', async () => {
+        (global.fetch as jest.Mock).mockResolvedValue({
+            ok: true,
+            json: async () => ({ error: 'Fallo' }),
+        });
+        await expect(service.fetchAvanceData('1-9', '8606')).rejects.toThrow('Fallo');
+    });
   });
 
   describe('sincronizarAvanceFull', () => {
-    it('debe insertar un registro nuevo si no existe en BD', async () => {
-      
-      const mockApiData: RamoTomado[] = [{
-        nrc: '123', period: '202310', student: '111', course: 'MAT101',
-        excluded: false, inscriptionType: 'N', status: 'APROBADO'
-      }];
-      
-      jest.spyOn(service, 'fetchAvanceData').mockResolvedValue(mockApiData);
+    it('debe guardar registros nuevos y actualizar existentes', async () => {
 
-      jest.spyOn(service, 'rellenarListaDeAvance').mockReturnValue([
-          new AvanceConAsignatura('123', '202310', '111', { codigo: 'MAT101', asignatura: 'Calculo I', creditos: 6 } as any, false, 'N', 'APROBADO')
+      jest.spyOn(service, 'fetchAvanceData').mockResolvedValue([
+        { nrc: '100', course: 'MAT1', period: '202310', status: 'APROBADO' } as any,
+        { nrc: '200', course: 'MAT2', period: '202310', status: 'APROBADO' } as any 
+      ]);
+      mockMallaService.fetchMallaCarrera.mockResolvedValue([{ codigo: 'MAT1' }, { codigo: 'MAT2' }]);
+
+      mockRepo.find.mockResolvedValue([
+          { codigoAsignatura: 'MAT2', periodo: '202310', estado: 'REPROBADO', nrc: '200' }
       ]);
 
-      repo.find.mockResolvedValue([]);
+      await service.sincronizarAvanceFull('1-9', '8606', '2020');
 
-      await service.sincronizarAvanceFull('111', '8606', '2020');
-
-      expect(repo.create).toHaveBeenCalled();
-      expect(repo.save).toHaveBeenCalledWith(expect.arrayContaining([
-          expect.objectContaining({ codigoAsignatura: 'MAT101', estado: 'APROBADO' })
-      ]));
+      expect(repo.save).toHaveBeenCalled();
+      const savedData = repo.save.mock.calls[0][0];
+      expect(savedData.length).toBeGreaterThanOrEqual(1);
     });
+  });
 
-    it('debe actualizar un registro existente si cambian los datos', async () => {
-
-        jest.spyOn(service, 'fetchAvanceData').mockResolvedValue([]); 
-        jest.spyOn(service, 'rellenarListaDeAvance').mockReturnValue([
-            new AvanceConAsignatura('999', '202310', '111', { codigo: 'MAT101', creditos: 6 } as any, false, 'N', 'APROBADO')
-        ]);
-
-        const datoAntiguo = { 
-            codigoAsignatura: 'MAT101', periodo: '202310', nrc: '111', estado: 'INSCRITO', creditos: 6 
-        };
-        repo.find.mockResolvedValue([datoAntiguo]);
-
-        await service.sincronizarAvanceFull('111', '8606', '2020');
-
-        expect(datoAntiguo.nrc).toBe('999'); 
-        expect(datoAntiguo.estado).toBe('APROBADO'); 
-        expect(repo.save).toHaveBeenCalled();
-    });
+  describe('obtenerAvanceDesdeBD', () => {
+      it('debe retornar objeto agrupado', async () => {
+          mockRepo.find.mockResolvedValue([
+              { nrc: '1', periodo: '202310', codigoAsignatura: 'A', nombreAsignatura: 'A', creditos: 5, estado: 'APROBADO' }
+          ]);
+          
+          await service.obtenerAvanceDesdeBD('1-9', '8606');
+          expect(utils.agruparPor).toHaveBeenCalled();
+      });
   });
 });

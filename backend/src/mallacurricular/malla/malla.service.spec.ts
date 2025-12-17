@@ -4,30 +4,32 @@ import { AcademicUtilsService } from '../../ArchivosComunes/AcademicUtilsService
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Asignaturas } from '../entities/asignatura.entity';
 
+// Mock global de fetch
+global.fetch = jest.fn();
+
 describe('MallaService', () => {
   let service: MallaService;
   let repo: any;
   let utils: AcademicUtilsService;
 
   const mockRepo = {
-    create: jest.fn(dto => dto),
+    create: jest.fn(d => d),
     save: jest.fn(),
     find: jest.fn(),
-    findOne: jest.fn(),
   };
 
   const mockUtils = {
-    limpiarPrerrequisitosInvalidos: jest.fn(data => data),
+    limpiarPrerrequisitosInvalidos: jest.fn(d => d),
     construirGrafoDeApertura: jest.fn().mockReturnValue(new Map()),
-    agruparPor: jest.fn().mockReturnValue({}),
+    agruparPor: jest.fn().mockReturnValue(new Map()),
   };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MallaService,
-        { provide: getRepositoryToken(Asignaturas), useValue: mockRepo },
         { provide: AcademicUtilsService, useValue: mockUtils },
+        { provide: getRepositoryToken(Asignaturas), useValue: mockRepo },
       ],
     }).compile();
 
@@ -36,25 +38,60 @@ describe('MallaService', () => {
     utils = module.get<AcademicUtilsService>(AcademicUtilsService);
   });
 
-  describe('sincronizarMalla', () => {
-    it('debe descargar datos de API y guardar en BD', async () => {
-      // Mock de fetch global
-      global.fetch = jest.fn().mockResolvedValue({
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('fetchMallaCarrera', () => {
+    it('debe retornar datos si la API responde OK', async () => {
+      const mockData = [{ codigo: 'A' }];
+      (global.fetch as jest.Mock).mockResolvedValue({
         ok: true,
-        json: async () => [{ codigo: 'FIS101', asignatura: 'Fisica', creditos: 6 }],
+        json: async () => mockData,
       });
 
-      await service.sincronizarMalla('8606', '2020');
-
-      expect(repo.create).toHaveBeenCalledWith(expect.objectContaining({ 
-          codigoAsignatura: 'FIS101' 
-      }));
-      expect(repo.save).toHaveBeenCalled();
+      const res = await service.fetchMallaCarrera('8606', '2020');
+      expect(res).toEqual(mockData);
+      expect(utils.limpiarPrerrequisitosInvalidos).toHaveBeenCalled();
     });
 
     it('debe lanzar error si la API falla', async () => {
-      global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 500 });
-      await expect(service.sincronizarMalla('8606', '2020')).rejects.toThrow();
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: false,
+        status: 500,
+        statusText: 'Error',
+      });
+      await expect(service.fetchMallaCarrera('8606', '2020')).rejects.toThrow();
     });
+
+    it('debe lanzar error si la data esta vacia', async () => {
+        (global.fetch as jest.Mock).mockResolvedValue({
+            ok: true,
+            json: async () => [],
+        });
+        await expect(service.fetchMallaCarrera('8606', '2020')).rejects.toThrow('Malla no encontrada');
+    });
+  });
+
+  describe('sincronizarMalla', () => {
+    it('debe guardar datos en repositorio', async () => {
+      jest.spyOn(service, 'fetchMallaCarrera').mockResolvedValue([{ codigo: 'A' } as any]);
+      
+      await service.sincronizarMalla('8606', '2020');
+      
+      expect(repo.create).toHaveBeenCalled();
+      expect(repo.save).toHaveBeenCalled();
+    });
+  });
+
+  describe('obtenerMallaDesdeBD', () => {
+      it('debe retornar malla agrupada', async () => {
+          repo.find.mockResolvedValue([{ codigoAsignatura: 'A', prerrequisitos: 'B,C' }]);
+          
+          await service.obtenerMallaDesdeBD('8606');
+          
+          expect(utils.construirGrafoDeApertura).toHaveBeenCalled();
+          expect(utils.agruparPor).toHaveBeenCalled();
+      });
   });
 });

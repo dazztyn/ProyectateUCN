@@ -298,6 +298,7 @@ export class ProyeccionService
         } 
         catch (error) 
         {
+            console.error("EL ERROR REAL ES:", error);
             await queryRunner.rollbackTransaction();
             throw new InternalServerErrorException("Error al guardar el semestre.");
         }

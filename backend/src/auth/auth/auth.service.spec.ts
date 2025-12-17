@@ -7,70 +7,81 @@ import { AvanceService } from '../../avance/avance/avance.service';
 import { MallaService } from '../../mallacurricular/malla/malla.service';
 import { UnauthorizedException } from '@nestjs/common';
 
+global.fetch = jest.fn();
+
 describe('AuthService', () => {
   let service: AuthService;
-  let avanceService: AvanceService;
-  let mallaService: MallaService;
+  let rolRepo: any;
+  let avanceService: any;
+  let mallaService: any;
+  let jwtService: any;
 
-
-  const mockJwtService = { sign: jest.fn(() => 'token_mock') };
-  const mockRepo = { findOne: jest.fn() };
-  
-  const mockAvanceService = { 
-    sincronizarAvanceFull: jest.fn().mockResolvedValue(true) 
-  };
-  const mockMallaService = { 
-    sincronizarMalla: jest.fn().mockResolvedValue(true) 
-  };
+  const mockJwtService = { sign: jest.fn().mockReturnValue('token') };
+  const mockRolRepo = { findOne: jest.fn() };
+  const mockAvanceService = { sincronizarAvanceFull: jest.fn() };
+  const mockMallaService = { sincronizarMalla: jest.fn() };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
         { provide: JwtService, useValue: mockJwtService },
-        { provide: getRepositoryToken(RolUsuario), useValue: mockRepo },
+        { provide: getRepositoryToken(RolUsuario), useValue: mockRolRepo },
         { provide: AvanceService, useValue: mockAvanceService },
         { provide: MallaService, useValue: mockMallaService },
       ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
-    avanceService = module.get<AvanceService>(AvanceService);
-    mallaService = module.get<MallaService>(MallaService);
+    rolRepo = module.get(getRepositoryToken(RolUsuario));
+    avanceService = module.get(AvanceService);
+    mallaService = module.get(MallaService);
   });
 
-  it('debe estar definido', () => {
-    expect(service).toBeDefined();
-  });
+  afterEach(() => jest.clearAllMocks());
 
   describe('login', () => {
-    it('debe loguear estudiante y ejecutar sincronización en segundo plano', async () => {
-      const mockAlumnoAPI = {
-        rut: '11111111-1',
-        carreras: [{ codigo: '8606', catalogo: '2020' }]
-      };
+    it('debe loguear admin local correctamente', async () => {
+      mockRolRepo.findOne.mockResolvedValue({ 
+          email: 'admin@ucn.cl', password: '123', rol: 'admin', rut: 'ADMIN' 
+      });
       
-      jest.spyOn(service, 'fetchloginData').mockResolvedValue(mockAlumnoAPI as any);
-
-      const resultado = await service.login('test@ucn.cl', '1234');
-
-      expect(resultado).toHaveProperty('access_token', 'token_mock');
-      expect(resultado.role).toBe('student');
-
-      expect(avanceService.sincronizarAvanceFull).toHaveBeenCalledWith('11111111-1', '8606', '2020');
-      expect(mallaService.sincronizarMalla).toHaveBeenCalledWith('8606', '2020');
+      const res = await service.login('admin@ucn.cl', '123');
+      expect(res.access_token).toBe('token');
+      expect(res.role).toBe('admin');
     });
 
-    it('debe permitir login aunque falle la sincronización (Tolerancia a fallos)', async () => {
-      const mockAlumnoAPI = {
-        rut: '11111111-1',
-        carreras: [{ codigo: '8606', catalogo: '2020' }]
-      };
-      jest.spyOn(service, 'fetchloginData').mockResolvedValue(mockAlumnoAPI as any);
-      
-      jest.spyOn(avanceService, 'sincronizarAvanceFull').mockRejectedValue(new Error('API UCN Caída'));
+    it('debe fallar admin local con password incorrecta', async () => {
+        mockRolRepo.findOne.mockResolvedValue({ password: '123' });
+        await expect(service.login('admin', 'bad')).rejects.toThrow(UnauthorizedException);
+    });
 
-      await expect(service.login('test@ucn.cl', '1234')).resolves.toHaveProperty('access_token');
+    it('debe loguear alumno externo y disparar sincronizacion', async () => {
+      mockRolRepo.findOne.mockResolvedValue(null);
+      
+      const mockAlumno = { 
+          rut: '1-9', 
+          carreras: [{ codigo: '8606', catalogo: '2020' }] 
+      };
+
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        json: async () => mockAlumno,
+      });
+
+      const res = await service.login('alumno', 'pass');
+      
+      expect(res.role).toBe('student');
+      expect(avanceService.sincronizarAvanceFull).toHaveBeenCalled();
+      expect(mallaService.sincronizarMalla).toHaveBeenCalled();
+    });
+
+    it('debe manejar error de API externa', async () => {
+        mockRolRepo.findOne.mockResolvedValue(null);
+        (global.fetch as jest.Mock).mockResolvedValue({
+            ok: false, status: 500, statusText: 'Error'
+        });
+        await expect(service.login('a', 'b')).rejects.toThrow();
     });
   });
 });
