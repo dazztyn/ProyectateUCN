@@ -16,6 +16,7 @@ export class EstadisticasController {
   ) 
   {
     const limite = top ? parseInt(top, 10) : 10;
+    
     return this.estadisticasService.obtenerRankingReprobacion(codigoCarrera, limite, periodo);
   }
 
