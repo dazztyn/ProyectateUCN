@@ -55,7 +55,7 @@ export class EstadisticasService {
       .addSelect(`SUM(CASE WHEN instancia.estado = 'REPROBADO' THEN 1 ELSE 0 END)`, 'total_reprobados')
       .groupBy('asignatura.codigoAsignatura')
       .addGroupBy('asignatura.nombreAsignatura')
-      .orderBy('total_reprobados::float / COUNT(instancia.id)', 'DESC')
+      .orderBy('(SUM(CASE WHEN "instancia"."estado" = \'REPROBADO\' THEN 1 ELSE 0 END))::float / COUNT("instancia"."id")', 'DESC')
       .limit(limite)
       .getRawMany();
 

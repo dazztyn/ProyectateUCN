@@ -48,7 +48,7 @@ export class AuthService
         }
     }
 
-async login(email: string, password: string)
+    async login(email: string, password: string)
     {
         let usuarioLocal: RolUsuario | null = null;
 
