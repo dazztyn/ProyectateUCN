@@ -164,6 +164,41 @@ export class ProyeccionController
         return this.proyeccion.obtenerAsignaturasProyeccionManual(parseInt(idProyeccion, 10), carrera.catalogo, semestreNum);
     }
 
+    @Get('/asignaturasExcepcion/:indiceCarrera')
+    obtenerAsignaturasExcepcion
+    (
+        @Req() request: Request,
+        @Param('indiceCarrera') indiceCarrera: string,
+        @Query('idProyeccion') idProyeccion: string,
+        @Query('tipo') tipo: 'SIN_PREREQ' | 'EXTRA_SEMESTRE' | 'COMBINADA',
+        @Query('semestreObjetivo') semestreObjetivo?: string
+    )
+    {
+        const usuario = request.user as Usuario;
+
+        const index = parseInt(indiceCarrera, 10);
+        
+        if (isNaN(index) || !usuario.carreras || !usuario.carreras[index]) 
+        {
+            throw new BadRequestException(`El índice de carrera ${index} no es válido.`);
+        }
+
+        const semestreNum = semestreObjetivo ? Number(semestreObjetivo) : undefined;
+
+        const carrera = usuario.carreras[index];
+
+        if (!tipo || tipo === 'NINGUNA' as any) {
+             throw new BadRequestException("Debe especificar un tipo de solicitud válido.");
+        }
+
+        return this.proyeccion.obtenerAsignaturasExcepcion(
+            parseInt(idProyeccion, 10), 
+            carrera.catalogo, 
+            tipo, 
+            semestreNum
+        );
+    }
+
     @Get('/estadisticas/:periodo')
     getEstadisticas
     (

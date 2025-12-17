@@ -8,5 +8,5 @@ export interface IProyeccionStrategy
      * @param estado Todos los datos preparados del alumno (malla, avance, grafos).
      * @returns Mapa con la proyección: "202410" -> [Cálculo, Progra...]
      */
-    generar(estado: EstadoAcademico): Map<string, Asignatura[]>;
+    generar(): Map<string, Asignatura[]>;
 }

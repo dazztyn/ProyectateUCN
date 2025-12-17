@@ -17,6 +17,8 @@ import { ProyeccionMapper } from './proyeccion.mapper';
 import { IProyeccionStrategy } from './strategies/IProyeccionStrategy';
 import { GreedyProjectionStrategy } from './strategies/GreedyProjectionStrategy';
 import { ProyeccionManual } from './ProyeccionManual';
+import { ProyeccionConsistencyService } from './proyeccion.consistencia'; // 👈 Nuevo
+import { ProyeccionStrategyFactory } from './strategies/proyeccion-strategy.factory';
 
 // Tipos
 import { Asignatura } from '../ArchivosComunes/Asignatura';
@@ -35,6 +37,8 @@ export class ProyeccionService
         private readonly studentFacade: StudentDataFacade,
         private readonly mapper: ProyeccionMapper,
         private readonly dataSource: DataSource,
+        private readonly consistencyService: ProyeccionConsistencyService, // Inyección
+        private readonly strategyFactory: ProyeccionStrategyFactory,
 
         @InjectRepository(Proyeccion)
         private proyeccionRepository: Repository<Proyeccion>,
@@ -47,8 +51,8 @@ export class ProyeccionService
     async proyeccionFutura(rutAlumno:string, codigoCarrera:string, catalogo:string, proyeccionDto: CreacionProyeccion)
     {
         const estado = await this.studentFacade.obtenerEstadoAcademico(rutAlumno, codigoCarrera, catalogo);
-        const estrategia: IProyeccionStrategy = new GreedyProjectionStrategy(estado);
-        const mapaFuturo = estrategia.generar(estado);
+        const estrategia = this.strategyFactory.createStrategy('GREEDY', estado);
+        const mapaFuturo = estrategia.generar();
 
         const queryRunner = this.dataSource.createQueryRunner();
         await queryRunner.connect();
@@ -60,9 +64,13 @@ export class ProyeccionService
             const semestresAvance = this.mapper.avanceToPersistence(estado.avancePorPeriodo, codigoCarrera);
 
             const ultimoSemestreAvance = semestresAvance[semestresAvance.length - 1];
+
             let siguienteNumero = ultimoSemestreAvance.numero;
+
             const tipoSemestre = ultimoSemestreAvance.periodo.slice(4, 6);
-            if (tipoSemestre !== '15' && tipoSemestre !== '25') {
+            
+            if (tipoSemestre !== '15' && tipoSemestre !== '25') 
+            {
                 siguienteNumero++;
             }
             
@@ -100,240 +108,110 @@ export class ProyeccionService
         }
     }
 
-    async listarProyeccionesDeUsuario(rut: string, codigoCarrera: string) 
+    async crearProyeccionConAvance(rut: string, catalogo: string, codigoCarrera: string, proyeccionDto: CreacionProyeccion)
     {
-        const proyecciones = await this.proyeccionRepository.find({
-            where: { 
-                rutUsuario: rut,
-                codigoCarrera: codigoCarrera 
-            },
-            select: {
-                idProyeccion: true,
-                nombreProyeccion: true,
-                ideal: true,
-                rutUsuario: true
-            },
-            order: { idProyeccion: 'DESC' }
+        const estado = await this.studentFacade.obtenerEstadoAcademico(rut, codigoCarrera, catalogo);
+
+        const semestresDto = this.mapper.avanceToPersistence(estado.avancePorPeriodo, codigoCarrera);
+
+        const nuevaProyeccion = this.proyeccionRepository.create({
+            rutUsuario: rut,
+            codigoCarrera: codigoCarrera,
+            ideal: proyeccionDto.ideal,
+            nombreProyeccion: proyeccionDto.nombreProyeccion,
+            semestres: semestresDto,
         });
-        return this.mapper.toSummaryResponseList(proyecciones);
-    }
-
-    private fusionarEstadoConProyeccion(estado: EstadoAcademico, proyeccion: Proyeccion, hastaSemestreNumero?: number): void 
-    {
-        if (!proyeccion.semestres || proyeccion.semestres.length === 0) return;
-
-        let ultimoPeriodoSimulado = estado.ultimoPeriodo;
-
-        const semestresOrdenados = proyeccion.semestres.sort((a, b) => a.numero - b.numero);
-
-        for (const semestre of semestresOrdenados) 
+        try
         {
-            if (hastaSemestreNumero !== undefined && semestre.numero >= hastaSemestreNumero) 
-            {
-                break; 
-            }
-
-            if (semestre.periodo > ultimoPeriodoSimulado) {
-                ultimoPeriodoSimulado = semestre.periodo;
-            }
-
-            if (semestre.instancias) {
-                for (const instancia of semestre.instancias) {
-                    estado.asignaturasAprobadas.add(instancia.asignatura.codigoAsignatura);
-                }
-            }
+            const guardada = await this.proyeccionRepository.save(nuevaProyeccion);
+            return await this.obtenerProyeccionCompleta(guardada.idProyeccion);
         }
-
-        estado.ultimoPeriodo = ultimoPeriodoSimulado;
+        catch (error) 
+        {
+            if (error.code === '23505') {
+                throw new ConflictException(`Ya tienes una proyección llamada "${proyeccionDto.nombreProyeccion}". Por favor elige otro nombre.`);
+            }
+            throw error;
+        }
     }
 
-    async validarConsistenciaProyeccion(idProyeccion: number, catalogo: string)
+    async autocompletarProyeccion(idProyeccion: number, catalogoCarrera: string)
     {
-        const proyeccion = await this.proyeccionRepository.findOne({
+
+        const proyeccionExistente = await this.proyeccionRepository.findOne({
             where: { idProyeccion },
             relations: ['semestres', 'semestres.instancias', 'semestres.instancias.asignatura']
         });
 
-        if (!proyeccion) return;
+        if (!proyeccionExistente) throw new NotFoundException("Proyección no encontrada");
 
         const estado = await this.studentFacade.obtenerEstadoAcademico(
-            proyeccion.rutUsuario, 
-            proyeccion.codigoCarrera, 
-            catalogo
+            proyeccionExistente.rutUsuario, 
+            proyeccionExistente.codigoCarrera, 
+            catalogoCarrera 
         );
 
-        // Conjunto de asignaturas aprobadas (Históricas + Proyectadas que vamos acumulando)
-        const aprobadosAcumulados = new Set(estado.asignaturasAprobadas);
+        this.fusionarEstadoConProyeccion(estado, proyeccionExistente);
 
-        // Preparamos la malla ordenada por nivel para calcular rápidamente el "tapón" académico
-        const mallaOrdenada = estado.mallaCompleta.sort((a, b) => a.nivel - b.nivel);
-
-        // Ordenamos cronológicamente los semestres de la proyección
-        const semestresOrdenados = proyeccion.semestres.sort((a, b) => a.numero - b.numero);
+        const estrategia = this.strategyFactory.createStrategy('GREEDY', estado);
+        const mapaFuturo = estrategia.generar();
 
         const queryRunner = this.dataSource.createQueryRunner();
         await queryRunner.connect();
         await queryRunner.startTransaction();
 
         try {
-            let huboCambios = false;
 
-            for (const semestre of semestresOrdenados) 
+            const ultimoSemestreDb = proyeccionExistente.semestres.sort((a,b) => b.numero - a.numero)[0];
+            let siguienteNumero = ultimoSemestreDb ? ultimoSemestreDb.numero : 0;
+
+            const nuevosSemestresDto = this.mapper.futureToPersistence(
+                mapaFuturo, 
+                siguienteNumero + 1,
+                proyeccionExistente.codigoCarrera 
+            );
+
+            for (const semDto of nuevosSemestresDto) 
             {
-                // PASO 1: Calcular el "Nivel más atrasado" actual
-                // Buscamos el primer ramo de la malla que NO esté en aprobadosAcumulados
-                let nivelMasAtrasado = 1; // Por defecto
-                for (const asignaturaMalla of mallaOrdenada) {
-                    if (!aprobadosAcumulados.has(asignaturaMalla.codigo)) {
-                        nivelMasAtrasado = asignaturaMalla.nivel;
-                        break; // Encontramos el tapón, dejamos de buscar
-                    }
-                }
+                const nuevoSemestreEntidad = queryRunner.manager.create(Semestre, semDto);
 
-                // La regla: Solo puede tomar ramos hasta (NivelMasAtrasado + 2)
-                const nivelMaximoPermitido = nivelMasAtrasado + 2;
+                nuevoSemestreEntidad.proyeccion = proyeccionExistente; 
                 
-                // console.log(`Semestre ${semestre.numero}: Tapón en nivel ${nivelMasAtrasado}. Máximo permitido: ${nivelMaximoPermitido}`);
-
-                const instanciasValidas: InstanciaAsignatura[] = [];
-
-                if (semestre.instancias) 
-                {
-                    for (const instancia of semestre.instancias) 
-                    {
-                        const asignatura = instancia.asignatura;
-
-                        // Protección contra nulos
-                        if (!asignatura) {
-                            await queryRunner.manager.remove(instancia);
-                            huboCambios = true;
-                            continue;
-                        }
-
-                        let esValido = true;
-                        let motivoEliminacion = "";
-
-                        // --- VALIDACIÓN A: Regla de los 2 Semestres ---
-                        if (asignatura.nivel > nivelMaximoPermitido) {
-                            esValido = false;
-                            motivoEliminacion = `Nivel ${asignatura.nivel} excede el límite permitido (${nivelMaximoPermitido})`;
-                        }
-
-                        // --- VALIDACIÓN B: Prerrequisitos (Solo si pasó la A) ---
-                        if (esValido && asignatura.prerrequisitos && asignatura.prerrequisitos.length > 0) 
-                        {
-                            const requisitos = asignatura.prerrequisitos.split(',').map(r => r.trim());
-                            const tieneTodos = requisitos.every(req => aprobadosAcumulados.has(req));
-                            
-                            if (!tieneTodos) {
-                                esValido = false;
-                                motivoEliminacion = "Falta de prerrequisitos";
-                            }
-                        }
-
-                        if (esValido) 
-                        {
-                            // Aprobamos virtualmente para los siguientes semestres
-                            aprobadosAcumulados.add(asignatura.codigoAsignatura);
-                            instanciasValidas.push(instancia);
-                        } 
-                        else
-                        {
-                            // Borramos la asignatura
-                            await queryRunner.manager.remove(instancia);
-                            console.log(`Eliminando ${asignatura.codigoAsignatura} del semestre ${semestre.numero}. Razón: ${motivoEliminacion}`);
-                            huboCambios = true;
-                        }
-                    }
-                }
-
-                // Actualizamos la lista en memoria
-                semestre.instancias = instanciasValidas; 
-
-                // ACTUALIZACIÓN DE CRÉDITOS
-                const nuevosCreditos = instanciasValidas.reduce((acc, inst) => {
-                    return acc + (inst.asignatura?.creditos || 0);
-                }, 0);
-
-                if (semestre.totalCreditos !== nuevosCreditos) {
-                    semestre.totalCreditos = nuevosCreditos;
-                    await queryRunner.manager.save(semestre);
-                    huboCambios = true;
-                }
-            }
-
-            // ====================================
-            // 🧩 FASE 2: DEFRAGMENTACIÓN (Tetris)
-            // ====================================
-            
-            const semestresFijos = semestresOrdenados.filter(s => !s.editable);
-            const semestresEditables = semestresOrdenados.filter(s => s.editable);
-
-            const editablesVivos = semestresEditables.filter(s => s.instancias.length > 0);
-            const editablesMuertos = semestresEditables.filter(s => s.instancias.length === 0);
-
-            if (editablesMuertos.length > 0) 
-            {
-                console.log(`🧹 Eliminando ${editablesMuertos.length} semestres vacíos.`);
-                await queryRunner.manager.remove(editablesMuertos);
-                huboCambios = true;
-            }
-
-            let periodoPivote: string;
-            let numeroPivote: number;
-
-            if (semestresFijos.length > 0) 
-            {
-                const ultimoFijo = semestresFijos[semestresFijos.length - 1];
-                periodoPivote = ultimoFijo.periodo;
-                numeroPivote = ultimoFijo.numero;
-            } 
-            else 
-            {
-
-                periodoPivote = estado.ultimoPeriodo; 
-                
-                numeroPivote = 0; 
-            }
-
-            let periodoRastreo = periodoPivote;
-            let numeroRastreo = numeroPivote;
-
-            for (const semestre of editablesVivos) 
-            {
-
-                const siguientePeriodo = this.siguientePeriodo(periodoRastreo);
-                const siguienteNumero = numeroRastreo + 1;
-
-                periodoRastreo = siguientePeriodo;
-                numeroRastreo = siguienteNumero;
-
-                if (semestre.periodo !== siguientePeriodo || semestre.numero !== siguienteNumero) {
-                
-                    console.log(`Reorganizando: Semestre ID ${semestre.idSemestre} pasa de N°${semestre.numero} a N°${siguienteNumero} (${siguientePeriodo})`);
-                    
-                    semestre.periodo = siguientePeriodo;
-                    semestre.numero = siguienteNumero;
-                    
-                    await queryRunner.manager.save(semestre);
-                    huboCambios = true;
-                }
+                await queryRunner.manager.save(Semestre, nuevoSemestreEntidad);
             }
 
             await queryRunner.commitTransaction();
-            return huboCambios;
+            
+            return this.obtenerProyeccionCompleta(idProyeccion);
 
-        } 
-        catch (error) 
-        {
-            console.error("Error en validación de consistencia:", error);
+        } catch (error) {
             await queryRunner.rollbackTransaction();
-            return false; 
-        } 
-        finally 
-        {
+            console.error("Error en autocompletar:", error);
+            throw new InternalServerErrorException("Error al autocompletar la proyección");
+        } finally {
             await queryRunner.release();
         }
+    }
+
+    async obtenerAsignaturasProyeccionManual(idProyeccion: number, catalogo:string, semestreObjetivo?: number)
+    {
+        const proyeccion = await this.buscarProyeccionYFusionar(idProyeccion, catalogo, semestreObjetivo);
+        const proyeccionManual = new ProyeccionManual(proyeccion.estado);
+        
+        return proyeccionManual.enviarAsignaturasNormales();
+    }
+
+    async obtenerAsignaturasExcepcion(
+        idProyeccion: number, 
+        catalogo: string, 
+        tipoSolicitud: 'SIN_PREREQ' | 'EXTRA_SEMESTRE' | 'COMBINADA',
+        semestreObjetivo?: number
+    )
+    {
+        const proyeccion = await this.buscarProyeccionYFusionar(idProyeccion, catalogo, semestreObjetivo);
+        const proyeccionManual = new ProyeccionManual(proyeccion.estado);
+
+        return proyeccionManual.enviarCandidatosExcepcion(tipoSolicitud);
     }
 
     async guardarSemestreManual(
@@ -423,7 +301,6 @@ export class ProyeccionService
         catch (error) 
         {
             await queryRunner.rollbackTransaction();
-            console.error("Error guardando semestre manual:", error);
             throw new InternalServerErrorException("Error al guardar el semestre.");
         }
         finally 
@@ -433,8 +310,7 @@ export class ProyeccionService
 
         try 
         {
-            console.log("Validando consistencia post-guardado...");
-            await this.validarConsistenciaProyeccion(idProyeccion, catalogo);
+            await this.validarConsistenciaProyeccion(idProyeccion, catalogo, periodo);
         } 
         catch (validationError) 
         {
@@ -444,110 +320,45 @@ export class ProyeccionService
         return this.obtenerProyeccionCompleta(idProyeccion);
     }
 
-    async obtenerAsignaturasProyeccionManual(idProyeccion: number, catalogo:string, semestreObjetivo?: number)
+    async validarConsistenciaProyeccion(idProyeccion: number, catalogo: string, periodoProtegido?: string)
     {
         const proyeccion = await this.proyeccionRepository.findOne({
             where: { idProyeccion },
             relations: ['semestres', 'semestres.instancias', 'semestres.instancias.asignatura']
         });
 
-        if (!proyeccion) throw new NotFoundException(`La proyección ${idProyeccion} no existe.`);
+        if (!proyeccion) return;
 
         const estado = await this.studentFacade.obtenerEstadoAcademico(
-            proyeccion.rutUsuario, 
-            proyeccion.codigoCarrera, 
-            catalogo
+            proyeccion.rutUsuario, proyeccion.codigoCarrera, catalogo
         );
 
-        this.fusionarEstadoConProyeccion(estado, proyeccion, semestreObjetivo);
-
-        const proyeccionManual = new ProyeccionManual(estado);
-        return proyeccionManual.enviarAsignaturas();
-    }
-
-    async crearProyeccionConAvance(rut: string, catalogo: string, codigoCarrera: string, proyeccionDto: CreacionProyeccion)
-    {
-        const estado = await this.studentFacade.obtenerEstadoAcademico(rut, codigoCarrera, catalogo);
-
-        const semestresDto = this.mapper.avanceToPersistence(estado.avancePorPeriodo, codigoCarrera);
-
-        const nuevaProyeccion = this.proyeccionRepository.create({
-            rutUsuario: rut,
-            codigoCarrera: codigoCarrera,
-            ideal: proyeccionDto.ideal,
-            nombreProyeccion: proyeccionDto.nombreProyeccion,
-            semestres: semestresDto,
-        });
-        try
-        {
-            const guardada = await this.proyeccionRepository.save(nuevaProyeccion);
-            return await this.obtenerProyeccionCompleta(guardada.idProyeccion);
-        }
-        catch (error) 
-        {
-            if (error.code === '23505') {
-                throw new ConflictException(`Ya tienes una proyección llamada "${proyeccionDto.nombreProyeccion}". Por favor elige otro nombre.`);
-            }
-            throw error;
-        }
-    }
-
-    async autocompletarProyeccion(idProyeccion: number, catalogoCarrera: string)
-    {
-
-        const proyeccionExistente = await this.proyeccionRepository.findOne({
-            where: { idProyeccion },
-            relations: ['semestres', 'semestres.instancias', 'semestres.instancias.asignatura']
-        });
-
-        if (!proyeccionExistente) throw new NotFoundException("Proyección no encontrada");
-
-        const estado = await this.studentFacade.obtenerEstadoAcademico(
-            proyeccionExistente.rutUsuario, 
-            proyeccionExistente.codigoCarrera, 
-            catalogoCarrera 
+        // Llamamos al especialista en Tetris y Reglas
+        return this.consistencyService.validarYCorregir(
+            proyeccion.semestres,
+            estado.mallaCompleta,
+            estado.asignaturasAprobadas,
+            estado.ultimoPeriodo,
+            periodoProtegido
         );
-
-        this.fusionarEstadoConProyeccion(estado, proyeccionExistente);
-
-        const estrategia: IProyeccionStrategy = new GreedyProjectionStrategy(estado);
-        const mapaFuturo = estrategia.generar(estado);
-
-        const queryRunner = this.dataSource.createQueryRunner();
-        await queryRunner.connect();
-        await queryRunner.startTransaction();
-
-        try {
-
-            const ultimoSemestreDb = proyeccionExistente.semestres.sort((a,b) => b.numero - a.numero)[0];
-            let siguienteNumero = ultimoSemestreDb ? ultimoSemestreDb.numero : 0;
-
-            const nuevosSemestresDto = this.mapper.futureToPersistence(
-                mapaFuturo, 
-                siguienteNumero + 1,
-                proyeccionExistente.codigoCarrera 
-            );
-
-            for (const semDto of nuevosSemestresDto) 
-            {
-                const nuevoSemestreEntidad = queryRunner.manager.create(Semestre, semDto);
-
-                nuevoSemestreEntidad.proyeccion = proyeccionExistente; 
-                
-                await queryRunner.manager.save(Semestre, nuevoSemestreEntidad);
-            }
-
-            await queryRunner.commitTransaction();
-            
-            return this.obtenerProyeccionCompleta(idProyeccion);
-
-        } catch (error) {
-            await queryRunner.rollbackTransaction();
-            console.error("Error en autocompletar:", error);
-            throw new InternalServerErrorException("Error al autocompletar la proyección");
-        } finally {
-            await queryRunner.release();
-        }
+    }   
+   
+    async listarProyeccionesDeUsuario(rut: string, codigoCarrera: string) 
+    {
+        const proyecciones = await this.proyeccionRepository.find({
+            where: { 
+                rutUsuario: rut,
+                codigoCarrera: codigoCarrera 
+            },
+            select: {
+                idProyeccion: true,
+                nombreProyeccion: true,
+                ideal: true,
+                rutUsuario: true
+            },
+            order: { idProyeccion: 'DESC' }
+        });
+        return this.mapper.toSummaryResponseList(proyecciones);
     }
 
     async obtenerProyeccionCompleta(idProyeccion: number)
@@ -581,15 +392,52 @@ export class ProyeccionService
         return resultado;
     }
 
-    private siguientePeriodo(periodoActual: string): string 
+    private fusionarEstadoConProyeccion(estado: EstadoAcademico, proyeccion: Proyeccion, hastaSemestreNumero?: number): void 
     {
-        const anho = parseInt(periodoActual.slice(0, 4));
-        const sem = parseInt(periodoActual.slice(4, 6));
+        if (!proyeccion.semestres || proyeccion.semestres.length === 0) return;
 
-        if (sem === 10) return `${anho}20`;
-        if (sem === 20) return `${anho + 1}10`;
+        let ultimoPeriodoSimulado = estado.ultimoPeriodo;
+
+        const semestresOrdenados = proyeccion.semestres.sort((a, b) => a.numero - b.numero);
+
+        for (const semestre of semestresOrdenados) 
+        {
+            if (hastaSemestreNumero !== undefined && semestre.numero >= hastaSemestreNumero) 
+            {
+                break; 
+            }
+
+            if (semestre.periodo > ultimoPeriodoSimulado) {
+                ultimoPeriodoSimulado = semestre.periodo;
+            }
+
+            if (semestre.instancias) {
+                for (const instancia of semestre.instancias) {
+                    estado.asignaturasAprobadas.add(instancia.asignatura.codigoAsignatura);
+                }
+            }
+        }
+
+        estado.ultimoPeriodo = ultimoPeriodoSimulado;
+    }
+
+    private async buscarProyeccionYFusionar(idProyeccion: number, catalogo: string, semestreObjetivo?: number) {
+        const proyeccion = await this.proyeccionRepository.findOne({
+            where: { idProyeccion },
+            relations: ['semestres', 'semestres.instancias', 'semestres.instancias.asignatura']
+        });
+
+        if (!proyeccion) throw new NotFoundException(`Proyección no encontrada.`);
+
+        const estado = await this.studentFacade.obtenerEstadoAcademico(
+            proyeccion.rutUsuario, 
+            proyeccion.codigoCarrera, 
+            catalogo
+        );
+
+        this.fusionarEstadoConProyeccion(estado, proyeccion, semestreObjetivo);
         
-        return `${anho + 1}10`; 
+        return { proyeccion, estado };
     }
 
 }

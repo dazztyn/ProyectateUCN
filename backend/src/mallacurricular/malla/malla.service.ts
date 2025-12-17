@@ -100,29 +100,5 @@ export class MallaService
 
         return Object.fromEntries(mallaAgrupada);
     }
-    
-    //Eliminar
-    async obtenerAsignatura(codigoAsignatura: string,  codigoCarrera: string)
-    {
-        const asignaturaEncontrada = await this.asignaturaRepo.findOne({
-            where: { 
-                codigoAsignatura: codigoAsignatura,
-                codigoCarrera: codigoCarrera
-            }
-        });
-
-        if (!asignaturaEncontrada) 
-        {
-            throw new NotFoundException(`La asignatura con código ${codigoAsignatura} no existe en esta carrera.`);
-        }
-
-        return {
-            codigo: asignaturaEncontrada.codigoAsignatura,
-            asignatura: asignaturaEncontrada.nombreAsignatura,
-            creditos: asignaturaEncontrada.creditos,
-            nivel: asignaturaEncontrada.nivel,
-            prereq: asignaturaEncontrada.prerrequisitos
-        };
-    }
 
 }

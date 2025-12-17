@@ -20,7 +20,7 @@ export class GreedyProjectionStrategy implements IProyeccionStrategy
         this.malla = this.eliminarAsignaturasAprobadasDeMalla(estado.mallaPorNiveles);
     }
 
-    public generar(estado?: EstadoAcademico): Map<string, Asignatura[]> 
+    public generar(): Map<string, Asignatura[]> 
     {
         const proyeccionOptima = new Map<string, Asignatura[]>();
 

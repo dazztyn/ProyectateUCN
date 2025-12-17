@@ -12,6 +12,9 @@ import { AcademicUtilsService } from '../ArchivosComunes/AcademicUtilsService.js
 import { StudentDataFacade } from './StudentDataFacade.js';
 import { ProyeccionMapper } from './proyeccion.mapper.js';
 
+import { ProyeccionConsistencyService } from './proyeccion.consistencia.js';
+import { ProyeccionStrategyFactory } from './strategies/proyeccion-strategy.factory.js';
+
 
 @Module({
   imports: [
@@ -24,7 +27,10 @@ import { ProyeccionMapper } from './proyeccion.mapper.js';
     ProyeccionService,
     StudentDataFacade,
     AcademicUtilsService,
-    ProyeccionMapper
-  ]
+    ProyeccionMapper,
+    ProyeccionConsistencyService,
+    ProyeccionStrategyFactory
+  ],
+  exports: [ProyeccionService]
 })
 export class ProyeccionModule {}

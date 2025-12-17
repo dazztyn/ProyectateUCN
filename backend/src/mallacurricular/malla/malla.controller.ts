@@ -31,25 +31,4 @@ export class MallaController
         return this.malla.obtenerMallaDesdeBD(carrera.codigo);
     }
 
-    //Eliminar
-    @Get(':indiceCarrera/:codigoAsignatura')
-    getAsignatura(
-        @Req() request: Request,
-        @Param('indiceCarrera') indiceCarrera: string,
-        @Param('codigoAsignatura') codigoAsignatura: string
-    )
-    {
-        const usuario = request.user as Usuario;
-
-        const index = parseInt(indiceCarrera, 10);
-                
-        if (isNaN(index) || !usuario.carreras || !usuario.carreras[index]) 
-        {
-            throw new BadRequestException(`El índice de carrera ${index} no es válido.`);
-        }
-
-        const carrera = usuario.carreras[index];
-
-        return this.malla.obtenerAsignatura(codigoAsignatura, carrera.codigo);
-    }
 }
