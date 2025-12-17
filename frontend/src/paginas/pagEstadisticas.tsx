@@ -7,29 +7,28 @@ import '../style/styleLogin.css';
 interface DatoEstadistica {
     codigo: string;
     nombre: string;
-    // Agregamos variantes posibles para que no falle
     total?: string | number;
     total_inscritos?: string | number;
     total_intentos?: string | number;
     total_reprobados?: string | number;
     reprobados?: string | number;
-    [key: string]: any; // <--- Esto permite propiedades dinámicas
+    [key: string]: any;
 }
+
 const Estadisticas: React.FC = () => {
     const navigate = useNavigate();
     const access_token = localStorage.getItem("access_token");
 
     // ESTADOS
     const [periodo, setPeriodo] = useState('202510');
-    // CAMBIO: Inicializamos con un valor por defecto o vacío, pero editable
-    const [codigoCarrera, setCodigoCarrera] = useState('C6'); 
+    const [codigoCarrera, setCodigoCarrera] = useState('8266'); 
+    const [limite, setLimite] = useState(20); // ✅ Nuevo estado para límite
     const [modo, setModo] = useState<'demanda' | 'reprobacion'>('demanda');
     const [datos, setDatos] = useState<DatoEstadistica[]>([]);
     
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    // Verificamos solo que exista token al entrar
     useEffect(() => {
         if (!access_token) {
             navigate('/');
@@ -38,7 +37,7 @@ const Estadisticas: React.FC = () => {
 
     const cargarEstadisticas = async () => {
         if (!codigoCarrera) {
-            setError("Debes ingresar un código de carrera (ej: C6)");
+            setError("Debes ingresar un código de carrera (ej: 8266)");
             return;
         }
 
@@ -48,8 +47,8 @@ const Estadisticas: React.FC = () => {
 
         try {
             const endpoint = modo === 'demanda' ? 'demanda' : 'reprobacion';
-            // Usamos el codigoCarrera que escribió el admin
-            const url = `http://localhost:3000/estadisticas/${endpoint}/${codigoCarrera}?periodo=${periodo}&top=20`;
+            // ✅ Agregamos el parámetro 'top' con el valor del límite
+            const url = `http://localhost:3000/estadisticas/${endpoint}/${codigoCarrera}?periodo=${periodo}&top=${limite}`;
 
             const res = await fetch(url, {
                 headers: { Authorization: `Bearer ${access_token}` },
@@ -141,6 +140,20 @@ const Estadisticas: React.FC = () => {
                         />
                     </div>
 
+                    {/* ✅ NUEVO: Input para límite de resultados */}
+                    <div className="input-group" style={{ marginBottom: 0 }}>
+                        <label>Límite (Top):</label>
+                        <input 
+                            type="number" 
+                            value={limite} 
+                            onChange={(e) => setLimite(Math.max(1, parseInt(e.target.value) || 20))}
+                            min="1"
+                            max="100"
+                            placeholder="20"
+                            style={{ padding: '0.6rem', border: '1px solid #ccc', borderRadius: '4px', width: '70px' }}
+                        />
+                    </div>
+
                     <button 
                         className="boton-ingresar" 
                         onClick={cargarEstadisticas} 
@@ -225,8 +238,8 @@ const Estadisticas: React.FC = () => {
                                 </tr>
                             )) : (
                                 <tr>
-                                    <td colSpan={5} style={{ padding: '3rem', textAlign: 'center', color: '#6b7280' }}>
-                                        {loading ? 'Procesando datos...' : 'Ingresa la carrera y periodo para ver datos.'}
+                                    <td colSpan={modo === 'demanda' ? 4 : 6} style={{ padding: '3rem', textAlign: 'center', color: '#6b7280' }}>
+                                        {loading ? 'Procesando datos...' : 'Ingresa los parámetros y presiona Consultar.'}
                                     </td>
                                 </tr>
                             )}
