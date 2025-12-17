@@ -9,7 +9,7 @@
     padding: 2rem;
     border-radius: 6px;
     background-color: #01343E;
-    margin: auto;
+    margin-top: 0;
 }
 .container-lateral {
     display: flex;

@@ -16,7 +16,7 @@ import type {
   AsignaturaDisponible,
   AsignaturaInputDto          
 } from '../types/dataTypesEditor';
-
+type TipoExcepcion = 'NORMAL' | 'SIN_PREREQ' | 'EXTRA_SEMESTRE' | 'COMBINADA';
 const calculateSemestreCredits = (malla: MallaEditorData): Record<string, number> => {
 
   const creditosPorSemestre: Record<string, number> = {};
@@ -40,6 +40,7 @@ const PagEditor = () => {
   const [malla, setMalla] = useState<MallaEditorData>(initialMalla);
   const [seleccionado, setSeleccionado] = React.useState<number | null>(null);
   const [indice, setIndice] = useState<number | null>(null);
+  const [tipoBusqueda, setTipoBusqueda] = useState<TipoExcepcion>('NORMAL');
   const [access_token, setAccessToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isDirty, setIsDirty] = useState(false);
@@ -96,6 +97,27 @@ const PagEditor = () => {
       setLoading(false);
     }
   };
+  const seleccionarPrimerEditable = (semestres: SemestreEditor[]) => {
+    const primerEditable = semestres.find(s => s.editable);
+    if (primerEditable) {
+        setSeleccionado(primerEditable.numero);
+    } else {
+        setSeleccionado(semestres[0].numero); // Fallback al primero si nada es editable
+    }
+};
+  const handleSelectSemestre = (numeroSemestre: number) => {
+      if (!isDirty) {
+          setSeleccionado(numeroSemestre);
+          return;
+      }
+      const semestreDestino = malla.find(s => s.numero === numeroSemestre);
+      
+      if (isDirty && !semestreDestino?.editable) {
+          alert("Tienes cambios pendientes. Por favor, selecciona un semestre editable y guarda para continuar.");
+          return;
+      }
+      setSeleccionado(numeroSemestre);
+  };
   const handleDeleteAsignatura = (semestreNumero: number, codigoAsignatura: string) => {
     if (semestreNumero !== seleccionado) {
         alert("Debes seleccionar el semestre antes de poder editar sus asignaturas.");
@@ -139,30 +161,71 @@ const PagEditor = () => {
     console.log(`Semestre ${newNumero} creado exitosamente.`);
     setIsDirty(true);
 };
+  const handleDeleteSemestre = async () => {
+      // 1. Validaciones iniciales
+      if (seleccionado === null || !malla || !proyeccionId) return;
+
+      const semActual = malla.find(s => s.numero === seleccionado);
+      if (!semActual || !semActual.editable) {
+          alert("No se puede eliminar un semestre que no es editable.");
+          return;
+      }
+
+      // 2. Advertencia de impacto en semestres futuros
+      const mensaje = "¡Atención! Al eliminar este semestre, se borrarán todas sus asignaturas. " +
+                      "Tenga en cuenta que esto puede eliminar automáticamente asignaturas de semestres futuros " +
+                      "que ya no cumplan con los prerrequisitos. ¿Desea proseguir?";
+
+      if (!window.confirm(mensaje)) {
+          return; // El usuario canceló
+      }
+
+      setLoading(true);
+
+      try {
+          // 3. Enviamos un Body vacío [] para que el backend limpie el semestre
+          const body: AsignaturaInputDto[] = []; 
+
+          const url = `http://localhost:3000/proyeccion/actualizarProyeccion/${indice}/${proyeccionId}/${semActual.numero}/${semActual.periodo}`;
+
+          const response = await fetch(url, {
+              method: 'PATCH',
+              headers: {
+                  'Authorization': `Bearer ${access_token}`,
+                  'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(body)
+          });
+
+          if (!response.ok) throw new Error("Error al intentar eliminar el semestre.");
+
+          // 4. Recibimos la nueva malla recalculada por el backend
+          const data: FullProyeccionResponse = await response.json();
+          
+          setMalla(data.semestres);
+          setIsDirty(false); // Limpiamos el estado de cambios
+
+          // 5. Re-posicionamos al usuario en un semestre válido (el primer editable)
+          const primerEditable = data.semestres.find(s => s.editable);
+          if (primerEditable) {
+              setSeleccionado(primerEditable.numero);
+          } else {
+              setSeleccionado(data.semestres[0].numero);
+          }
+
+          alert("Semestre eliminado y proyección recalculada con éxito.");
+
+      } catch (err) {
+          console.error("Error al eliminar semestre:", err);
+          alert("Hubo un fallo al intentar eliminar el semestre.");
+      } finally {
+          setLoading(false);
+      }
+  };
   const semestreCredits = React.useMemo(() => {
     return calculateSemestreCredits(malla); 
   }, [malla]);
-const seleccionarPrimerEditable = (semestres: SemestreEditor[]) => {
-    const primerEditable = semestres.find(s => s.editable);
-    if (primerEditable) {
-        setSeleccionado(primerEditable.numero);
-    } else {
-        setSeleccionado(semestres[0].numero); // Fallback al primero si nada es editable
-    }
-};
-const handleSelectSemestre = (numeroSemestre: number) => {
-    if (!isDirty) {
-        setSeleccionado(numeroSemestre);
-        return;
-    }
-    const semestreDestino = malla.find(s => s.numero === numeroSemestre);
-    
-    if (isDirty && !semestreDestino?.editable) {
-        alert("Tienes cambios pendientes. Por favor, selecciona un semestre editable y guarda para continuar.");
-        return;
-    }
-    setSeleccionado(numeroSemestre);
-};
+
   const handleAddAsignatura = (asignatura: AsignaturaDisponible) => {
     if (seleccionado === null) {
         alert("Primero selecciona un semestre para agregar la asignatura.");
@@ -363,6 +426,7 @@ const handleSaveProyeccion = async () => {
             onAddSemestre={handleAddSemestre}
             onSaveProyeccion={() => handleRestriccionProyeccion(false)}
             onAutocompletar={handleAutocompletar}
+            onEliminarSemestre={handleDeleteSemestre}
           />
         <CompAsignaturasDisponibles 
         selectedSemestreId={seleccionado} 
@@ -371,6 +435,8 @@ const handleSaveProyeccion = async () => {
         indiceCarrera={indice}
         idProyeccion={proyeccionId || 0}
         malla ={malla}
+        tipoBusqueda={tipoBusqueda}
+        setTipoBusqueda={setTipoBusqueda}
         />
         {warning && (
     <CompAdvertenciaCreditos 
