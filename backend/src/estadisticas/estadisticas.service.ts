@@ -30,7 +30,7 @@ export class EstadisticasService {
     return resultados.map(r => ({
       codigo: r.codigo,
       nombre: r.nombre,
-      total_inscritos: parseInt(r.total_inscritos, 10) // ✅ Cambiar 'inscritos' a 'total_inscritos'
+      total_inscritos: parseInt(r.total_inscritos, 10) 
     }));
   }
 
@@ -64,8 +64,8 @@ export class EstadisticasService {
       return {
         codigo: row.codigo,
         nombre: row.nombre,
-        total_intentos: total,        // ✅ Cambiar 'totalCursado' a 'total_intentos'
-        total_reprobados: reprobados  // ✅ Cambiar 'totalReprobado' a 'total_reprobados'
+        total_intentos: total,       
+        total_reprobados: reprobados  
       };
     });
   }
