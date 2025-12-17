@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 
@@ -419,4 +419,22 @@ export class ProyeccionService
         return { proyeccion, estado };
     }
 
+    async eliminarProyeccion(idProyeccion: number, rutUsuario: string)
+    {
+        const proyeccion = await this.proyeccionRepository.findOne({
+            where: { idProyeccion: idProyeccion }
+        });
+
+        if (!proyeccion) 
+        {
+            throw new NotFoundException(`La proyección con ID ${idProyeccion} no existe.`);
+        }
+
+        if (proyeccion.rutUsuario !== rutUsuario) 
+        {
+            throw new ForbiddenException('No tienes permiso para eliminar esta proyección.');
+        }
+
+        await this.proyeccionRepository.remove(proyeccion);
+    }   
 }

@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ProyeccionService } from './proyeccion.service';
 import type { Request } from 'express';
@@ -199,4 +199,14 @@ export class ProyeccionController
         );
     }
 
+    @Delete('/eliminarProyeccion/:idProyeccion')
+    eliminarProyeccion
+    (
+        @Req() request: Request,
+        @Param('idProyeccion') idProyeccion: string
+    )
+    {
+        const usuario = request.user as Usuario;
+        return this.proyeccion.eliminarProyeccion(parseInt(idProyeccion, 10), usuario.rut);
+    }
 }

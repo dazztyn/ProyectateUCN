@@ -10,7 +10,10 @@ export class InstanciaAsignatura {
   @Column({ default: 'PENDIENTE' })
   estado: string;
 
-  @ManyToOne(() => Semestre, (semestre) => semestre.instancias)
+  @ManyToOne(() => Semestre, (semestre) => semestre.instancias,
+  {
+    onDelete: 'CASCADE'
+  })
   semestre: Semestre;
 
   @ManyToOne(() => Asignaturas, (asignatura) => asignatura.instancias)

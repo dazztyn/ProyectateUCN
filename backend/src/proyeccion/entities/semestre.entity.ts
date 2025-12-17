@@ -22,7 +22,10 @@ export class Semestre {
   // --- RELACIÓN CON PROYECCION ---
   // Muchos Semestres pertenecen a una Proyeccion.
   // Este es el lado que tendrá la columna de la llave foránea ('proyeccionIdProyeccion').
-  @ManyToOne(() => Proyeccion, (proyeccion) => proyeccion.semestres)
+  @ManyToOne(() => Proyeccion, (proyeccion) => proyeccion.semestres,
+  {
+    onDelete: 'CASCADE',
+  })
   proyeccion: Proyeccion;
 
 // --- RELACIÓN MODIFICADA ---

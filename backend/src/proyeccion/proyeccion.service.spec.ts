@@ -15,17 +15,16 @@ describe('ProyeccionService', () => {
   let service: ProyeccionService;
   let facade: StudentDataFacade;
   
-  // Mocks independientes
+  // Variables para los Mocks
   let mockProyeccionRepo: any;
   let mockSemestreRepo: any;
   let mockInstanciaRepo: any;
-  
   let mockQueryRunner: any;
   let mockConsistencyService: any;
   let mockStrategyFactory: any;
   let mockMapper: any;
 
-  // --- CONFIGURACIÓN DE MOCKS ---
+  // --- CONFIGURACIÓN DE DATOS FALSOS (MOCKS) ---
 
   const mockFacade = {
     obtenerEstadoAcademico: jest.fn().mockResolvedValue({
@@ -47,24 +46,33 @@ describe('ProyeccionService', () => {
     toSummaryResponseList: jest.fn()
   };
 
-  // ⚠️ FIX IMPORTANTE: QueryRunner ahora devuelve repositorios funcionales
+  // 🛡️ EL MOCK DEL QUERY RUNNER BLINDADO 🛡️
   mockQueryRunner = {
     connect: jest.fn(),
     startTransaction: jest.fn(),
     commitTransaction: jest.fn(),
     rollbackTransaction: jest.fn(),
     release: jest.fn(),
+    // El manager es lo que se usa DENTRO de la transacción
     manager: {
       create: jest.fn().mockImplementation((entity, dto) => dto),
-      save: jest.fn().mockImplementation(entity => Promise.resolve({ ...entity, idProyeccion: 1 })),
+      // Save devuelve lo que recibe + un ID simulado
+      save: jest.fn().mockImplementation(entity => Promise.resolve({ ...entity, id: 1, idProyeccion: 1 })),
       remove: jest.fn(),
-      // AQUÍ ESTABA EL PROBLEMA: getRepository debe devolver algo útil
+      
+      // Si el código usa manager.findOne() directo:
+      findOne: jest.fn().mockResolvedValue({ id: 1, codigo: 'MAT101', creditos: 5 }),
+      
+      // Si el código usa manager.getRepository(...)
       getRepository: jest.fn().mockReturnValue({
-          count: jest.fn().mockResolvedValue(1),     // Para validaciones de existencia
-          findOne: jest.fn().mockResolvedValue({}),  // Para búsquedas
+          count: jest.fn().mockResolvedValue(1),     // "Sí, la asignatura existe"
+          findOne: jest.fn().mockResolvedValue({ id: 1, codigo: 'MAT101' }), // "Sí, encontré el objeto"
           create: jest.fn(d => d),
-          save: jest.fn(d => d)
+          save: jest.fn(d => Promise.resolve({ ...d, id: 1 })),
+          find: jest.fn().mockResolvedValue([])
       }),
+
+      // Si usa QueryBuilder dentro de la transacción
       createQueryBuilder: jest.fn(() => ({
           insert: jest.fn().mockReturnThis(),
           into: jest.fn().mockReturnThis(),
@@ -89,11 +97,14 @@ describe('ProyeccionService', () => {
   };
 
   beforeEach(async () => {
-    // Mocks de Repositorios (Inyectados)
+    // 1. Limpiamos contadores antes de cada test
+    jest.clearAllMocks();
+
+    // 2. Configuración inicial de repositorios (lo que se usa FUERA de la transacción)
     mockProyeccionRepo = {
         create: jest.fn().mockImplementation(dto => dto),
         save: jest.fn().mockResolvedValue({ idProyeccion: 1 }),
-        findOne: jest.fn(), // Se configura por test
+        findOne: jest.fn(), // Se configura en cada test específico
         find: jest.fn().mockResolvedValue([])
     };
 
@@ -103,7 +114,6 @@ describe('ProyeccionService', () => {
         findOne: jest.fn()
     };
 
-    // Mock para Instancia (Inyectado)
     mockInstanciaRepo = {
         create: jest.fn().mockImplementation(dto => dto),
         manager: {
@@ -111,6 +121,7 @@ describe('ProyeccionService', () => {
                 count: jest.fn().mockResolvedValue(1) 
             })
         },
+        // Mock necesario para obtenerEstadisticas
         createQueryBuilder: jest.fn(() => ({
             leftJoin: jest.fn().mockReturnThis(),
             leftJoinAndSelect: jest.fn().mockReturnThis(),
@@ -143,15 +154,13 @@ describe('ProyeccionService', () => {
 
     service = module.get<ProyeccionService>(ProyeccionService);
     facade = module.get<StudentDataFacade>(StudentDataFacade);
-    
-    jest.clearAllMocks();
   });
 
   // --- TESTS ---
 
   describe('proyeccionFutura', () => {
     it('debe orquestar la generación automática', async () => {
-      // 1. Configurar que la proyección se encuentre al final
+      // Configuramos para que al final del proceso encuentre la proyección creada
       mockProyeccionRepo.findOne.mockResolvedValue({ 
           idProyeccion: 1, 
           rutUsuario: '111', 
@@ -169,7 +178,9 @@ describe('ProyeccionService', () => {
   describe('validarConsistenciaProyeccion', () => {
     it('debe delegar al servicio de consistencia', async () => {
       mockProyeccionRepo.findOne.mockResolvedValue({ idProyeccion: 1, semestres: [] });
+      
       await service.validarConsistenciaProyeccion(1, '2020');
+      
       expect(mockConsistencyService.validarYCorregir).toHaveBeenCalled();
     });
   });
@@ -178,21 +189,21 @@ describe('ProyeccionService', () => {
     it('debe guardar un semestre editado manualmente y validar consistencia', async () => {
       const mockAsignaturasDto = [{ codigo: 'MAT101', creditos: 5, nombre: 'Calc' }];
       
-      // 1. Encontrar la proyección inicial
+      // A. Mock Proyección inicial
       mockProyeccionRepo.findOne.mockResolvedValueOnce({ idProyeccion: 1, codigoCarrera: '8606' });
       
-      // 2. Simular que el semestre no existe (para entrar al flujo de creación)
+      // B. Mock Semestre (findOne FUERA de la transacción, si aplica)
+      // Si tu código busca el semestre antes de la transacción:
       mockSemestreRepo.findOne.mockResolvedValueOnce(null);
 
-      // 3. Mockear la respuesta final (obtenerProyeccionCompleta)
+      // C. Mock Respuesta final (obtenerProyeccionCompleta usa findOne)
       mockProyeccionRepo.findOne.mockResolvedValueOnce({ idProyeccion: 1, semestres: [] });
       mockMapper.toResponse.mockReturnValue({ id: 1 });
 
       await service.guardarSemestreManual(1, 2, '202410', mockAsignaturasDto as any, '2020');
 
       expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
-      // Verificamos que se intentó guardar algo
-      expect(mockQueryRunner.manager.save).toHaveBeenCalled(); 
+      expect(mockQueryRunner.manager.save).toHaveBeenCalled();
       expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
       expect(mockConsistencyService.validarYCorregir).toHaveBeenCalled();
     });
@@ -200,7 +211,6 @@ describe('ProyeccionService', () => {
 
   describe('autocompletarProyeccion', () => {
     it('debe generar semestres futuros y guardarlos', async () => {
-      // 1. Encontrar proyección existente
       mockProyeccionRepo.findOne.mockResolvedValue({
           idProyeccion: 1, rutUsuario: '111', codigoCarrera: '8606',
           semestres: [{ numero: 1, periodo: '202310' }]
