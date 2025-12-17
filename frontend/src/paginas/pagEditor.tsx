@@ -12,7 +12,8 @@ import type {
   FullProyeccionResponse, 
   MallaEditorData,        
   SemestreEditor,
-  AsignaturaDisponible          
+  AsignaturaDisponible,
+  AsignaturaInputDto          
 } from '../types/dataTypesEditor';
 
 const calculateSemestreCredits = (malla: MallaEditorData): Record<string, number> => {
@@ -39,6 +40,7 @@ const PagEditor = () => {
   const [indice, setIndice] = useState<number | null>(null);
   const [access_token, setAccessToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isDirty, setIsDirty] = useState(false);
 
     useEffect(() => {
     const state = location.state as
@@ -66,8 +68,6 @@ const PagEditor = () => {
     setIndice(idx);
     fetchUsuario(token, idx);
   }, [location.state, navigate]);
-
- //Nota, corregir cuando haya booleanos de editable/no editable
   useEffect(() => {
     if (seleccionado === null && malla.length > 0) {
       setSeleccionado(malla[0].numero);
@@ -100,6 +100,7 @@ const PagEditor = () => {
             if (sem.numero === semestreNumero) {
                 const updatedAsignaturas = sem.asignaturas.filter(a => a.codigo !== codigoAsignatura);
                 const totalCreditos = updatedAsignaturas.reduce((sum, a) => sum + a.creditos, 0);
+                setIsDirty(true);
                 return {
                     ...sem,
                     asignaturas: updatedAsignaturas,
@@ -108,7 +109,9 @@ const PagEditor = () => {
             }
             return sem;
         });
+        setIsDirty(true);
         return updatedMalla;
+        
     });
   };
   const handleAddSemestre = () => {
@@ -128,12 +131,17 @@ const PagEditor = () => {
     setMalla(prevMalla => [...prevMalla, newSemestre]);
     setSeleccionado(newNumero); 
     console.log(`Semestre ${newNumero} creado exitosamente.`);
+    setIsDirty(true);
 };
   const semestreCredits = React.useMemo(() => {
     return calculateSemestreCredits(malla); 
   }, [malla]);
 
   const handleSelectSemestre = (semestrePeriodo: number) => {
+    if (isDirty) {
+        alert("Tienes cambios sin guardar en el semestre actual. Por favor, guarda antes de cambiar de semestre para actualizar la disponibilidad de materias.");
+        return; 
+    }
     if (semestrePeriodo === seleccionado) return;
     setSeleccionado(semestrePeriodo);
     console.log("Semestre seleccionado:", semestrePeriodo);
@@ -154,7 +162,7 @@ const PagEditor = () => {
                     creditos: asignatura.creditos,
                     estado: 'PENDIENTE' as const, // Asumimos 'PENDIENTE' al agregarla
                 };
-          
+                  setIsDirty(true);
                 if (sem.asignaturas.some(a => a.codigo === nuevaAsignatura.codigo)) {
                     console.warn(`La asignatura ${asignatura.nombre} ya está en el semestre.`);
                     return sem;
@@ -170,10 +178,61 @@ const PagEditor = () => {
         
         return updatedMalla;
     });
+    setIsDirty(true);
 };
-  const handleSaveProyeccion = () => {
-      console.log("Guardando proyección...", malla);
-  };
+
+// PagEditor.tsx
+
+const handleSaveProyeccion = async () => {
+    
+    if (!access_token || indice === null || !proyeccionId || seleccionado === null) {
+        alert("Faltan datos para guardar.");
+        return;
+    }
+
+    const semestreActual = malla.find(s => s.numero === seleccionado);
+
+    if (!semestreActual || !semestreActual.editable) {
+        alert("Este semestre no se puede modificar.");
+        return;
+    }
+
+    setLoading(true);
+
+    try {
+        const body: AsignaturaInputDto[] = semestreActual.asignaturas.map(a => ({
+            codigo: a.codigo,
+            nombre: a.nombre,
+            creditos: a.creditos,
+            estado: a.estado || "PENDIENTE"
+        }));
+
+        const url = `http://localhost:3000/proyeccion/actualizarProyeccion/${indice}/${proyeccionId}/${semestreActual.numero}/${semestreActual.periodo}`;
+
+        const response = await fetch(url, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${access_token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(body)
+        });
+
+        if (!response.ok) throw new Error("No se pudo guardar el semestre.");
+
+        const data: FullProyeccionResponse = await response.json();
+        setMalla(data.semestres);
+        setIsDirty(false);
+
+        alert("Semestre guardado. La proyección se ha actualizado con los cambios del servidor.");
+
+    } catch (err) {
+        console.error("Error al guardar:", err);
+        alert("Hubo un error al sincronizar con el servidor.");
+    } finally {
+        setLoading(false);
+    }
+};
   const handleAutocompletar = async () => {
     if (!access_token || indice === null || !proyeccionId) {
         alert("Faltan datos para realizar la operación.");
