@@ -30,7 +30,7 @@ export class EstadisticasService {
     return resultados.map(r => ({
       codigo: r.codigo,
       nombre: r.nombre,
-      inscritos: parseInt(r.total_inscritos, 10)
+      total_inscritos: parseInt(r.total_inscritos, 10) // ✅ Cambiar 'inscritos' a 'total_inscritos'
     }));
   }
 
@@ -60,14 +60,12 @@ export class EstadisticasService {
     return resultados.map(row => {
       const total = parseInt(row.total_intentos);
       const reprobados = parseInt(row.total_reprobados);
-      const porcentaje = total > 0 ? (reprobados / total) * 100 : 0;
 
       return {
         codigo: row.codigo,
         nombre: row.nombre,
-        totalCursado: total,
-        totalReprobado: reprobados,
-        tasaReprobacion: parseFloat(porcentaje.toFixed(2)) + '%'
+        total_intentos: total,        // ✅ Cambiar 'totalCursado' a 'total_intentos'
+        total_reprobados: reprobados  // ✅ Cambiar 'totalReprobado' a 'total_reprobados'
       };
     });
   }

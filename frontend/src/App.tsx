@@ -7,6 +7,8 @@ import Proyeccion from './paginas/pagProyeccion';
 import Login from './paginas/pagLogin';
 import SeleccionCarrera from './paginas/pagSeleccion';
 import PagEditor from './paginas/pagEditor';
+import Estadisticas from './paginas/pagEstadisticas';
+
 function App() {
   return (
     <Routes>
@@ -16,6 +18,7 @@ function App() {
       <Route path="/editor" element={<PagEditor/>} />
       <Route path="/proyeccion" element={<Proyeccion/>} />
       <Route path="/seleccion" element={<SeleccionCarrera />} />
+      <Route path="/estadisticas" element={<Estadisticas />} />
       <Route path="*" element={<Login />} />
     </Routes>
 

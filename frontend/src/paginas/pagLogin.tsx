@@ -28,10 +28,16 @@ const Login: React.FC = () => {
         password
       });
 
-      const { access_token } = response.data;
+      const { access_token, isAdmin, role } = response.data;
 
       localStorage.setItem("access_token", access_token);
-      navigate("/seleccion");
+      
+      // Redirigir según el tipo de usuario
+      if (isAdmin || role === 'admin') {
+        navigate("/estadisticas");
+      } else {
+        navigate("/seleccion");
+      }
 
     } catch (err: any) {
       if (err.response?.status === 401) {
