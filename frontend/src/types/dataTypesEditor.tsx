@@ -55,3 +55,9 @@ export type AsignaturasDisponiblesResponse = {
     disponibles: AsignaturaRawDisponible[];
     noDisponibles: AsignaturaRawDisponible[];
 };
+export type AsignaturaInputDto = {
+    codigo: string;
+    nombre: string;
+    creditos: number;
+    estado?: string; 
+};
