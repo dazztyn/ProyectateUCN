@@ -165,7 +165,10 @@ export class ProyeccionService
         // Conjunto de asignaturas aprobadas (Históricas + Proyectadas que vamos acumulando)
         const aprobadosAcumulados = new Set(estado.asignaturasAprobadas);
 
-        // Ordenamos cronológicamente (Importante: 1 -> 2 -> 3...)
+        // Preparamos la malla ordenada por nivel para calcular rápidamente el "tapón" académico
+        const mallaOrdenada = estado.mallaCompleta.sort((a, b) => a.nivel - b.nivel);
+
+        // Ordenamos cronológicamente los semestres de la proyección
         const semestresOrdenados = proyeccion.semestres.sort((a, b) => a.numero - b.numero);
 
         const queryRunner = this.dataSource.createQueryRunner();
@@ -177,6 +180,21 @@ export class ProyeccionService
 
             for (const semestre of semestresOrdenados) 
             {
+                // PASO 1: Calcular el "Nivel más atrasado" actual
+                // Buscamos el primer ramo de la malla que NO esté en aprobadosAcumulados
+                let nivelMasAtrasado = 1; // Por defecto
+                for (const asignaturaMalla of mallaOrdenada) {
+                    if (!aprobadosAcumulados.has(asignaturaMalla.codigo)) {
+                        nivelMasAtrasado = asignaturaMalla.nivel;
+                        break; // Encontramos el tapón, dejamos de buscar
+                    }
+                }
+
+                // La regla: Solo puede tomar ramos hasta (NivelMasAtrasado + 2)
+                const nivelMaximoPermitido = nivelMasAtrasado + 2;
+                
+                // console.log(`Semestre ${semestre.numero}: Tapón en nivel ${nivelMasAtrasado}. Máximo permitido: ${nivelMaximoPermitido}`);
+
                 const instanciasValidas: InstanciaAsignatura[] = [];
 
                 if (semestre.instancias) 
@@ -185,71 +203,131 @@ export class ProyeccionService
                     {
                         const asignatura = instancia.asignatura;
 
-                        // 🛡️ PROTECCIÓN CRÍTICA: Detectar datos corruptos
-                        // Si la asignatura es null (se guardó mal antes), la eliminamos
-                        // para que no rompa el bucle y permita continuar la validación.
+                        // Protección contra nulos
                         if (!asignatura) {
-                            console.warn(`⚠️ Instancia corrupta (ID: ${instancia.id}) en Semestre ${semestre.numero}. Eliminando...`);
                             await queryRunner.manager.remove(instancia);
                             huboCambios = true;
-                            continue; // Saltamos a la siguiente iteración
+                            continue;
                         }
 
-                        let cumpleRequisitos = true;
-                        
-                        if (asignatura.prerrequisitos && asignatura.prerrequisitos.length > 0) 
+                        let esValido = true;
+                        let motivoEliminacion = "";
+
+                        // --- VALIDACIÓN A: Regla de los 2 Semestres ---
+                        if (asignatura.nivel > nivelMaximoPermitido) {
+                            esValido = false;
+                            motivoEliminacion = `Nivel ${asignatura.nivel} excede el límite permitido (${nivelMaximoPermitido})`;
+                        }
+
+                        // --- VALIDACIÓN B: Prerrequisitos (Solo si pasó la A) ---
+                        if (esValido && asignatura.prerrequisitos && asignatura.prerrequisitos.length > 0) 
                         {
-                            // 🛡️ MEJORA: .trim() elimina espacios accidentales (ej: "MAT101, MAT102")
                             const requisitos = asignatura.prerrequisitos.split(',').map(r => r.trim());
-                            
                             const tieneTodos = requisitos.every(req => aprobadosAcumulados.has(req));
                             
-                            if (!tieneTodos) cumpleRequisitos = false;
+                            if (!tieneTodos) {
+                                esValido = false;
+                                motivoEliminacion = "Falta de prerrequisitos";
+                            }
                         }
 
-                        if (cumpleRequisitos) 
+                        if (esValido) 
                         {
-                            // Si cumple, la "aprobamos" virtualmente para los siguientes semestres
+                            // Aprobamos virtualmente para los siguientes semestres
                             aprobadosAcumulados.add(asignatura.codigoAsignatura);
                             instanciasValidas.push(instancia);
                         } 
                         else
                         {
-                            // Si NO cumple, la borramos de la proyección
+                            // Borramos la asignatura
                             await queryRunner.manager.remove(instancia);
-                            console.log(`🗑️ Eliminando ${asignatura.codigoAsignatura} del semestre ${semestre.numero} por falta de requisitos.`);
+                            console.log(`Eliminando ${asignatura.codigoAsignatura} del semestre ${semestre.numero}. Razón: ${motivoEliminacion}`);
                             huboCambios = true;
                         }
                     }
                 }
-                // Actualizamos la lista en memoria del objeto semestre
+
+                // Actualizamos la lista en memoria
                 semestre.instancias = instanciasValidas; 
 
-                // 1. Recalculamos la suma de créditos con las instancias que SOBREVIVIERON
+                // ACTUALIZACIÓN DE CRÉDITOS
                 const nuevosCreditos = instanciasValidas.reduce((acc, inst) => {
                     return acc + (inst.asignatura?.creditos || 0);
                 }, 0);
 
-                // 2. Si la suma es diferente a lo que dice el semestre, actualizamos y guardamos
                 if (semestre.totalCreditos !== nuevosCreditos) {
-                    console.log(`Actualizando créditos Semestre ${semestre.numero}: ${semestre.totalCreditos} -> ${nuevosCreditos}`);
                     semestre.totalCreditos = nuevosCreditos;
-                    
-                    // Guardamos el cambio en la tabla 'semestres'
                     await queryRunner.manager.save(semestre);
                     huboCambios = true;
                 }
-
             }
+
+            // ====================================
+            // 🧩 FASE 2: DEFRAGMENTACIÓN (Tetris)
+            // ====================================
+            
+            const semestresFijos = semestresOrdenados.filter(s => !s.editable);
+            const semestresEditables = semestresOrdenados.filter(s => s.editable);
+
+            const editablesVivos = semestresEditables.filter(s => s.instancias.length > 0);
+            const editablesMuertos = semestresEditables.filter(s => s.instancias.length === 0);
+
+            if (editablesMuertos.length > 0) 
+            {
+                console.log(`🧹 Eliminando ${editablesMuertos.length} semestres vacíos.`);
+                await queryRunner.manager.remove(editablesMuertos);
+                huboCambios = true;
+            }
+
+            let periodoPivote: string;
+            let numeroPivote: number;
+
+            if (semestresFijos.length > 0) 
+            {
+                const ultimoFijo = semestresFijos[semestresFijos.length - 1];
+                periodoPivote = ultimoFijo.periodo;
+                numeroPivote = ultimoFijo.numero;
+            } 
+            else 
+            {
+
+                periodoPivote = estado.ultimoPeriodo; 
+                
+                numeroPivote = 0; 
+            }
+
+            let periodoRastreo = periodoPivote;
+            let numeroRastreo = numeroPivote;
+
+            for (const semestre of editablesVivos) 
+            {
+
+                const siguientePeriodo = this.siguientePeriodo(periodoRastreo);
+                const siguienteNumero = numeroRastreo + 1;
+
+                periodoRastreo = siguientePeriodo;
+                numeroRastreo = siguienteNumero;
+
+                if (semestre.periodo !== siguientePeriodo || semestre.numero !== siguienteNumero) {
+                
+                    console.log(`Reorganizando: Semestre ID ${semestre.idSemestre} pasa de N°${semestre.numero} a N°${siguienteNumero} (${siguientePeriodo})`);
+                    
+                    semestre.periodo = siguientePeriodo;
+                    semestre.numero = siguienteNumero;
+                    
+                    await queryRunner.manager.save(semestre);
+                    huboCambios = true;
+                }
+            }
+
             await queryRunner.commitTransaction();
             return huboCambios;
+
         } 
         catch (error) 
         {
-            console.error("Error fatal en validación de consistencia:", error);
+            console.error("Error en validación de consistencia:", error);
             await queryRunner.rollbackTransaction();
-            // No lanzamos el error para no interrumpir el flujo del usuario, 
-            // pero lo dejamos registrado en consola.
             return false; 
         } 
         finally 
@@ -502,4 +580,16 @@ export class ProyeccionService
 
         return resultado;
     }
+
+    private siguientePeriodo(periodoActual: string): string 
+    {
+        const anho = parseInt(periodoActual.slice(0, 4));
+        const sem = parseInt(periodoActual.slice(4, 6));
+
+        if (sem === 10) return `${anho}20`;
+        if (sem === 20) return `${anho + 1}10`;
+        
+        return `${anho + 1}10`; 
+    }
+
 }

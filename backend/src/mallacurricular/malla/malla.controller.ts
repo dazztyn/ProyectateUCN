@@ -31,6 +31,7 @@ export class MallaController
         return this.malla.obtenerMallaDesdeBD(carrera.codigo);
     }
 
+    //Eliminar
     @Get(':indiceCarrera/:codigoAsignatura')
     getAsignatura(
         @Req() request: Request,
