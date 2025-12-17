@@ -59,13 +59,9 @@ const MallaEditorDisplay: React.FC<Props> = ({ malla, selectedSemestreId, onSele
                                     key={a.codigo} 
                                     className="asignatura-card-edit"
                                 >
-                                    <h3>Créditos: {a.creditos}</h3>
-                                    <h4>{a.nombre}</h4>
-
                                     {isEditable && (
                                         <button 
                                             className="btn-delete-asig"
-                                            title={`Eliminar ${a.nombre}`}
                                             onClick={(e) => {
                                                 e.stopPropagation(); 
                                                 onDeleteAsignatura(sem.numero, a.codigo);
@@ -74,6 +70,9 @@ const MallaEditorDisplay: React.FC<Props> = ({ malla, selectedSemestreId, onSele
                                             &times;
                                         </button>
                                     )}
+                                    <h3>Créditos: {a.creditos}</h3>
+                                    <h4>{a.nombre}</h4>
+
                                 </div>
                             ))}
                         </div>
