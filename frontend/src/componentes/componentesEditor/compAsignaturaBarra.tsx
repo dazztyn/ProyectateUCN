@@ -9,7 +9,8 @@ import { useState, useEffect, useMemo } from 'react';
 import type { 
     AsignaturaDisponible, 
     AsignaturasDisponiblesResponse, 
-    AsignaturaRawDisponible 
+    AsignaturaRawDisponible,
+    SemestreEditor
 } from '../../types/dataTypesEditor';
 
 type Props = {
@@ -18,6 +19,7 @@ type Props = {
     access_token: string;
     indiceCarrera: number;
     idProyeccion: number;
+    malla: SemestreEditor[];
 };
 const processResponse = (data: AsignaturasDisponiblesResponse): AsignaturaDisponible[] => {
     const disponibles = data.disponibles.map(a => ({
@@ -41,7 +43,14 @@ const processResponse = (data: AsignaturasDisponiblesResponse): AsignaturaDispon
     return [...disponibles, ...noDisponibles];
 };
 
-const CompAsignaturasDisponibles: React.FC<Props> = ({ selectedSemestreId, onAddAsignatura, access_token, indiceCarrera, idProyeccion }) => {
+const CompAsignaturasDisponibles: React.FC<Props> = ({ 
+    selectedSemestreId, 
+    onAddAsignatura, 
+    access_token, 
+    indiceCarrera, 
+    idProyeccion,
+    malla
+}) => {
     
     const [allAsignaturas, setAllAsignaturas] = useState<AsignaturaDisponible[]>([]);
     const [loading, setLoading] = useState(false);
@@ -53,18 +62,23 @@ const CompAsignaturasDisponibles: React.FC<Props> = ({ selectedSemestreId, onAdd
             [codigo]: !prev[codigo],
             }));
         };
+        const asignaturasVisibles = useMemo(() => {
+        const codigosEnMalla = new Set(
+            malla.flatMap(sem => sem.asignaturas.map(asig => asig.codigo))
+        );
+        return allAsignaturas.filter((asig: AsignaturaDisponible) => !codigosEnMalla.has(asig.codigo));
+    }, [allAsignaturas, malla]);
     useEffect(() => {
-    if (indiceCarrera == null || !access_token) {
-        setError("Falta el índice de carrera o el token de acceso.");
+    if (indiceCarrera == null || !access_token || !idProyeccion || selectedSemestreId == null) {
+        setError("Faltan datos para cargar las asignaturas disponibles.");
         return;
     }
-    
 
     const fetchAsignaturas = async () => {
         setLoading(true);
         setError(null);
 
-        const url = `http://localhost:3000/proyeccion/asignaturasDisponibles/${indiceCarrera}?idProyeccion=${idProyeccion}`;
+        const url = `http://localhost:3000/proyeccion/asignaturasDisponibles/${indiceCarrera}?idProyeccion=${idProyeccion}&semestreObjetivo=${selectedSemestreId}`;
 
         try {
             const resp = await fetch(url, {
@@ -87,7 +101,7 @@ const CompAsignaturasDisponibles: React.FC<Props> = ({ selectedSemestreId, onAdd
     };
 
     fetchAsignaturas();
-}, [indiceCarrera, access_token]);
+}, [indiceCarrera, access_token, idProyeccion, selectedSemestreId]);
 
 
     if (loading) {
@@ -104,10 +118,10 @@ const CompAsignaturasDisponibles: React.FC<Props> = ({ selectedSemestreId, onAdd
 
     return (
         <div className="asigcontainer">
-             <h3>
-                    Asignaturas Disponibles 
-                </h3>
-            {allAsignaturas.map(asig => (
+            {/* ... botones superiores ... */}
+            <h3>Asignaturas Disponibles</h3>
+            
+            {asignaturasVisibles.map((asig: AsignaturaDisponible) => ( // <--- Tipo explícito para evitar Error 7006
                 <div 
                     key={asig.codigo} 
                     className={`asigcard ${asig.puedeAgregar ? 'puede-agregar' : 'no-disponible'}`}
@@ -118,35 +132,33 @@ const CompAsignaturasDisponibles: React.FC<Props> = ({ selectedSemestreId, onAdd
                     </div>
                     
                     {!asig.puedeAgregar && (
-                    <div className="asig-motivo-bloqueo">
-                        <button
-                        className="boton-prereq"
-                        onClick={() => togglePrereq(asig.codigo)}
-                        >
-                        {openPrereq[asig.codigo] ? 'Ocultar prereq' : 'Ver prereq'}
-                        </button>
-
-                        {openPrereq[asig.codigo] && (
-                        <div className="mensaje-prereq" style={{ display: openPrereq[asig.codigo] ? "block" : "none" }}>
-                            ⚠Prerrequisitos:
-                            <br />
-                            {asig.prereq || 'N/A'}
+                        <div className="asig-motivo-bloqueo">
+                            <button className="boton-prereq" onClick={() => togglePrereq(asig.codigo)}>
+                                {openPrereq[asig.codigo] ? 'Ocultar prereq' : 'Ver prereq'}
+                            </button>
+                            {openPrereq[asig.codigo] && (
+                                <div className="mensaje-prereq">
+                                    ⚠️ Prerrequisitos: {asig.prereq || 'N/A'}
+                                </div>
+                            )}
                         </div>
-                        )}
-                    </div>
                     )}
 
-                    
                     {asig.puedeAgregar && (
-                         <button 
-                             className="boton-agregar"
-                             onClick={() => onAddAsignatura(asig)}
-                         >
-                            <img src={addIcon} alt="icono añadir asignatura a semestre" className="icon-suma" />
-                         </button>
+                        <button 
+                            className="boton-agregar"
+                            onClick={() => onAddAsignatura(asig)}
+                        >
+                            <img src={addIcon} alt="añadir" className="icon-suma" />
+                        </button>
                     )}
                 </div>
             ))}
+
+            {asignaturasVisibles.length === 0 && !loading && (
+                <div className="info-asignaturas">No hay más asignaturas disponibles para agregar.</div>
+            )}
+
             {error && <ErrorMessage message={error} onClose={() => setError(null)}/>}
         </div>
     );

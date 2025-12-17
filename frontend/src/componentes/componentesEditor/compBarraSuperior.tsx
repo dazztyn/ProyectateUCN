@@ -3,8 +3,10 @@ import backIcon from "../../assets/backIcon.png";
 import "../../style/styleBanner.css";
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-
-const BarraSuperior: React.FC = () => {
+type Props = {
+  nombreProyeccion: string;
+}
+const BarraSuperior: React.FC<Props> = ({ nombreProyeccion }) => {
     const navigate = useNavigate();
   const handleNav = (path: string) => {
     const access_token = localStorage.getItem("access_token");
@@ -20,7 +22,7 @@ const BarraSuperior: React.FC = () => {
     <div className="banner">
         <div className="banner-left">
         <img src={logo} alt="Logo UCN" className="logo-top"/>
-        <div className="wawa">Editor de proyecciones</div>
+        <div className="wawa">Actualmente editando: {nombreProyeccion}</div>
         </div>
         <div className="banner-right">
         <div className="back-button" onClick={() => handleNav('/proyeccion')}>
