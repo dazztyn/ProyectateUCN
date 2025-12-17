@@ -15,6 +15,22 @@
     margin-top: 0.5rem;
     filter: invert(1); 
 }
+.organizar{
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  align-items: center;
+}
+.btn-delete-asig {
+  position: absolute; /* 👈 Se sale del flujo */
+  top: 2px;           /* 👈 Ajusta la distancia desde arriba */
+  right: 2px;         /* 👈 Ajusta la distancia desde la derecha */
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.1rem;    /* Reducimos un poco el padding para que no ocupe tanto espacio visual */
+  line-height: 0;     /* Evita espacios extra extraños */
+}
 .semestre-edit-card {
   display: flex;
   flex-direction: column;
@@ -62,6 +78,7 @@
 }
 
 .asignatura-card-edit {
+ position: relative;
 display: flex;
   height: 4rem;
   flex-direction: column;

@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import MallaEditorDisplay from '../componentes/componentesEditor/compMallaEditor';
 import CompAsignaturasDisponibles from '../componentes/componentesEditor/compAsignaturaBarra';
 import CompBarraControlesProyeccion from '../componentes/componentesEditor/compBotones';
+import CompAdvertenciaCreditos from '../componentes/compMensajeAdvertencia';
 
 import type { 
   FullProyeccionResponse, 
@@ -33,6 +34,7 @@ const PagEditor = () => {
 
   const fullResponse = (location.state?.data as FullProyeccionResponse) || {};
   const initialMalla: MallaEditorData = fullResponse.semestres || [];
+  const [warning, setWarning] = useState<{msg: string, canOverride: boolean} | null>(null);
   const [proyeccionId, setProyeccionId] = useState<number | null>(fullResponse.id || null);
   const [proyeccionNombre, setProyeccionNombre] = useState<string>(fullResponse.nombre || "Sin Nombre");
   const [malla, setMalla] = useState<MallaEditorData>(initialMalla);
@@ -95,6 +97,10 @@ const PagEditor = () => {
     }
   };
   const handleDeleteAsignatura = (semestreNumero: number, codigoAsignatura: string) => {
+    if (semestreNumero !== seleccionado) {
+        alert("Debes seleccionar el semestre antes de poder editar sus asignaturas.");
+        return;
+    }
     setMalla(prevMalla => {
         const updatedMalla = prevMalla.map(sem => {
             if (sem.numero === semestreNumero) {
@@ -136,16 +142,27 @@ const PagEditor = () => {
   const semestreCredits = React.useMemo(() => {
     return calculateSemestreCredits(malla); 
   }, [malla]);
-
-  const handleSelectSemestre = (semestrePeriodo: number) => {
-    if (isDirty) {
-        alert("Tienes cambios sin guardar en el semestre actual. Por favor, guarda antes de cambiar de semestre para actualizar la disponibilidad de materias.");
-        return; 
+const seleccionarPrimerEditable = (semestres: SemestreEditor[]) => {
+    const primerEditable = semestres.find(s => s.editable);
+    if (primerEditable) {
+        setSeleccionado(primerEditable.numero);
+    } else {
+        setSeleccionado(semestres[0].numero); // Fallback al primero si nada es editable
     }
-    if (semestrePeriodo === seleccionado) return;
-    setSeleccionado(semestrePeriodo);
-    console.log("Semestre seleccionado:", semestrePeriodo);
-  }
+};
+const handleSelectSemestre = (numeroSemestre: number) => {
+    if (!isDirty) {
+        setSeleccionado(numeroSemestre);
+        return;
+    }
+    const semestreDestino = malla.find(s => s.numero === numeroSemestre);
+    
+    if (isDirty && !semestreDestino?.editable) {
+        alert("Tienes cambios pendientes. Por favor, selecciona un semestre editable y guarda para continuar.");
+        return;
+    }
+    setSeleccionado(numeroSemestre);
+};
   const handleAddAsignatura = (asignatura: AsignaturaDisponible) => {
     if (seleccionado === null) {
         alert("Primero selecciona un semestre para agregar la asignatura.");
@@ -181,8 +198,45 @@ const PagEditor = () => {
     setIsDirty(true);
 };
 
-// PagEditor.tsx
+const handleRestriccionProyeccion = async (bypassRestriction: boolean = false) => {
+    if (!seleccionado || !malla) return;
 
+    const semActual = malla.find(s => s.numero === seleccionado);
+    if (!semActual) return;
+
+    const totalCreditos = semActual.totalCreditos;
+
+    if (!bypassRestriction) {
+        if (totalCreditos < 10) {
+            setWarning({ 
+                msg: `El semestre tiene ${totalCreditos} créditos. El mínimo permitido es 10.`, 
+                canOverride: true 
+            });
+            return;
+        }
+
+        if (totalCreditos > 30) {
+            const creditosSinLaMayor = totalCreditos - Math.max(...semActual.asignaturas.map(a => a.creditos));
+            
+            if (creditosSinLaMayor > 30) {
+                setWarning({ 
+                    msg: "Solo se permite exceder el límite de 30 créditos por una asignatura.", 
+                    canOverride: false 
+                });
+                return;
+            } else {
+                setWarning({ 
+                    msg: `Has excedido los 30 créditos (${totalCreditos}). ¿Deseas levantar la restricción para esta asignatura extra?`, 
+                    canOverride: true 
+                });
+                return;
+            }
+        }
+    }
+
+    setWarning(null); 
+    await handleSaveProyeccion(); 
+};
 const handleSaveProyeccion = async () => {
     
     if (!access_token || indice === null || !proyeccionId || seleccionado === null) {
@@ -222,6 +276,7 @@ const handleSaveProyeccion = async () => {
 
         const data: FullProyeccionResponse = await response.json();
         setMalla(data.semestres);
+        seleccionarPrimerEditable(data.semestres);
         setIsDirty(false);
 
         alert("Semestre guardado. La proyección se ha actualizado con los cambios del servidor.");
@@ -264,6 +319,8 @@ const handleSaveProyeccion = async () => {
         const data: FullProyeccionResponse = await response.json();
 
         setMalla(data.semestres);
+        seleccionarPrimerEditable(data.semestres); 
+        setIsDirty(false);
         if (data.semestres.length > 0) {
             setSeleccionado(data.semestres[0].numero);
         }
@@ -304,7 +361,7 @@ const handleSaveProyeccion = async () => {
         <div className="container-lateral">
         <CompBarraControlesProyeccion 
             onAddSemestre={handleAddSemestre}
-            onSaveProyeccion={handleSaveProyeccion}
+            onSaveProyeccion={() => handleRestriccionProyeccion(false)}
             onAutocompletar={handleAutocompletar}
           />
         <CompAsignaturasDisponibles 
@@ -315,8 +372,17 @@ const handleSaveProyeccion = async () => {
         idProyeccion={proyeccionId || 0}
         malla ={malla}
         />
+        {warning && (
+    <CompAdvertenciaCreditos 
+        message={warning.msg}
+        showConfirm={warning.canOverride}
+        onClose={() => setWarning(null)}
+        onConfirm={() => handleRestriccionProyeccion(true)} // <--- Bypass activado
+    />
+)}
         </div>
       </div>
+      
     </Layout>
     );
 };
