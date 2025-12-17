@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class CrearEstructuraNAN1765998233796 implements MigrationInterface {
-    name = 'CrearEstructuraNAN1765998233796'
+export class CrearEstructuraNAN1766001257633 implements MigrationInterface {
+    name = 'CrearEstructuraNAN1766001257633'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`CREATE TABLE "proyecciones" ("idProyeccion" SERIAL NOT NULL, "codigoCarrera" text NOT NULL, "rutUsuario" text NOT NULL, "ideal" boolean NOT NULL, "nombreProyeccion" text NOT NULL, CONSTRAINT "UQ_5857a986dc8acf038fa286c8428" UNIQUE ("rutUsuario", "nombreProyeccion", "codigoCarrera"), CONSTRAINT "PK_62f522379fd0aff294016de3768" PRIMARY KEY ("idProyeccion"))`);
