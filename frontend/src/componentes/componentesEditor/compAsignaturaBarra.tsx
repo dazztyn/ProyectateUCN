@@ -24,8 +24,21 @@ type Props = {
     setTipoBusqueda: (tipo: TipoExcepcion) => void;
 };
 
-const processResponse = (data: AsignaturasDisponiblesResponse): AsignaturaDisponible[] => {
-    const disponibles = data.disponibles.map(a => ({
+// compAsignaturaBarra.tsx
+
+const processResponse = (data: any): AsignaturaDisponible[] => {
+    if (Array.isArray(data)) {
+        return data.map(a => ({
+            codigo: a.codigo,
+            nombre: a.asignatura,
+            creditos: a.creditos,
+            nivel: a.nivel,
+            prereq: a.prereq,
+            puedeAgregar: true, 
+        }));
+    }
+
+    const disponibles = (data.disponibles || []).map((a: any) => ({
         codigo: a.codigo,
         nombre: a.asignatura, 
         creditos: a.creditos,
@@ -34,7 +47,7 @@ const processResponse = (data: AsignaturasDisponiblesResponse): AsignaturaDispon
         puedeAgregar: true,
     }));
 
-    const noDisponibles = data.noDisponibles.map(a => ({
+    const noDisponibles = (data.noDisponibles || []).map((a: any) => ({
         codigo: a.codigo,
         nombre: a.asignatura,
         creditos: a.creditos,
@@ -45,7 +58,6 @@ const processResponse = (data: AsignaturasDisponiblesResponse): AsignaturaDispon
 
     return [...disponibles, ...noDisponibles];
 };
-
 const CompAsignaturasDisponibles: React.FC<Props> = ({ 
     selectedSemestreId, 
     onAddAsignatura, 
@@ -113,70 +125,67 @@ const CompAsignaturasDisponibles: React.FC<Props> = ({
 }, [indiceCarrera, access_token, idProyeccion, selectedSemestreId, tipoBusqueda]);
 
 
-    if (loading) {
-        return <div className="asigcontainer">Cargando catálogo de asignaturas...</div>;
-    }
-
     if (error) {
         return error;
     }
     
-    if (allAsignaturas.length === 0) {
-        return <div className="asigcontainer">Advertencia! No hay asignaturas en el catálogo actualmente, pruebe a cambiar de semestre.</div>
-    }
+
 
     return (
         <div className="asigcontainer">
-            <h3>Asignaturas Disponibles</h3>
-            <select 
-                        id="tipo-busqueda"
-                        value={tipoBusqueda} 
-                        onChange={(e) => setTipoBusqueda(e.target.value as TipoExcepcion)}
-                        className="select-excepcion"
-                    >
-                        <option value="NORMAL">Estándar</option>
-                        <option value="SIN_PREREQ">Levantar Prerrequisitos</option>
-                        <option value="EXTRA_SEMESTRE">Adelantar Materias</option>
-                        <option value="COMBINADA">Ambas Restricciones</option>
-                    </select>
-            {asignaturasVisibles.map((asig: AsignaturaDisponible) => ( // <--- Tipo explícito para evitar Error 7006
-                <div 
-                    key={asig.codigo} 
-                    className={`asigcard ${asig.puedeAgregar ? 'puede-agregar' : 'no-disponible'}`}
+            <div className="asig-header">
+                <h3>Asignaturas Disponibles</h3>
+                <select 
+                    id="tipo-busqueda"
+                    value={tipoBusqueda} 
+                    onChange={(e) => setTipoBusqueda(e.target.value as TipoExcepcion)}
+                    className="select-excepcion"
                 >
-                    <div className="asig-info">
-                        <h3>{asig.nombre}</h3>
-                        <p>{asig.codigo} | Créditos: {asig.creditos} | Nivel: {asig.nivel}</p>
-                    </div>
-                    
-                    {!asig.puedeAgregar && (
-                        <div className="asig-motivo-bloqueo">
-                            <button className="boton-prereq" onClick={() => togglePrereq(asig.codigo)}>
-                                {openPrereq[asig.codigo] ? 'Ocultar prereq' : 'Ver prereq'}
-                            </button>
-                            {openPrereq[asig.codigo] && (
-                                <div className="mensaje-prereq">
-                                    ⚠️ Prerrequisitos: {asig.prereq || 'N/A'}
-                                </div>
+                    <option value="NORMAL">Estándar</option>
+                    <option value="SIN_PREREQ">Levantar Prerrequisitos</option>
+                    <option value="EXTRA_SEMESTRE">Adelantar Materias</option>
+                    <option value="COMBINADA">Ambas Restricciones</option>
+                </select>
+            </div>
+            {loading ? (
+                <div className="asig-mensaje-estado">Cargando catálogo...</div>
+            ) : error ? (
+                <div className="asig-mensaje-estado error-texto">
+                    {error} 
+                    <button onClick={() => setTipoBusqueda('NORMAL')}>Reintentar Normal</button>
+                </div>
+            ) : asignaturasVisibles.length === 0 ? (
+                <div className="asig-mensaje-estado">
+                    No hay asignaturas en este modo para el semestre seleccionado.
+                </div>
+            ) : (
+                <div className="asig-lista-scroll">
+                    {asignaturasVisibles.map((asig: AsignaturaDisponible) => (
+                        <div 
+                            key={asig.codigo} 
+                            className={`asigcard ${asig.puedeAgregar ? 'puede-agregar' : 'no-disponible'}`}
+                        >
+                            <div className="asig-info">
+                                <h3>{asig.nombre}</h3>
+                                <p>{asig.codigo} | Créditos: {asig.creditos}</p>
+                            </div>
+
+                            {asig.puedeAgregar ? (
+                                <button className="boton-agregar" onClick={() => onAddAsignatura(asig)}>
+                                    <img src={addIcon} alt="añadir" className="icon-suma" />
+                                </button>
+                            ) : (
+                                <button className="boton-prereq" onClick={() => togglePrereq(asig.codigo)}>
+                                    {openPrereq[asig.codigo] ? 'Ocultar' : 'Ver prereq'}
+                                </button>
+                            )}
+                            {openPrereq[asig.codigo] && !asig.puedeAgregar && (
+                                <div className="mensaje-prereq">⚠️ {asig.prereq || 'Sin info'}</div>
                             )}
                         </div>
-                    )}
-
-                    {asig.puedeAgregar && (
-                        <button 
-                            className="boton-agregar"
-                            onClick={() => onAddAsignatura(asig)}
-                        >
-                            <img src={addIcon} alt="añadir" className="icon-suma" />
-                        </button>
-                    )}
+                    ))}
                 </div>
-            ))}
-
-            {asignaturasVisibles.length === 0 && !loading && (
-                <div className="info-asignaturas">No hay más asignaturas disponibles para agregar.</div>
             )}
-
             {error && <ErrorMessage message={error} onClose={() => setError(null)}/>}
         </div>
     );
