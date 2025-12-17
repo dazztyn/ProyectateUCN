@@ -12,7 +12,7 @@ import type {
     AsignaturaRawDisponible,
     SemestreEditor
 } from '../../types/dataTypesEditor';
-
+type TipoExcepcion = 'NORMAL' | 'SIN_PREREQ' | 'EXTRA_SEMESTRE' | 'COMBINADA';
 type Props = {
     selectedSemestreId: number | null; 
     onAddAsignatura: (asignatura: AsignaturaDisponible) => void; 
@@ -20,7 +20,10 @@ type Props = {
     indiceCarrera: number;
     idProyeccion: number;
     malla: SemestreEditor[];
+    tipoBusqueda: TipoExcepcion;
+    setTipoBusqueda: (tipo: TipoExcepcion) => void;
 };
+
 const processResponse = (data: AsignaturasDisponiblesResponse): AsignaturaDisponible[] => {
     const disponibles = data.disponibles.map(a => ({
         codigo: a.codigo,
@@ -49,13 +52,15 @@ const CompAsignaturasDisponibles: React.FC<Props> = ({
     access_token, 
     indiceCarrera, 
     idProyeccion,
-    malla
+    malla,
+    tipoBusqueda,
+    setTipoBusqueda
 }) => {
     
     const [allAsignaturas, setAllAsignaturas] = useState<AsignaturaDisponible[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [openPrereq, setOpenPrereq] = useState<Record<string, boolean>>({});
+    const [openPrereq, setOpenPrereq] = useState<Record<string, boolean>>({});;
     const togglePrereq = (codigo: string) => {
             setOpenPrereq(prev => ({
             ...prev,
@@ -78,8 +83,12 @@ const CompAsignaturasDisponibles: React.FC<Props> = ({
         setLoading(true);
         setError(null);
 
-        const url = `http://localhost:3000/proyeccion/asignaturasDisponibles/${indiceCarrera}?idProyeccion=${idProyeccion}&semestreObjetivo=${selectedSemestreId}`;
-
+        let url = "";
+        if (tipoBusqueda === 'NORMAL') {
+            url = `http://localhost:3000/proyeccion/asignaturasDisponibles/${indiceCarrera}?idProyeccion=${idProyeccion}&semestreObjetivo=${selectedSemestreId}`;
+        } else {
+            url = `http://localhost:3000/proyeccion/asignaturasExcepcion/${indiceCarrera}?idProyeccion=${idProyeccion}&tipo=${tipoBusqueda}&semestreObjetivo=${selectedSemestreId}`;
+        }
         try {
             const resp = await fetch(url, {
                 headers: { Authorization: `Bearer ${access_token}` },
@@ -101,7 +110,7 @@ const CompAsignaturasDisponibles: React.FC<Props> = ({
     };
 
     fetchAsignaturas();
-}, [indiceCarrera, access_token, idProyeccion, selectedSemestreId]);
+}, [indiceCarrera, access_token, idProyeccion, selectedSemestreId, tipoBusqueda]);
 
 
     if (loading) {
@@ -118,9 +127,18 @@ const CompAsignaturasDisponibles: React.FC<Props> = ({
 
     return (
         <div className="asigcontainer">
-            {/* ... botones superiores ... */}
             <h3>Asignaturas Disponibles</h3>
-            
+            <select 
+                        id="tipo-busqueda"
+                        value={tipoBusqueda} 
+                        onChange={(e) => setTipoBusqueda(e.target.value as TipoExcepcion)}
+                        className="select-excepcion"
+                    >
+                        <option value="NORMAL">Estándar</option>
+                        <option value="SIN_PREREQ">Levantar Prerrequisitos</option>
+                        <option value="EXTRA_SEMESTRE">Adelantar Materias</option>
+                        <option value="COMBINADA">Ambas Restricciones</option>
+                    </select>
             {asignaturasVisibles.map((asig: AsignaturaDisponible) => ( // <--- Tipo explícito para evitar Error 7006
                 <div 
                     key={asig.codigo} 

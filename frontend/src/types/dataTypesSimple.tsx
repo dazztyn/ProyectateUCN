@@ -25,6 +25,6 @@ export type Avance = {
 export type AvanceData = Record<string, Avance[]>;
 
 export type Props = {
-  indice: string;
+  indice: number;
   access_token: string;
 };
