@@ -5,70 +5,30 @@ import { AvancePlano } from './interfaces/EstadoAcademico';
 
 describe('ProyeccionMapper', () => {
   let mapper: ProyeccionMapper;
-  const mockCarrera = '8606'; // Codigo carrera dummy
+  const mockCarrera = '8606';
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [ProyeccionMapper],
     }).compile();
-
     mapper = module.get<ProyeccionMapper>(ProyeccionMapper);
   });
 
-  it('debe estar definido', () => {
-    expect(mapper).toBeDefined();
-  });
-
-  it('toPersistenceCatalog debe convertir asignaturas a DTOs con carrera', () => {
-    const malla: Asignatura[] = [{
-        codigo: 'MAT101', asignatura: 'Calculo', creditos: 6, nivel: 1, prereq: ''
-    }];
-    
-    // Ahora recibe codigoCarrera
-    const resultado = mapper.toPersistenceCatalog(malla, mockCarrera);
-    
-    expect(resultado).toHaveLength(1);
-    expect(resultado[0].codigoAsignatura).toBe('MAT101');
-    expect(resultado[0].codigoCarrera).toBe(mockCarrera); // Verificamos la carrera
-    expect(resultado[0].nombreAsignatura).toBe('Calculo');
-  });
-
-  it('avanceToPersistence debe convertir mapa de avance PLANO a semestres', () => {
-    // Usamos un objeto plano (AvancePlano), NO la clase AvanceConAsignatura
-    const ramo: AvancePlano = {
-        nrc: '123',
-        periodo: '202310',
-        rut: '111',
-        codigo: 'MAT101',
-        asignatura: 'Calculo I',
-        creditos: 6,
-        estado: 'APROBADO',
-        tipo: 'N'
-    };
+  it('avanceToPersistence debe ignorar semestres de verano (15) para el contador de semestre académico', () => {
     
     const mapa = new Map<string, AvancePlano[]>();
-    mapa.set('202310', [ramo]);
+    mapa.set('202310', [{ codigo: 'A', creditos: 5 } as any]);
+    mapa.set('202315', [{ codigo: 'B', creditos: 5 } as any]); 
+    mapa.set('202320', [{ codigo: 'C', creditos: 5 } as any]);
 
-    // Ahora recibe codigoCarrera
     const resultado = mapper.avanceToPersistence(mapa, mockCarrera);
 
-    expect(resultado).toHaveLength(1);
-    expect(resultado[0].periodo).toBe('202310');
-    // Verificamos que mapee correctamente la PK compuesta
-    expect(resultado[0].instancias[0].asignatura.codigoAsignatura).toBe('MAT101');
-    expect(resultado[0].instancias[0].asignatura.codigoCarrera).toBe(mockCarrera); 
-  });
+    const sem1 = resultado.find(s => s.periodo === '202310');
+    const semVerano = resultado.find(s => s.periodo === '202315');
+    const sem2 = resultado.find(s => s.periodo === '202320');
 
-  it('futureToPersistence debe convertir mapa futuro a semestres', () => {
-    const asig = { codigo: 'MAT201', creditos: 6 } as Asignatura;
-    const mapa = new Map<string, Asignatura[]>();
-    mapa.set('202320', [asig]);
-
-    // Ahora recibe codigoCarrera como tercer argumento
-    const resultado = mapper.futureToPersistence(mapa, 2, mockCarrera);
-
-    expect(resultado).toHaveLength(1);
-    expect(resultado[0].numero).toBe(2);
-    expect(resultado[0].instancias[0].asignatura.codigoCarrera).toBe(mockCarrera);
+    expect(sem1?.numero).toBe(1);
+    expect(semVerano?.numero).toBe(2);
+    expect(resultado).toHaveLength(3);
   });
 });

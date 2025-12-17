@@ -10,12 +10,18 @@ describe('StudentDataFacade', () => {
   let avanceService: AvanceService;
 
   // Mocks
-  const mockMallaService = { fetchMallaCarrera: jest.fn().mockResolvedValue([]) };
-  const mockAvanceService = { 
+  const mockMallaService = 
+  { 
+    fetchMallaCarrera: jest.fn().mockResolvedValue([]),
+    obtenerMallaRaw: jest.fn().mockResolvedValue([]) 
+  };
+  
+    const mockAvanceService = { 
     fetchAvanceData: jest.fn().mockResolvedValue([]),
     rellenarListaDeAvance: jest.fn().mockReturnValue([]),
     avanceSeparadoPorPeriodo: jest.fn().mockReturnValue(new Map()),
-    sacarUltimoPeriodo: jest.fn().mockReturnValue('202320')
+    sacarUltimoPeriodo: jest.fn().mockReturnValue('202320'),
+    obtenerAvanceDesdeBD: jest.fn().mockResolvedValue({})
   };
   const mockUtils = {
     agruparPor: jest.fn().mockReturnValue(new Map()),
@@ -41,11 +47,10 @@ describe('StudentDataFacade', () => {
   it('debe orquestar la obtención de datos', async () => {
     const resultado = await facade.obtenerEstadoAcademico('111', '8606', '202320');
 
-    expect(mallaService.fetchMallaCarrera).toHaveBeenCalled();
-    expect(avanceService.fetchAvanceData).toHaveBeenCalled();
+    expect(mallaService.obtenerMallaRaw).toHaveBeenCalled();
+    expect(avanceService.obtenerAvanceDesdeBD).toHaveBeenCalled()
     expect(mockUtils.construirGrafoDeApertura).toHaveBeenCalled();
-    
-    // Verificar estructura de retorno
+
     expect(resultado).toHaveProperty('mallaCompleta');
     expect(resultado).toHaveProperty('grafoPrerrequisitos');
   });

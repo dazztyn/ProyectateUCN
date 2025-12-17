@@ -4,9 +4,9 @@ import { Usuario } from '../../ArchivosComunes/Usuario.js';
 import { ErrorResponse } from '../../ArchivosComunes/ErrorResponse.js';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { RolUsuario } from './entities/rol-usuario.entity.js';
-import { AvanceService } from '../../avance/avance/avance.service.js';
-import { MallaService } from '../../mallacurricular/malla/malla.service.js';
+import { RolUsuario } from './entities/rol-usuario.entity';
+import { AvanceService } from '../../avance/avance/avance.service';
+import { MallaService } from '../../mallacurricular/malla/malla.service';
 
 @Injectable()
 export class AuthService 
