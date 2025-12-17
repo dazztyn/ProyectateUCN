@@ -36,8 +36,13 @@ export class ProyeccionConsistencyService {
             // --- FASE 1: SANEAMIENTO ACADÉMICO ---
             for (const semestre of semestresOrdenados) {
                 // Si el semestre no es editable, solo acumulamos sus ramos aprobados y seguimos
-                if (!semestre.editable) {
-                    semestre.instancias?.forEach(i => aprobadosAcumulados.add(i.asignatura.codigoAsignatura));
+                if (!semestre.editable) 
+                {
+                    semestre.instancias.forEach(i => {
+                            if (i.asignatura) {
+                                aprobadosAcumulados.add(i.asignatura.codigoAsignatura);
+                            }
+                        });
                     continue;
                 }
 
@@ -56,6 +61,12 @@ export class ProyeccionConsistencyService {
                 if (semestre.instancias) {
                     for (const instancia of semestre.instancias) {
                         
+                        if (!instancia.asignatura) {
+                            await queryRunner.manager.remove(instancia);
+                            huboCambios = true;
+                            continue; 
+                        }
+
                         const esValida = esProtegido ? true 
                             : this.esAsignaturaValida(instancia.asignatura, nivelMaximo, aprobadosAcumulados);
                         
