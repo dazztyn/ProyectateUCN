@@ -14,11 +14,11 @@ type Props = {
     isDirty: boolean;
 };
 
-const CompBarraControlesProyeccion: React.FC<Props> = ({ onSaveProyeccion, onAddSemestre, onAutocompletar, onEliminarSemestre }) => {
+const CompBarraControlesProyeccion: React.FC<Props> = ({ onSaveProyeccion, onAddSemestre, onAutocompletar, onEliminarSemestre, isDirty }) => {
     return (
         <div className="seccion-botones">
             <button 
-                className="boton-guardar"
+                className={`boton-guardar ${!isDirty ? '' : 'dirty'}`}
                 onClick={onSaveProyeccion} 
             >
                 Guardar Proyección

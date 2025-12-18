@@ -144,7 +144,7 @@ const PagEditor = () => {
     setIsDirty(true);
 };
   const handleDeleteSemestre = async () => {
-      // 1. Validaciones iniciales
+
       if (seleccionado === null || !malla || !proyeccionId) return;
 
       const semActual = malla.find(s => s.numero === seleccionado);
@@ -153,19 +153,17 @@ const PagEditor = () => {
           return;
       }
 
-      // 2. Advertencia de impacto en semestres futuros
       const mensaje = "¡Atención! Al eliminar este semestre, se borrarán todas sus asignaturas. " +
                       "Tenga en cuenta que esto puede eliminar automáticamente asignaturas de semestres futuros " +
                       "que ya no cumplan con los prerrequisitos. ¿Desea proseguir?";
 
       if (!window.confirm(mensaje)) {
-          return; // El usuario canceló
+          return; 
       }
 
       setLoading(true);
 
       try {
-          // 3. Enviamos un Body vacío [] para que el backend limpie el semestre
           const body: AsignaturaInputDto[] = []; 
 
           const url = `http://localhost:3000/proyeccion/actualizarProyeccion/${indice}/${proyeccionId}/${semActual.numero}/${semActual.periodo}`;
