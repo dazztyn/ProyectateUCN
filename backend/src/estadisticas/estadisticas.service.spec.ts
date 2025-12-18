@@ -63,9 +63,8 @@ describe('EstadisticasService', () => {
       expect(resultado[0]).toEqual({
         codigo: 'MAT001',
         nombre: 'Calculo I',
-        totalCursado: 100,
-        totalReprobado: 50,
-        tasaReprobacion: '50%' 
+        total_intentos: 100, 
+        total_reprobados: 50      
       });
     });
 
@@ -85,7 +84,7 @@ describe('EstadisticasService', () => {
       expect(resultado[0]).toEqual({
         codigo: 'MAT001',
         nombre: 'Calculo I',
-        inscritos: 200 
+        total_inscritos: 200  
       });
     });
   });

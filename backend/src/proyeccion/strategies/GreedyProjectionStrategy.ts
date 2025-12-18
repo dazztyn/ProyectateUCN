@@ -71,7 +71,7 @@ export class GreedyProjectionStrategy implements IProyeccionStrategy
 
         for (const asignatura of priorizadas) 
         {
-            if (creditosInscritos + asignatura.creditos <= 31) 
+            if (creditosInscritos + asignatura.creditos <= 30) 
             {
                 semestrePlanificado.push(asignatura);
                 creditosInscritos += asignatura.creditos;
