@@ -22,14 +22,14 @@
   align-items: center;
 }
 .btn-delete-asig {
-  position: absolute; /* 👈 Se sale del flujo */
-  top: 2px;           /* 👈 Ajusta la distancia desde arriba */
-  right: 2px;         /* 👈 Ajusta la distancia desde la derecha */
+  position: absolute;
+  top: 2px;           
+  right: 2px;        
   background-color: transparent;
   border: none;
   cursor: pointer;
-  padding: 0.1rem;    /* Reducimos un poco el padding para que no ocupe tanto espacio visual */
-  line-height: 0;     /* Evita espacios extra extraños */
+  padding: 0.1rem;    
+  line-height: 0;     
 }
 .semestre-edit-card {
   display: flex;
@@ -129,4 +129,25 @@ display: flex;
 .asignatura-card-edit.cursando {
   background-color: #e5e7eb;
   border: 3px solid #ffe278;
+}
+.prereq-tooltip {
+  position: absolute;
+  top: 0;
+  right: 110%; 
+  min-width: 8rem;
+  max-width: 12rem;
+
+  background: #1f2937;
+  color: #f9fafb;
+  font-size: xx-small;
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+}
+
+.prereq-content {
+  margin-top: 0.2rem;
+  line-height: 1.2;
 }

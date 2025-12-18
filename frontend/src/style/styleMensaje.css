@@ -1,0 +1,59 @@
+.mensaje-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(2px);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  z-index: 300;
+}
+
+.mensaje-container {
+  background: #e5e7eb;
+  border-radius: 12px;
+  padding: 1.2rem 1.5rem;
+  width: 320px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  text-align: center;
+
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+}
+
+.mensaje-titulo {
+  font-weight: bold;
+  font-size: small;
+  color: #065d6d;
+  letter-spacing: 0.05em;
+}
+
+.mensaje-texto {
+  font-size: small;
+  color: #1f2937;
+  line-height: 1.4;
+}
+
+.mensaje-boton {
+  margin-top: 0.5rem;
+  align-self: center;
+
+  background-color: #065d6d;
+  color: white;
+  border: none;
+  border-radius: 8px;
+
+  padding: 0.4rem 1.2rem;
+  font-size: small;
+  cursor: pointer;
+
+  transition: background-color 0.2s ease;
+}
+
+.mensaje-boton:hover {
+  background-color: #2d8191;
+}

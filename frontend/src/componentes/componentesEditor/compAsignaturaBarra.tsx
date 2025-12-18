@@ -181,12 +181,17 @@ const CompAsignaturasDisponibles: React.FC<Props> = ({
                                 </button>
                             ) : (
                                 <button className="boton-prereq" onClick={() => togglePrereq(asig.codigo)}>
-                                    {openPrereq[asig.codigo] ? 'Ocultar' : 'Ver prereq'}
+                                    {openPrereq[asig.codigo] ? 'Ocultar' : 'Prereq'}
                                 </button>
                             )}
-                            {openPrereq[asig.codigo] && !asig.puedeAgregar && (
-                                <div className="mensaje-prereq">⚠️ {asig.prereq || 'Sin info'}</div>
-                            )}
+                            {openPrereq[asig.codigo] && (
+    <div className="mensaje-prereq">
+      <strong>Prerequisitos</strong>
+      <div className="prereq-content">
+        {asig.prereq || 'Sin información'}
+      </div>
+    </div>
+  )}
                         </div>
                     ))}
                 </div>

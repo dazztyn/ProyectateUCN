@@ -9,6 +9,7 @@
 }
 
 .semestre-card {
+  position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;  
@@ -17,6 +18,16 @@
   background: #065d6d;
   border-radius: 12px;
   padding: 0.5rem;
+}
+.btn-prereq {
+  position: absolute;
+  top: 2px;           
+  right: 2px;        
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.1rem;    
+  line-height: 0;     
 }
 .semestre-titulo-container {
     display: flex;
@@ -38,6 +49,7 @@
 }
 
 .asignatura-card {
+  position: relative;
 display: flex;
 line-height: 0.5rem;
   height: 4rem;

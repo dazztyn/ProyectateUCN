@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import ErrorMessage from "./compMensajeError";
 import '../style/styleMalla.css';
+import iconMore from "../assets/addIcon.png";
 
 import type { 
   Asignatura,
@@ -13,7 +14,13 @@ const MallaCarrera: React.FC<Props> = ({ indice, access_token}) => {
   const [semestres, setSemestres] = useState<Semestre[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError]  = React.useState<string | null>(null);
-
+  const [openPrereq, setOpenPrereq] = useState<Record<string, boolean>>({});
+  const togglePrereq = (codigo: string) => {
+  setOpenPrereq(prev => ({
+    ...prev,
+    [codigo]: !prev[codigo],
+  }));
+};
   useEffect(() => {
     const obtenerMalla = async () => {
       try {
@@ -66,11 +73,30 @@ const MallaCarrera: React.FC<Props> = ({ indice, access_token}) => {
           <div className="semestre-titulo-container">{sem.numero}° Sem.</div>
           <div className="asignaturas-grid">
           {sem.asignaturas.map(a => (
-            <div key={a.codigo} className="asignatura-card">
-              <h3>{a.codigo}</h3>
-              <h4>{a.asignatura}</h4>
-              <h3>Créditos: {a.creditos}</h3>
-            </div>
+            <div className="asignatura-card">
+              <button
+                className="btn-prereq"
+                onClick={() => togglePrereq(a.codigo)}
+                title="Ver prerrequisitos"
+              >
+                👁
+              </button>
+
+              {openPrereq[a.codigo] && (
+                <div className="prereq-tooltip">
+                  <strong>Prerequisitos</strong>
+                  <div className="prereq-content">
+                    {a.prereq.length > 0
+                      ? a.prereq.join(", ")
+                      : "Sin prerrequisitos"}
+                  </div>
+                </div>
+  )}
+
+  <h3>{a.codigo}</h3>
+  <h4>{a.asignatura}</h4>
+  <h3>Créditos: {a.creditos}</h3>
+</div>
           ))}
           </div>
         </div>
