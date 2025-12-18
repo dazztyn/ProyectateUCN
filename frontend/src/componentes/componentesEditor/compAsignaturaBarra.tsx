@@ -73,6 +73,8 @@ const CompAsignaturasDisponibles: React.FC<Props> = ({
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [openPrereq, setOpenPrereq] = useState<Record<string, boolean>>({});;
+    const semestreBloqueadoPorExcepcion = malla.find(s => s.numero === selectedSemestreId)
+    ?.asignaturas.some((a: any) => a.esExcepcion);
     const togglePrereq = (codigo: string) => {
             setOpenPrereq(prev => ({
             ...prev,
@@ -171,7 +173,7 @@ const CompAsignaturasDisponibles: React.FC<Props> = ({
                             </div>
 
                             {asig.puedeAgregar ? (
-                                <button className="boton-agregar" onClick={() => onAddAsignatura(asig)}>
+                                <button className="boton-agregar" onClick={() => onAddAsignatura(asig)} disabled={tipoBusqueda !== 'NORMAL' && semestreBloqueadoPorExcepcion}>
                                     <img src={addIcon} alt="añadir" className="icon-suma" />
                                 </button>
                             ) : (

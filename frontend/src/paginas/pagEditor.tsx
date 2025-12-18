@@ -97,27 +97,6 @@ const PagEditor = () => {
       setLoading(false);
     }
   };
-  const seleccionarPrimerEditable = (semestres: SemestreEditor[]) => {
-    const primerEditable = semestres.find(s => s.editable);
-    if (primerEditable) {
-        setSeleccionado(primerEditable.numero);
-    } else {
-        setSeleccionado(semestres[0].numero); // Fallback al primero si nada es editable
-    }
-};
-  const handleSelectSemestre = (numeroSemestre: number) => {
-      if (!isDirty) {
-          setSeleccionado(numeroSemestre);
-          return;
-      }
-      const semestreDestino = malla.find(s => s.numero === numeroSemestre);
-      
-      if (isDirty && !semestreDestino?.editable) {
-          alert("Tienes cambios pendientes. Por favor, selecciona un semestre editable y guarda para continuar.");
-          return;
-      }
-      setSeleccionado(numeroSemestre);
-  };
   const handleDeleteAsignatura = (semestreNumero: number, codigoAsignatura: string) => {
     if (semestreNumero !== seleccionado) {
         alert("Debes seleccionar el semestre antes de poder editar sus asignaturas.");
@@ -199,13 +178,11 @@ const PagEditor = () => {
 
           if (!response.ok) throw new Error("Error al intentar eliminar el semestre.");
 
-          // 4. Recibimos la nueva malla recalculada por el backend
           const data: FullProyeccionResponse = await response.json();
           
           setMalla(data.semestres);
-          setIsDirty(false); // Limpiamos el estado de cambios
+          setIsDirty(false); 
 
-          // 5. Re-posicionamos al usuario en un semestre válido (el primer editable)
           const primerEditable = data.semestres.find(s => s.editable);
           if (primerEditable) {
               setSeleccionado(primerEditable.numero);
@@ -226,22 +203,22 @@ const PagEditor = () => {
     return calculateSemestreCredits(malla); 
   }, [malla]);
 
+  const handleSelectSemestre = (semestrePeriodo: number) => {
+    if (isDirty) {
+        alert("Tienes cambios sin guardar en el semestre actual. Por favor, guarda antes de cambiar de semestre para actualizar la disponibilidad de materias.");
+        return; 
+    }
+    if (semestrePeriodo === seleccionado) return;
+    setSeleccionado(semestrePeriodo);
+    console.log("Semestre seleccionado:", semestrePeriodo);
+  }
   const handleAddAsignatura = (asignatura: AsignaturaDisponible) => {
-
     const semActual = malla.find(s => s.numero === seleccionado);
+
     if (!semActual || !semActual.editable) {
         alert("No puedes añadir asignaturas a un semestre que no es editable.");
         return;
     }
-    if (tipoBusqueda !== 'NORMAL') {
-
-        const confirmar = window.confirm(
-            `Estás añadiendo "${asignatura.nombre}" bajo una excepción. Solo se permite una por semestre. ¿Deseas continuar?`
-        );
-        if (!confirmar) return;
-        setTipoBusqueda('NORMAL');
-    }
-
     if (seleccionado === null) {
         alert("Primero selecciona un semestre para agregar la asignatura.");
         return;
@@ -277,25 +254,24 @@ const PagEditor = () => {
 };
 
 const handleRestriccionProyeccion = async (bypassRestriction: boolean = false) => {
-    if (!seleccionado || !malla) return;
 
+    if (!seleccionado || !malla) return;
     const semActual = malla.find(s => s.numero === seleccionado);
     if (!semActual) return;
-
     const totalCreditos = semActual.totalCreditos;
-
     if (!bypassRestriction) {
         if (totalCreditos < 10) {
             setWarning({ 
-                msg: `El semestre tiene ${totalCreditos} créditos. El mínimo permitido es 10.`, 
+               msg: `El semestre tiene ${totalCreditos} créditos. El mínimo permitido es 10.`, 
                 canOverride: true 
             });
             return;
+
+
         }
 
         if (totalCreditos > 30) {
             const creditosSinLaMayor = totalCreditos - Math.max(...semActual.asignaturas.map(a => a.creditos));
-            
             if (creditosSinLaMayor > 30) {
                 setWarning({ 
                     msg: "Solo se permite exceder el límite de 30 créditos por una asignatura.", 
@@ -305,7 +281,7 @@ const handleRestriccionProyeccion = async (bypassRestriction: boolean = false) =
             } else {
                 setWarning({ 
                     msg: `Has excedido los 30 créditos (${totalCreditos}). ¿Deseas levantar la restricción para esta asignatura extra?`, 
-                    canOverride: true 
+                    canOverride: true
                 });
                 return;
             }
@@ -314,6 +290,8 @@ const handleRestriccionProyeccion = async (bypassRestriction: boolean = false) =
 
     setWarning(null); 
     await handleSaveProyeccion(); 
+
+
 };
 const handleSaveProyeccion = async () => {
     
@@ -354,7 +332,6 @@ const handleSaveProyeccion = async () => {
 
         const data: FullProyeccionResponse = await response.json();
         setMalla(data.semestres);
-        seleccionarPrimerEditable(data.semestres);
         setIsDirty(false);
 
         alert("Semestre guardado. La proyección se ha actualizado con los cambios del servidor.");
@@ -397,8 +374,6 @@ const handleSaveProyeccion = async () => {
         const data: FullProyeccionResponse = await response.json();
 
         setMalla(data.semestres);
-        seleccionarPrimerEditable(data.semestres); 
-        setIsDirty(false);
         if (data.semestres.length > 0) {
             setSeleccionado(data.semestres[0].numero);
         }
@@ -442,6 +417,7 @@ const handleSaveProyeccion = async () => {
             onSaveProyeccion={() => handleRestriccionProyeccion(false)}
             onAutocompletar={handleAutocompletar}
             onEliminarSemestre={handleDeleteSemestre}
+            isDirty={isDirty}
           />
         <CompAsignaturasDisponibles 
         selectedSemestreId={seleccionado} 
@@ -455,15 +431,13 @@ const handleSaveProyeccion = async () => {
         />
         {warning && (
     <CompAdvertenciaCreditos 
-        message={warning.msg}
+    message={warning.msg}
         showConfirm={warning.canOverride}
         onClose={() => setWarning(null)}
-        onConfirm={() => handleRestriccionProyeccion(true)} // <--- Bypass activado
-    />
-)}
+        onConfirm={() => handleRestriccionProyeccion(true)} 
+    />)}
         </div>
       </div>
-      
     </Layout>
     );
 };

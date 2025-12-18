@@ -11,13 +11,14 @@ type Props = {
     onAddSemestre: () => void;
     onAutocompletar: () => void;
     onEliminarSemestre: () => void;
+    isDirty: boolean;
 };
 
 const CompBarraControlesProyeccion: React.FC<Props> = ({ onSaveProyeccion, onAddSemestre, onAutocompletar, onEliminarSemestre }) => {
     return (
         <div className="seccion-botones">
             <button 
-                className="boton-top"
+                className="boton-guardar"
                 onClick={onSaveProyeccion} 
             >
                 Guardar Proyección

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import ErrorMessage from '../componentes/compMensajeError';
+import iconTrash from "../assets/trash-can.png";
 
 import type { 
   Props,
@@ -197,18 +198,19 @@ const CompSelectProyeccion: React.FC<Props> = ({ indice, access_token})  => {
       setOpen(false); 
     }}
   >
+    <div className="item-separa">
     <span className="texto-proy-item">
       {proy.nombre} {proy.esIdeal ? "(Mejor Caso)" : ""}
     </span>
 
-    {/* BOTÓN DE ELIMINAR */}
     <button 
       className="btn-delete-lista" 
       onClick={(e) => handleDeleteProjection(e, proy.id)}
       title="Eliminar proyección"
     >
-      🗑️
+      <img src={iconTrash} alt="Eliminar" className="icono-trash" />
     </button>
+    </div>
   </li>
 ))}
         </ul>

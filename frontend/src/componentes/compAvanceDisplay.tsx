@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import ErrorMessage from "./compMensajeError";
 import { useMemo } from "react";
+
 import "../style/styleMalla.css";
 
 import type { 
