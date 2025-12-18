@@ -1,0 +1,71 @@
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.6); 
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000; 
+  backdrop-filter: blur(3px);
+}
+
+.modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  max-width: 450px;
+  width: 90%;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+  animation: modalAppear 0.3s ease-out;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #024A58; 
+  border-bottom: 2px solid #B17C06; 
+  padding-bottom: 0.5rem;
+}
+
+.modal-body {
+  margin: 1.5rem 0;
+  color: #444;
+  line-height: 1.5;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.btn-modal-cancel {
+  background: #e5e7eb;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-modal-confirm {
+  background: #024A58;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.btn-modal-confirm:hover {
+  background: #B17C06; 
+}
+
+@keyframes modalAppear {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}

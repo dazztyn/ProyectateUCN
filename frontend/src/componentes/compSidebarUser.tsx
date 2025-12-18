@@ -17,6 +17,7 @@ const Sidebar: React.FC = () => {
   const indiceCarrera = localStorage.getItem("indiceCarrera");
   const carreraActual =
     usuario?.carreras?.[Number(indiceCarrera)]?.nombre || "Ninguna seleccionada";
+
   const handleNav = (path: string) => {
     const access_token = localStorage.getItem("access_token");
     const indiceCarrera = localStorage.getItem("indiceCarrera");
@@ -27,7 +28,13 @@ const Sidebar: React.FC = () => {
     }
     navigate(path, { state: { indice: Number(indiceCarrera), access_token } });
   };
+  const handleLogout = () => {
 
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("usuario");
+    
+    navigate("/");
+  };
   return (
     <div className="sidebar">
       <div className="logo-container">
@@ -62,6 +69,16 @@ const Sidebar: React.FC = () => {
           Proyección
         </button>
       </nav>
+      <div className="sidebar-footer">
+        <button onClick={handleLogout} className="sidebar-logout">
+          <span>Cerrar Sesión</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+        </button>
+      </div>
     </div>
   );
 };

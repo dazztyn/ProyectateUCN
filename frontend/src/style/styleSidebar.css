@@ -2,13 +2,44 @@
   height: 100vh;            
   width: 8rem;             
   background: #2D8191;
-background: linear-gradient(180deg, rgb(45, 137, 145) 0%, rgba(6, 93, 109, 1) 49%, rgb(1, 32, 62) 100%);
+  background: linear-gradient(180deg, rgb(45, 137, 145) 0%, rgba(6, 93, 109, 1) 49%, rgb(1, 32, 62) 100%);
   color: white;
   display: flex;
   flex-direction: column;
   align-items: center;
+  position: sticky; 
+  top: 0;           
+  left: 0;          
+  z-index: 100;     
+  flex-shrink: 0;
+}
+.sidebar-footer {
+    margin-top: auto; 
+    padding-top: 2rem;
 }
 
+.sidebar-logout {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.8rem 1rem;
+    background-color: transparent;
+    color: #e5e7eb;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.sidebar-logout:hover {
+    color:  #B17C06;
+;
+}
+
+.sidebar-logout svg {
+    margin-left: 10px;
+}
 .logo-container {
   position: relative;
   width: 80px;

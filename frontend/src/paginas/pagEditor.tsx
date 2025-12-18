@@ -10,6 +10,8 @@ import CompBarraControlesProyeccion from '../componentes/componentesEditor/compB
 import CompAdvertenciaCreditos from '../componentes/compMensajeAdvertencia';
 import LoadingOverlay from '../componentes/componentesEditor/compLoadingOverlay';
 import CompMensaje from '../componentes/compMensaje';
+import ModalConfirm from '../componentes/compModal';
+
 
 import type { 
   FullProyeccionResponse, 
@@ -47,6 +49,11 @@ const PagEditor = () => {
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isDirty, setIsDirty] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    mensaje: string;
+    onConfirm: () => void;
+} | null>(null);
 
     useEffect(() => {
     const state = location.state as
@@ -152,6 +159,7 @@ const PagEditor = () => {
     setIsDirty(true);
 };
   const handleDeleteSemestre = async () => {
+    setConfirmConfig(null);
 
       if (seleccionado === null || !malla || !proyeccionId) return;
 
@@ -159,14 +167,6 @@ const PagEditor = () => {
       if (!semActual || !semActual.editable) {
           setMensaje("No se puede eliminar un semestre que no es editable.");
           return;
-      }
-
-      const mensaje = "¡Atención! Al eliminar este semestre, se borrarán todas sus asignaturas. " +
-                      "Tenga en cuenta que esto puede eliminar automáticamente asignaturas de semestres futuros " +
-                      "que ya no cumplan con los prerrequisitos. ¿Desea proseguir?";
-
-      if (!window.confirm(mensaje)) {
-          return; 
       }
 
       setLoading(true);
@@ -208,6 +208,22 @@ const PagEditor = () => {
           setLoading(false);
       }
   };
+  const handleDeleteSemestreMensaje = async () => {
+    if (seleccionado === null || !malla || !proyeccionId) return;
+
+    const semActual = malla.find(s => s.numero === seleccionado);
+    if (!semActual || !semActual.editable) {
+        setMensaje("No se puede eliminar un semestre que no es editable.");
+        return;
+    }
+
+
+    setConfirmConfig({
+        isOpen: true,
+        mensaje: "¡Atención! Al eliminar este semestre, se borrarán todas sus asignaturas. Tenga en cuenta que esto puede eliminar automáticamente asignaturas de semestres futuros que ya no cumplan con los prerrequisitos. ¿Desea proseguir?",
+        onConfirm: handleDeleteSemestre 
+    });
+};
   const semestreCredits = React.useMemo(() => {
     return calculateSemestreCredits(malla); 
   }, [malla]);
@@ -360,16 +376,11 @@ const handleSaveProyeccion = async () => {
     }
 };
   const handleAutocompletar = async () => {
+    setConfirmConfig(null);
     if (!access_token || indice === null || !proyeccionId) {
         setMensaje("Faltan datos para realizar la operación.");
         return;
     }
-
-    const confirmar = window.confirm(
-        "¿Estás seguro? Se autocompletará tu proyección con el camino ideal y se perderán los cambios no guardados en los semestres editables."
-    );
-    if (!confirmar) return;
-
     setLoading(true);
 
     try {
@@ -403,7 +414,18 @@ const handleSaveProyeccion = async () => {
         setLoading(false);
     }
 };
+const handleAutocompletarMensaje = () => {
+    if (!access_token || indice === null || !proyeccionId) {
+        setMensaje("Faltan datos para realizar la operación.");
+        return;
+    }
 
+    setConfirmConfig({
+        isOpen: true,
+        mensaje: "¿Estás seguro? Se autocompletará tu proyección con el camino ideal y se perderán los cambios no guardados en los semestres editables.",
+        onConfirm: handleAutocompletar
+    });
+};
   
 
   if (indice === null || !access_token)
@@ -428,6 +450,14 @@ const handleSaveProyeccion = async () => {
             onClose={() => setMensaje(null)}
         />
         )}
+        {confirmConfig?.isOpen && (
+                <ModalConfirm 
+                    isOpen={confirmConfig.isOpen}
+                    mensaje={confirmConfig.mensaje}
+                    onConfirm={confirmConfig.onConfirm}
+                    onCancel={() => setConfirmConfig(null)}
+                />
+            )}
         <MallaEditorDisplay 
         malla={malla}
         selectedSemestreId={seleccionado}
@@ -439,8 +469,8 @@ const handleSaveProyeccion = async () => {
         <CompBarraControlesProyeccion 
             onAddSemestre={handleAddSemestre}
             onSaveProyeccion={() => handleRestriccionProyeccion(false)}
-            onAutocompletar={handleAutocompletar}
-            onEliminarSemestre={handleDeleteSemestre}
+            onAutocompletar={handleAutocompletarMensaje}
+            onEliminarSemestre={handleDeleteSemestreMensaje} 
             isDirty={isDirty}
           />
         <CompAsignaturasDisponibles 
