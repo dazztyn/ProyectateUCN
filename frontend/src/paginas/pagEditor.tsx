@@ -82,6 +82,11 @@ const PagEditor = () => {
         setProyeccionNombre(fullResponse.nombre);
     }
   }, [fullResponse]);
+  const yaTieneExcepcion = React.useMemo(() => {
+    return malla.some(sem =>
+        sem.asignaturas.some(a => a.esExcepcion)
+    );
+}, [malla]);
   const fetchUsuario = async (token: string, i: number) => {
     try {
       const res = await axios.post(
@@ -233,7 +238,8 @@ const PagEditor = () => {
                     codigo: asignatura.codigo,
                     nombre: asignatura.nombre,
                     creditos: asignatura.creditos,
-                    estado: 'PENDIENTE' as const, // Asumimos 'PENDIENTE' al agregarla
+                    estado: 'PENDIENTE' as const,
+                    esExcepcion: tipoBusqueda !== 'NORMAL'
                 };
                   setIsDirty(true);
                 if (sem.asignaturas.some(a => a.codigo === nuevaAsignatura.codigo)) {
@@ -338,7 +344,24 @@ const handleSaveProyeccion = async () => {
         if (!response.ok) throw new Error("No se pudo guardar el semestre.");
 
         const data: FullProyeccionResponse = await response.json();
-        setMalla(data.semestres);
+        setMalla(prevMalla => {
+    return data.semestres.map(sem => {
+        const semPrevio = prevMalla.find(s => s.numero === sem.numero);
+
+        if (!semPrevio) return sem;
+
+        return {
+            ...sem,
+            asignaturas: sem.asignaturas.map(a => {
+                const prevAsig = semPrevio.asignaturas.find(pa => pa.codigo === a.codigo);
+                return {
+                    ...a,
+                    esExcepcion: prevAsig?.esExcepcion || false
+                };
+            })
+        };
+    });
+});
         setIsDirty(false);
 
         alert("Semestre guardado. La proyección se ha actualizado con los cambios del servidor.");

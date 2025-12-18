@@ -5,6 +5,7 @@ export type AsignaturaEditor = {
   nombre: string;
   estado: 'APROBADO' | 'REPROBADO' | 'PENDIENTE'; 
   creditos: number; 
+  esExcepcion?: boolean;
 
 };
 export type AsignaturaDisponible = {
