@@ -255,44 +255,50 @@ const PagEditor = () => {
 };
 
 const handleRestriccionProyeccion = async (bypassRestriction: boolean = false) => {
-
     if (!seleccionado || !malla) return;
     const semActual = malla.find(s => s.numero === seleccionado);
     if (!semActual) return;
     const totalCreditos = semActual.totalCreditos;
+    if (totalCreditos > 35) {
+        setWarning({
+            msg: `No se permite superar los 35 créditos (${totalCreditos}).`,
+            canOverride: false
+        });
+        return;
+    }
+
     if (!bypassRestriction) {
         if (totalCreditos < 10) {
-            setWarning({ 
-               msg: `El semestre tiene ${totalCreditos} créditos. El mínimo permitido es 10.`, 
-                canOverride: true 
+            setWarning({
+                msg: `El semestre tiene ${totalCreditos} créditos. El mínimo permitido es 10.`,
+                canOverride: true
             });
             return;
-
-
         }
 
         if (totalCreditos > 30) {
-            const creditosSinLaMayor = totalCreditos - Math.max(...semActual.asignaturas.map(a => a.creditos));
+            const mayorCredito = Math.max(
+                ...semActual.asignaturas.map(a => a.creditos)
+            );
+            const creditosSinLaMayor = totalCreditos - mayorCredito;
             if (creditosSinLaMayor > 30) {
-                setWarning({ 
-                    msg: "Solo se permite exceder el límite de 30 créditos por una asignatura.", 
-                    canOverride: false 
-                });
-                return;
-            } else {
-                setWarning({ 
-                    msg: `Has excedido los 30 créditos (${totalCreditos}). ¿Deseas levantar la restricción para esta asignatura extra?`, 
-                    canOverride: true
+                setWarning({
+                    msg: "Solo se permite exceder los 30 créditos por una única asignatura.",
+                    canOverride: false
                 });
                 return;
             }
+
+            setWarning({
+                msg: `Has excedido los 30 créditos (${totalCreditos}). ¿Deseas permitir esta asignatura extra?`,
+                canOverride: true
+            });
+            return;
         }
     }
 
-    setWarning(null); 
-    await handleSaveProyeccion(); 
-
-
+    setWarning(null);
+    await handleSaveProyeccion();
 };
 const handleSaveProyeccion = async () => {
     
