@@ -122,7 +122,10 @@ const PagEditor = () => {
     });
   };
   const handleAddSemestre = () => {
-    // Buscamos el número de semestre más alto en la malla actual.
+    if (isDirty) {
+        alert("Tienes cambios sin guardar en el semestre actual. Por favor, guarda antes de añadir un nuevo semestre.");
+        return; 
+    }
     const maxSemestre = malla.reduce((max, semestre) => 
         Math.max(max, semestre.numero), 0);
         
