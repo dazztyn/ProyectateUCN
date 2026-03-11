@@ -1,0 +1,108 @@
+.malla-container {
+  display: flex;      
+  height : auto;
+  width: min-content;
+  overflow-y: auto;
+  border-radius: 8px;
+  gap: 0.5rem;                    
+  padding: 0.5rem;
+  background-color: #91a0c3;
+}
+
+.semestre-card {
+  position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;  
+  height:max-content;     
+  flex-shrink: 1;          
+  background: #065d6d;
+  border-radius: 12px;
+  padding: 0.5rem;
+}
+.btn-prereq {
+  position: absolute;
+  top: 2px;           
+  right: 2px;        
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.1rem;    
+  line-height: 0;     
+}
+.semestre-titulo-container {
+    display: flex;
+    font-size: x-small;
+    font-weight: bold;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+    border-radius: 8px;
+    color:#e5e7eb;
+
+}
+
+.asignaturas-grid {
+  display: flex;
+  flex-direction: column;  
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.asignatura-card {
+  position: relative;
+display: flex;
+line-height: 0.5rem;
+  height: 4rem;
+  flex-direction: column;  
+  justify-content: space-between;
+  text-align: center;
+  background: #e5e7eb;
+  border-radius: 8px;
+  width: 6rem;          
+  max-width: 8rem;      
+  padding: 0.2rem;      
+  margin: 0 auto; 
+}
+.asignatura-card h4{
+    font-size: xx-small;
+    
+
+}
+.asignatura-card h3 {
+    font-weight: lighter;
+  margin: 0;
+  font-size: xx-small;
+}
+.status.aprobado {
+  font-weight: lighter;
+  margin: 0;
+  font-size: xx-small;
+  color:rgb(0, 0, 117);
+}
+.status.reprobado {
+    font-weight: lighter;
+  margin: 0;
+  font-size: xx-small;
+  color:rgb(98, 0, 0);
+}
+.status.cursando {
+    font-weight: lighter;
+  margin: 0;
+  font-size: xx-small;
+  color:rgb(59, 60, 0);
+}
+.asignatura-card.aprobado {
+  background-color: #e5e7eb;
+  border: 3px solid #4a6aea;
+}
+
+.asignatura-card.reprobado {
+  background-color: #e5e7eb;
+  border: 3px solid #aa6d33;
+}
+
+.asignatura-card.cursando {
+  background-color: #e5e7eb;
+  border: 3px solid #ffe278;
+}

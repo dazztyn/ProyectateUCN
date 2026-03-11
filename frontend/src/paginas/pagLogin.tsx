@@ -1,51 +1,62 @@
 import React from 'react';
-import '../style/loginStyle.css';
+import '../style/styleLogin.css';
 import logo from '../assets/logoUCN.png';
+import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import ErrorMessage from '../componentes/mensajeError';
+import { useEffect } from 'react';
+import ErrorMessage from '../componentes/compMensajeError';
 
 const Login: React.FC = () => {
+
   // Datos Usuario
   const [email, setCorreo] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [error, setError] = React.useState<string | null>(null);
   const navigate = useNavigate();
 
-  // Manejo de formulario
+  useEffect(() => {
+    document.title = "Inicio — Proyéctate UCN";
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    const url = "http://localhost:3000/auth/login";
-
     try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+      const response = await axios.post('http://localhost:3000/auth/login', {
+        email,
+        password
       });
 
-      if (!response.ok) {
-        setError('Credenciales incorrectas');
-        return;
+      const { access_token, isAdmin, role } = response.data;
+
+      localStorage.setItem("access_token", access_token);
+      
+      // Redirigir según el tipo de usuario
+      if (isAdmin || role === 'admin') {
+        navigate("/estadisticas");
+      } else {
+        navigate("/seleccion");
       }
 
-      const data = await response.json();
-      console.log('Login exitoso:', data);
-      navigate('/malla');
-    } catch (err) {
-      setError('Error de conexión');
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        setError("Credenciales incorrectas");
+      } else {
+        setError("Error de conexión");
+      }
     }
   };
 
   return (
     <div className="cuerpoLogin">
-      <img src={logo} alt="Logo UCN" className="logo" />
-      <h3>Bienvenid@ a Proyectate UCN</h3>
+      <img src={logo} alt="Logo oficial de la Universidad Católica del Norte" className="logo-ucn" />
+      <h3 id="login-title">Bienvenid@ a Proyectate UCN</h3>
 
-      <div className="login-box">
+      <div className="login-box" role="form" aria-labelledby="login-title">
         <h2>Iniciar Sesión</h2>
         <form onSubmit={handleSubmit}>
+          <label htmlFor="email-input" className="sr-only">Correo</label>
           <input
             type="email"
             placeholder="Correo"
@@ -53,17 +64,18 @@ const Login: React.FC = () => {
             onChange={(e) => setCorreo(e.target.value)}
             required
           />
-          <input
+          <label htmlFor="password-input" className="sr-only">Contraseña</label>
+          <input 
             type="password"
             placeholder="Contraseña"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-          <button type="submit">Ingresar Datos</button>
+          <button type="submit" className="login-button" aria-label="Ingresar al sistema">Ingresar Datos</button>
         </form>
 
-        {error && <ErrorMessage message={error} />}
+        {error && <ErrorMessage message={error} onClose={() => setError(null)}/>}
       </div>
     </div>
   );

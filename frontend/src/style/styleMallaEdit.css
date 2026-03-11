@@ -1,0 +1,153 @@
+.malla-edit-container {
+  display: flex;      
+  height : 80vh;
+  overflow-x: auto;
+  overflow-y: auto;
+  width: 110vw;
+  border-radius: 8px;
+  gap: 0.5rem;                    
+  padding: 0.5rem;
+  background-color: #91a0c3;
+}
+.icon-lock {
+    width: 16px;
+    height: 16px;
+    margin-top: 0.5rem;
+    filter: invert(1); 
+}
+.organizar{
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  align-items: center;
+}
+.btn-delete-asig {
+  position: absolute;
+  top: 2px;           
+  right: 2px;        
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.1rem;    
+  line-height: 0;     
+}
+.semestre-edit-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height:max-content;     
+  flex-shrink: 1;          
+  background: #065d6d;
+  border-radius: 12px;
+  padding: 0.5rem;
+  border: 2px solid #ccc;
+  cursor: pointer; 
+  transition: all 0.2s ease-in-out;
+}
+
+.semestre-edit-card--selected {
+    border: 2px solid #ccc;
+    box-shadow: 0 0 10px rgba(0, 123, 255, 0.5); 
+    background-color: #8F6300; 
+}
+.semestre-edit-card--blocked {
+  background-color: #1d373c; 
+} 
+.semestre-edit-card:hover {
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+    transform: scale(1.01); 
+}
+.semestre-titulo-edit-container {
+    display: flex;
+    font-size: small;
+    flex-direction: column;
+    font-weight: bold;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+    border-radius: 8px;
+    color:#e5e7eb;
+
+}
+
+.asignaturas-grid-edit {
+  display: flex;
+  flex-direction: column;  
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.asignatura-card-edit {
+ position: relative;
+display: flex;
+  height: 4rem;
+  flex-direction: column;
+    align-items: center;
+  text-align: center;
+  justify-content: center;
+  background: #e5e7eb;
+  border-radius: 8px;
+  width: 8rem;          
+  max-width: 8rem;
+}
+.asignatura-card-edit h4{
+    font-size: small;
+    line-height: normal;
+}
+.asignatura-card-edit h3 {
+    font-weight: normal;
+  font-size: small;
+}
+.status-edit.aprobado {
+  font-weight: lighter;
+  margin: 0;
+  font-size: xx-small;
+  color:rgb(0, 0, 117);
+}
+.status-edit.reprobado{
+    font-weight: lighter;
+  margin: 0;
+  font-size: xx-small;
+  color:rgb(98, 0, 0);
+}
+.status-edit.cursando{
+    font-weight: lighter;
+  margin: 0;
+  font-size: xx-small;
+  color:rgb(59, 60, 0);
+}
+.asignatura-card-edit.aprobado {
+  background-color: #e5e7eb;
+  border: 3px solid #4a6aea;
+}
+
+.asignatura-card-edit.reprobado {
+  background-color: #e5e7eb;
+  border: 3px solid #aa6d33;
+}
+
+.asignatura-card-edit.cursando {
+  background-color: #e5e7eb;
+  border: 3px solid #ffe278;
+}
+.prereq-tooltip {
+  position: absolute;
+  top: 0;
+  right: 110%; 
+  min-width: 8rem;
+  max-width: 12rem;
+
+  background: #1f2937;
+  color: #f9fafb;
+  font-size: xx-small;
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+}
+
+.prereq-content {
+  margin-top: 0.2rem;
+  line-height: 1.2;
+}

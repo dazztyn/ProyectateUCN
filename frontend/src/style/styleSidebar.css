@@ -1,0 +1,138 @@
+.sidebar {
+  height: 100vh;            
+  width: 8rem;             
+  background: #2D8191;
+  background: linear-gradient(180deg, rgb(45, 137, 145) 0%, rgba(6, 93, 109, 1) 49%, rgb(1, 32, 62) 100%);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: sticky; 
+  top: 0;           
+  left: 0;          
+  z-index: 100;     
+  flex-shrink: 0;
+}
+.sidebar-footer {
+    margin-top: auto; 
+    padding-top: 2rem;
+}
+
+.sidebar-logout {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.8rem 1rem;
+    background-color: transparent;
+    color: #e5e7eb;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.sidebar-logout:hover {
+    color:  #B17C06;
+;
+}
+
+.sidebar-logout svg {
+    margin-left: 10px;
+}
+.logo-container {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  margin-top: 6rem;
+  margin-bottom: 1.5rem;
+}
+.sidebar-logo, .sidebar-logo-hover {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  position: absolute;
+  top: 0;
+  left: 0;
+  transition: opacity 0.3s ease;
+}
+.sidebar-logo-hover {
+  opacity: 0; 
+}
+
+.logo-container:hover .sidebar-logo-hover {
+  opacity: 1;
+}
+
+.logo-container:hover .sidebar-logo {
+  opacity: 1;
+}
+.sidebar-username {
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+.sidebar-career {
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.sidebar-link {
+  background-color: transparent; 
+  border: none;                  
+  padding: 0;                    
+  font-family: inherit;          
+  text-align: inherit;
+  color: white;
+  font-size: medium;
+  text-decoration: none;
+  transition: font-weight 0.2s, transform 0.2s;
+  position: relative;
+  padding-bottom: 5px;
+}
+.sidebar-link:hover {
+  cursor: pointer;
+  transform: scale(1.05);
+}
+
+.sidebar-link.active {
+  font-weight: bold;
+  
+  
+}
+.icon {
+  width: 0.9rem;
+  height: 0.9rem;
+  margin-right: 0.5rem;
+  filter: invert(1);
+}
+.sidebar-link::after {
+  width: 1rem;
+  content: '';
+  position: absolute;
+left: 50%;
+  transform: translateX(-50%);
+  bottom: 0;
+
+  width: 0;
+  height: 2px;
+  background-color: white; 
+  transition: width 0.3s ease-in-out;
+}
+
+.sidebar-link:hover::after{
+  width: 65%;
+}

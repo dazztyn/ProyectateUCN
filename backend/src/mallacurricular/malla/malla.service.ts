@@ -1,10 +1,18 @@
 import { Injectable } from '@nestjs/common';
-import { Asignatura } from 'src/ArchivosComunes/Asignatura.js';
-
+import { Asignatura } from '../../ArchivosComunes/Asignatura';
+import { AcademicUtilsService } from '../../ArchivosComunes/AcademicUtilsService';
+import { Asignaturas } from '../entities/asignatura.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class MallaService 
 {
+    constructor(private readonly academicUtils: AcademicUtilsService,
+        @InjectRepository(Asignaturas)
+        private readonly asignaturaRepo: Repository<Asignaturas>,
+    ) {}
+
     async fetchMallaCarrera(codigoCarrera: string, catalogo: string): Promise<Asignatura[]>
     {
         const url = `https://losvilos.ucn.cl/hawaii/api/mallas?${codigoCarrera}-${catalogo}`;
@@ -25,7 +33,7 @@ export class MallaService
                 throw new Error('Malla no encontrada o Catalogo/Codigo de carrera incorrecto');
             }
 
-            return data;
+            return this.academicUtils.limpiarPrerrequisitosInvalidos(data);
         } 
         catch (error) 
         {
@@ -33,30 +41,62 @@ export class MallaService
             throw error;
         }
     }
-
-    mallaSeparadaEnSemestres(malla: Asignatura[])
+ 
+    async sincronizarMalla(codigoCarrera: string, catalogo: string): Promise<void> 
     {
-        let hashmap = new Map<number, Asignatura[]>();
+        const mallaApi = await this.fetchMallaCarrera(codigoCarrera, catalogo);
+        const entidadesAGuardar = mallaApi.map(ramo => {
+            return this.asignaturaRepo.create({
+                codigoAsignatura: ramo.codigo,
+                codigoCarrera: codigoCarrera,
+                nombreAsignatura: ramo.asignatura,
+                creditos: ramo.creditos,
+                nivel: ramo.nivel,
+                prerrequisitos: ramo.prereq
+            });
+        });
+        if (entidadesAGuardar.length > 0) {
+            await this.asignaturaRepo.save(entidadesAGuardar);
+        }
+    }
 
-        malla.forEach((asignatura) => 
-        {
-            let nivel = asignatura.nivel;
-            if(!hashmap.has(nivel))
-            {
-                hashmap.set(nivel, []);
-            }
-            hashmap.get(nivel)?.push(asignatura);
+    async obtenerMallaRaw(codigoCarrera: string): Promise<Asignatura[]> 
+    {
+        const asignaturasBD = await this.asignaturaRepo.find({
+            where: { codigoCarrera: codigoCarrera } 
+        }); 
+
+        return asignaturasBD.map(entidad => ({
+            codigo: entidad.codigoAsignatura,
+            asignatura: entidad.nombreAsignatura,
+            creditos: entidad.creditos,
+            nivel: entidad.nivel,
+            prereq: entidad.prerrequisitos
+        }));
+    }
+
+    async obtenerMallaDesdeBD(codigoCarrera: string)
+    {
+        const listaPlana = await this.obtenerMallaRaw(codigoCarrera);
+
+        const grafoApertura = this.academicUtils.construirGrafoDeApertura(listaPlana);
+
+        const listaEnriquecida = listaPlana.map(ramo => {
+            
+            const prereqArray = ramo.prereq && ramo.prereq.length > 0 
+                ? ramo.prereq.split(',') 
+                : [];
+
+            return {
+                ...ramo, 
+                prereq: prereqArray,
+                asignaturasQueAbre: grafoApertura.get(ramo.codigo) || []
+            };
         });
 
-        return hashmap;
+        const mallaAgrupada = this.academicUtils.agruparPor(listaEnriquecida, (ramo) => ramo.nivel);
+
+        return Object.fromEntries(mallaAgrupada);
     }
 
-    async getMalla(codigoCarrera: string, catalogo: string)
-    {
-        const malla = await this.fetchMallaCarrera(codigoCarrera, catalogo);
-        
-        let mallaSeparada = this.mallaSeparadaEnSemestres(malla);
-    
-        return Object.fromEntries(mallaSeparada);
-    }
 }

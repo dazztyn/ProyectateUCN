@@ -1,4 +1,4 @@
-import { Asignatura } from "src/ArchivosComunes/Asignatura.js";
+import { Asignatura } from "../../ArchivosComunes/Asignatura.js";
 
 
 export class AvanceConAsignatura
@@ -22,4 +22,23 @@ export class AvanceConAsignatura
         this.status = status;
     }
 
+    getNrc(): string
+    {
+        return this.nrc;
+    }
+
+    getPeriod(): string
+    {
+        return this.period;
+    }
+    
+    getStatus(): string
+    {
+        return this.status;
+    }
+
+    getCourse(): Asignatura
+    {
+        return this.course;
+    }
 }

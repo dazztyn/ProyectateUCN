@@ -1,0 +1,70 @@
+.seccion-botones{
+  display: flex;
+  flex-direction: column;
+  width: 25vw;
+  height: 25vh;
+  border-radius: 8px;
+  background-color: #065d6d;
+  gap: 0.2rem;
+  justify-content: space-evenly;
+  padding: 0.5rem;
+  
+}
+.boton-top{
+  height: 2.3rem;
+  width: 100%;
+  display: flex;
+  padding-top: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #2D8191;
+  border-style: solid;
+  border-color:#e5e7eb;
+  border-width: 3px;
+  font-weight: bolder;
+  color: white;
+  border: none;
+  transition: 0.2s;
+}
+.boton-guardar{
+  height: 2.3rem;
+  width: 100%;
+  display: flex;
+  padding-top: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #2D8191;
+  border-style: solid;
+  border-color:#e5e7eb;
+  border-width: 3px;
+  font-weight: bolder;
+  color: white;
+  border: none;
+  transition: 0.2s;
+}
+.boton-guardar:hover{
+  background-color: #065d6d;
+  font-weight: bolder;
+  border-width: 8px;
+}
+.boton-guardar.dirty {
+    background-color: #B17C06;
+    box-shadow: 0 0 10px rgba(177, 124, 6, 0.4);
+    animation: pulse-dirty 2s infinite;
+}
+
+@keyframes pulse-dirty {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+.boton-top:hover{
+  background-color: #065d6d;
+  font-weight: bolder;
+  border-width: 8px;
+}
+.icon-mini{
+  width: 25px;
+  height: 25px;
+  filter: invert(1);
+}

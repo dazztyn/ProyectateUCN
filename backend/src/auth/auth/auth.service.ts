@@ -1,24 +1,25 @@
-import { Injectable } from '@nestjs/common';
-
-export interface LoginResponse
-{
-    rut: string;
-    carreras: 
-    {
-        codigo:string;
-        nombre:string;
-        catalogo:string;
-    }[];
-}
-export interface ErrorResponse 
-{
-  error: string;
-}
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { Usuario } from '../../ArchivosComunes/Usuario.js';
+import { ErrorResponse } from '../../ArchivosComunes/ErrorResponse.js';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { RolUsuario } from './entities/rol-usuario.entity';
+import { AvanceService } from '../../avance/avance/avance.service';
+import { MallaService } from '../../mallacurricular/malla/malla.service';
 
 @Injectable()
 export class AuthService 
 {
-    async fetchloginData(email: string, password: string): Promise<LoginResponse> 
+    constructor(
+        private readonly jwtService: JwtService,
+        @InjectRepository(RolUsuario)
+        private readonly rolUsuarioRepository: Repository<RolUsuario>,
+        private readonly avanceService: AvanceService,
+        private readonly mallaService: MallaService,
+    ) {}
+
+    async fetchloginData(email: string, password: string): Promise<Usuario> 
     {
         const url = `https://puclaro.ucn.cl/eross/avance/login.php?email=${email}&password=${password}`;
 
@@ -31,7 +32,7 @@ export class AuthService
                 throw new Error(`Error de red o servidor: ${response.status} ${response.statusText}`);
             }
 
-            const data: LoginResponse | ErrorResponse = await response.json();
+            const data: Usuario | ErrorResponse = await response.json();
 
             if ('error' in data) 
             {
@@ -47,9 +48,86 @@ export class AuthService
         }
     }
 
-    login(email: string, contraseña: string)
+    async login(email: string, password: string)
     {
-        const alumno = this.fetchloginData(email, contraseña);
-        return alumno;
+        let usuarioLocal: RolUsuario | null = null;
+
+        try
+        {
+            usuarioLocal = await this.rolUsuarioRepository.findOne({ where: { email } });
+        }
+        catch (error)
+        {
+            console.warn('Error accediendo a BD local, procediendo como estudiante normal:', error);
+        }
+
+        if(usuarioLocal)
+        {
+            if(usuarioLocal.password === password)
+            {
+                const payload = { 
+                    rut: usuarioLocal.rut || 'ADMIN', 
+                    carreras: [], 
+                    role: usuarioLocal.rol // 'admin'
+                };
+                const accessToken = this.jwtService.sign(payload);
+                return {
+                    access_token: accessToken, 
+                    role: usuarioLocal.rol, 
+                    usuario: { rut: 'ADMIN', nombre: 'Administrador', carreras: [] }
+                };
+            }
+            else
+            {
+                throw new UnauthorizedException('Credenciales de administrador incorrectas.');
+            }
+            
+        }
+
+        try
+        {
+            const alumno = await this.fetchloginData(email, password);
+
+            if (alumno.carreras && alumno.carreras.length > 0) 
+            {
+                await Promise.all(alumno.carreras.map(async (carrera) => {
+                    try {
+                        console.log(`Sincronizando datos para carrera ${carrera.codigo}...`);
+                        
+                        // Ejecutamos AMBAS sincronizaciones en paralelo para esa carrera
+                        await Promise.all([
+                            this.avanceService.sincronizarAvanceFull(alumno.rut, carrera.codigo, carrera.catalogo),
+                            this.mallaService.sincronizarMalla(carrera.codigo, carrera.catalogo) // 👈 NUEVA LÍNEA
+                        ]);
+                        
+                    } catch (syncError) {
+                        console.error(`Error sincronizando carrera ${carrera.codigo}:`, syncError);
+                        // No lanzamos error para permitir que el login continúe aunque falle la sync de fondo
+                    }
+                }));
+            }
+
+            const payload = {
+                rut: alumno.rut, 
+                carreras: alumno.carreras,
+                role: 'student' // Rol por defecto
+            };
+
+            const accessToken = this.jwtService.sign(payload);
+
+            return {
+                access_token: accessToken, 
+                role: 'student',
+                usuario: alumno
+            };
+
+
+        }
+        catch (error)
+        {
+           if (error instanceof UnauthorizedException) throw error;
+            throw new Error(error.message || 'Error al conectar con servicio UCN');
+        }
+    
     }
 }

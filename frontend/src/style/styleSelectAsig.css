@@ -1,0 +1,179 @@
+.asigcontainer {
+  display: flex;   
+  flex-direction: column;   
+  overflow-y: auto;
+  width: 25vw;
+  height: 53vh;
+  border-radius: 8px;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;                    
+  padding: 0.5rem;
+  background-color: #91a0c3;
+}
+.asig-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  background: #065d6d;
+  color: #e5e7eb;
+
+  padding: 0.4rem 0.6rem;
+  border-radius: 8px;
+  font-size: small;
+}
+.select-excepcion {
+  background: #e5e7eb;
+  color: #065d6d;
+  border: none;
+  border-radius: 6px;
+  font-size: x-small;
+  padding: 0.2rem 0.4rem;
+  cursor: pointer;
+}
+.asig-lista-scroll {
+  width: 100%;
+  flex: 1;
+  overflow-y: auto;
+
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+
+  padding-right: 0.2rem;
+}
+.asig-mensaje-estado {
+  font-size: small;
+  color: #1f2937;
+  padding: 0.5rem;
+}
+
+.asig-mensaje-estado.error-texto {
+  color: #7f1d1d;
+}
+
+.asig-mensaje-estado button {
+  margin-top: 0.3rem;
+  padding: 0.2rem 0.5rem;
+  font-size: x-small;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  background: #065d6d;
+  color: white;
+}
+.asigcard{
+  position: relative;
+  display: flex;
+  height: 4rem;
+  width: 100%;
+  flex-direction: row;
+    align-items: center;
+  text-align: center;
+  justify-content: space-between;
+  background: #e5e7eb;
+  border-color: #065d6d;
+  border-width: 3px;
+  border-radius: 8px;
+  padding-left: 0.5rem; 
+}
+.asigcard.no-disponible {
+  position: relative;
+  display: flex;
+  height: 4rem;
+  width: 100%;
+  flex-direction: row;
+    align-items: center;
+  text-align: center;
+  justify-content: space-between;
+  background: #787f8e;
+  border-color: #065d6d;
+  border-width: 3px;
+  border-radius: 8px;
+  padding-left: 0.5rem; 
+}
+.asig-info {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  font-size: small;
+  align-items: flex-start;
+}
+.boton-agregar{
+  border-radius: unset;
+  border-bottom-right-radius: 8px;
+  border-top-right-radius: 8px;
+  height: 100%;
+  width:6vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #065d6d;
+  color: white;
+  border-color: #065d6d;
+  cursor: pointer;
+}
+.boton-agregar:hover{
+  background-color: #2D8191;
+}
+.icon-suma{
+  width: 50px;
+  height: 50px;
+  filter: invert(1);
+}
+
+.asig-motivo-bloqueo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.boton-prereq {
+  border-radius: unset;
+  border-bottom-right-radius: 8px;
+  border-top-right-radius: 8px;
+  height: 100%;
+  width:6vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #065d6d;
+  border-color: #065d6d;
+  color: white;
+  cursor: pointer;
+}
+
+.boton-prereq:hover {
+  background-color: #2D8191;
+}
+
+.mensaje-prereq {
+  position: absolute;
+
+  min-width: 8rem;
+  max-width: 12rem;
+
+  background: #1f2937;
+  color: #f9fafb;
+  font-size: xx-small;
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+}
+.mensaje-prereq .prereq-content {
+  margin-top: 0.2rem;
+}
+.mensaje-prereq.visible {
+  max-height: 4rem;   
+  opacity: 1;
+  padding: 0.4rem 0.5rem;
+    margin-top: 0.2rem;
+  line-height: 1.2;
+}

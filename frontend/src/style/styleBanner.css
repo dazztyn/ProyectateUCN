@@ -1,0 +1,44 @@
+.banner {        
+  width: 100%;
+  height: min-content;
+  background-color: #065d6d;
+  color: white;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0;
+}
+.banner-left {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 1rem;            
+}
+.logo-top {
+  height: 50px;
+  padding: 0.5rem;
+}
+.wawa {
+  font-family: 'Arial', sans-serif;
+  font-size: 2rem;
+  font-weight: bold;
+  align-items: center;
+}
+.banner-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.back-button {
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+}
+.icon-banner {
+  width: 50px;
+  height: 50px;
+  filter: invert(1);
+}

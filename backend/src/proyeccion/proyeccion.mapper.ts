@@ -1,0 +1,145 @@
+import { Injectable } from '@nestjs/common';
+import { Asignatura } from '../ArchivosComunes/Asignatura.js';
+import { AvancePlano } from './interfaces/EstadoAcademico.js';
+import { CreacionSemestre } from './DtoProyeccion/CreacionSemestre.js';
+import { CreacionInstanciaAsignatura } from './DtoProyeccion/CreacionInstanciaAsignatura.js';
+import { CreacionAsignatura } from '../mallacurricular/dtoMallaCurricular/CreacionAsignatura.js';
+import { Proyeccion } from './entities/proyeccion.entity';
+import { ResponseProyeccionDto, ResponseSemestreDto } from './DtoProyeccion/ResponseProyeccion.dto';
+import { ResponseProyeccionResumenDto } from './DtoProyeccion/ResponseProyeccionResumenDto.js';
+@Injectable()
+export class ProyeccionMapper {
+
+    toPersistenceCatalog(malla: Asignatura[], codigoCarrera: string): CreacionAsignatura[] {
+        return malla.map(asig => ({
+            codigoAsignatura: asig.codigo,
+            codigoCarrera: codigoCarrera,
+            nombreAsignatura: asig.asignatura,
+            creditos: asig.creditos,
+            nivel: asig.nivel,
+            prerrequisitos: Array.isArray(asig.prereq) ? asig.prereq.join(',') : asig.prereq
+        }));
+    }
+
+    avanceToPersistence(avanceMap: Map<string, AvancePlano[]>, codigoCarrera: string): CreacionSemestre[] {
+        let numeroSemestre = 1;
+        const arraySemestres: CreacionSemestre[] = [];
+
+        const periodosOrdenados = Array.from(avanceMap.keys()).sort();
+
+        for (const periodo of periodosOrdenados) {
+            const asignaturas = avanceMap.get(periodo) || [];
+            
+            let creditosTotales = 0;
+            const instancias: CreacionInstanciaAsignatura[] = asignaturas.map(item => {
+                creditosTotales += item.creditos;
+                return {
+                    estado: item.estado, 
+                    asignatura: 
+                    { 
+                        codigoAsignatura: item.codigo,
+                        codigoCarrera: codigoCarrera
+                    } 
+                };
+            });
+
+            arraySemestres.push({
+                numero: numeroSemestre,
+                periodo: periodo,
+                editable: false,
+                totalCreditos: creditosTotales,
+                instancias: instancias
+            });
+
+            const tipoSemestre = periodo.slice(4, 6);
+            if (tipoSemestre !== '15' && tipoSemestre !== '25') {
+                numeroSemestre++;
+            }
+        }
+        return arraySemestres;
+    }
+
+    futureToPersistence(futureMap: Map<string, Asignatura[]>, ultimoNumeroSemestre: number, codigoCarrera: string): CreacionSemestre[] {
+        let numeroSemestre = ultimoNumeroSemestre;
+        const arraySemestres: CreacionSemestre[] = [];
+        
+ 
+        const periodosOrdenados = Array.from(futureMap.keys()).sort();
+
+        for (const periodo of periodosOrdenados) {
+            const asignaturas = futureMap.get(periodo) || [];
+            
+            let creditosTotales = 0;
+            const instancias: CreacionInstanciaAsignatura[] = asignaturas.map(asig => {
+                creditosTotales += asig.creditos;
+                return {
+                    estado: 'PENDIENTE',
+                    asignatura: 
+                    {
+                        codigoAsignatura: asig.codigo,
+                        codigoCarrera: codigoCarrera 
+                    }
+                };
+            });
+
+            arraySemestres.push({
+                numero: numeroSemestre,
+                periodo: periodo,
+                editable: true,
+                totalCreditos: creditosTotales,
+                instancias: instancias
+            });
+
+            numeroSemestre++;
+        }
+        return arraySemestres;
+    }
+
+
+    toResponse(entidad: Proyeccion): ResponseProyeccionDto {
+        const semestresOrdenados = entidad.semestres 
+            ? entidad.semestres.sort((a, b) => a.numero - b.numero) 
+            : [];
+
+        const semestresDto: ResponseSemestreDto[] = semestresOrdenados.map(semestre => ({
+            numero: semestre.numero,
+            periodo: semestre.periodo,
+            totalCreditos: semestre.totalCreditos,
+            editable: semestre.editable,
+            asignaturas: semestre.instancias ? semestre.instancias
+            .filter(instancia => instancia.asignatura != null)
+            .map(instancia => ({
+                codigo: instancia.asignatura?.codigoAsignatura || 'ERROR-DATA',
+                nombre: instancia.asignatura?.nombreAsignatura || 'Asignatura no encontrada',
+                creditos: instancia.asignatura?.creditos || 0,
+                estado: instancia.estado as 'APROBADO' | 'PENDIENTE' | 'REPROBADO'
+            })) : []
+        }));
+
+        return {
+            id: entidad.idProyeccion,
+            rut: entidad.rutUsuario,
+            nombre: entidad.nombreProyeccion,
+            esIdeal: entidad.ideal,
+            semestres: semestresDto
+        };
+    }
+
+
+    toResponseList(entidades: Proyeccion[]): ResponseProyeccionDto[] {
+        return entidades.map(entidad => this.toResponse(entidad));
+    }
+
+    toSummaryResponse(entidad: Proyeccion): ResponseProyeccionResumenDto 
+    {
+        return {
+            id: entidad.idProyeccion,
+            nombre: entidad.nombreProyeccion,
+            esIdeal: entidad.ideal,
+        };
+    }
+    toSummaryResponseList(entidades: Proyeccion[]): ResponseProyeccionResumenDto[] 
+    {
+        return entidades.map(e => this.toSummaryResponse(e));
+    }
+}

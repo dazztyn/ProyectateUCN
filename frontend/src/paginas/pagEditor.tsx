@@ -1,0 +1,498 @@
+import Layout from '../componentes/componentesEditor/layoutWithBanner';
+import { useLocation, useNavigate } from 'react-router-dom';
+import React from 'react';
+import axios from "axios";
+import '../style/styleEdit.css';
+import { useState, useEffect } from 'react';
+import MallaEditorDisplay from '../componentes/componentesEditor/compMallaEditor';
+import CompAsignaturasDisponibles from '../componentes/componentesEditor/compAsignaturaBarra';
+import CompBarraControlesProyeccion from '../componentes/componentesEditor/compBotones';
+import CompAdvertenciaCreditos from '../componentes/compMensajeAdvertencia';
+import LoadingOverlay from '../componentes/componentesEditor/compLoadingOverlay';
+import CompMensaje from '../componentes/compMensaje';
+import ModalConfirm from '../componentes/compModal';
+
+
+import type { 
+  FullProyeccionResponse, 
+  MallaEditorData,        
+  SemestreEditor,
+  AsignaturaDisponible,
+  AsignaturaInputDto          
+} from '../types/dataTypesEditor';
+type TipoExcepcion = 'NORMAL' | 'SIN_PREREQ' | 'EXTRA_SEMESTRE' | 'COMBINADA';
+const calculateSemestreCredits = (malla: MallaEditorData): Record<string, number> => {
+
+  const creditosPorSemestre: Record<string, number> = {};
+
+  malla.forEach((semestre: SemestreEditor) => {
+    const totalCreditos = semestre.totalCreditos || 0;
+    creditosPorSemestre[String(semestre.numero)] = totalCreditos;
+  });
+
+  return creditosPorSemestre;
+};
+const PagEditor = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const fullResponse = (location.state?.data as FullProyeccionResponse) || {};
+  const initialMalla: MallaEditorData = fullResponse.semestres || [];
+  const [warning, setWarning] = useState<{msg: string, canOverride: boolean} | null>(null);
+  const [proyeccionId, setProyeccionId] = useState<number | null>(fullResponse.id || null);
+  const [proyeccionNombre, setProyeccionNombre] = useState<string>(fullResponse.nombre || "Sin Nombre");
+  const [malla, setMalla] = useState<MallaEditorData>(initialMalla);
+  const [seleccionado, setSeleccionado] = React.useState<number | null>(null);
+  const [indice, setIndice] = useState<number | null>(null);
+  const [tipoBusqueda, setTipoBusqueda] = useState<TipoExcepcion>('NORMAL');
+  const [access_token, setAccessToken] = useState<string | null>(null);
+  const [mensaje, setMensaje] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isDirty, setIsDirty] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    mensaje: string;
+    onConfirm: () => void;
+} | null>(null);
+
+    useEffect(() => {
+    const state = location.state as
+      | { indice: number; access_token: string }
+      | undefined;
+
+    
+    if (state?.access_token) {
+      setAccessToken(state.access_token);
+      setIndice(state.indice);
+      fetchUsuario(state.access_token, state.indice);
+      return;
+    }
+
+    
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      navigate("/seleccion");
+      return;
+    }
+
+    const idx = Number(localStorage.getItem("indiceCarrera")) || 0;
+
+    setAccessToken(token);
+    setIndice(idx);
+    fetchUsuario(token, idx);
+  }, [location.state, navigate]);
+  useEffect(() => {
+    if (seleccionado === null && malla.length > 0) {
+      setSeleccionado(malla[0].numero);
+    }
+  }, [malla, seleccionado]);
+  useEffect(() => {
+    if (fullResponse.id) {
+        setProyeccionId(fullResponse.id);
+        setProyeccionNombre(fullResponse.nombre);
+    }
+  }, [fullResponse]);
+  const yaTieneExcepcion = React.useMemo(() => {
+    return malla.some(sem =>
+        sem.asignaturas.some(a => a.esExcepcion)
+    );
+}, [malla]);
+  const fetchUsuario = async (token: string, i: number) => {
+    try {
+      const res = await axios.post(
+        "http://localhost:3000/alumno",
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+    } catch (err) {
+      console.error(err);
+      navigate("/seleccion");
+    } finally {
+      setLoading(false);
+    }
+  };
+  const handleDeleteAsignatura = (semestreNumero: number, codigoAsignatura: string) => {
+    if (semestreNumero !== seleccionado) {
+        setMensaje("Debes seleccionar el semestre antes de poder editar sus asignaturas.");
+        return;
+    }
+    setMalla(prevMalla => {
+        const updatedMalla = prevMalla.map(sem => {
+            if (sem.numero === semestreNumero) {
+                const updatedAsignaturas = sem.asignaturas.filter(a => a.codigo !== codigoAsignatura);
+                const totalCreditos = updatedAsignaturas.reduce((sum, a) => sum + a.creditos, 0);
+                setIsDirty(true);
+                return {
+                    ...sem,
+                    asignaturas: updatedAsignaturas,
+                    totalCreditos: totalCreditos
+                };
+            }
+            return sem;
+        });
+        setIsDirty(true);
+        return updatedMalla;
+        
+    });
+  };
+  const handleAddSemestre = () => {
+    if (isDirty) {
+        setMensaje("Tienes cambios sin guardar en el semestre actual. Por favor, guarda antes de añadir un nuevo semestre.");
+        return; 
+    }
+    const maxSemestre = malla.reduce((max, semestre) => 
+        Math.max(max, semestre.numero), 0);
+        
+    const newNumero = maxSemestre + 1;
+    
+    const newSemestre: SemestreEditor = {
+        numero: newNumero, 
+        periodo: `S${newNumero}`, 
+        totalCreditos: 0, 
+        asignaturas: [],
+        editable: true, 
+    };
+    setMalla(prevMalla => [...prevMalla, newSemestre]);
+    setSeleccionado(newNumero); 
+    console.log(`Semestre ${newNumero} creado exitosamente.`);
+    setIsDirty(true);
+};
+  const handleDeleteSemestre = async () => {
+    setConfirmConfig(null);
+
+      if (seleccionado === null || !malla || !proyeccionId) return;
+
+      const semActual = malla.find(s => s.numero === seleccionado);
+      if (!semActual || !semActual.editable) {
+          setMensaje("No se puede eliminar un semestre que no es editable.");
+          return;
+      }
+
+      setLoading(true);
+
+      try {
+          const body: AsignaturaInputDto[] = []; 
+
+          const url = `http://localhost:3000/proyeccion/actualizarProyeccion/${indice}/${proyeccionId}/${semActual.numero}/${semActual.periodo}`;
+
+          const response = await fetch(url, {
+              method: 'PATCH',
+              headers: {
+                  'Authorization': `Bearer ${access_token}`,
+                  'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(body)
+          });
+
+          if (!response.ok) throw new Error("Error al intentar eliminar el semestre.");
+
+          const data: FullProyeccionResponse = await response.json();
+          
+          setMalla(data.semestres);
+          setIsDirty(false); 
+
+          const primerEditable = data.semestres.find(s => s.editable);
+          if (primerEditable) {
+              setSeleccionado(primerEditable.numero);
+          } else {
+              setSeleccionado(data.semestres[0].numero);
+          }
+
+          setMensaje("Semestre eliminado y proyección recalculada con éxito.");
+
+      } catch (err) {
+          console.error("Error al eliminar semestre:", err);
+          setMensaje("Hubo un fallo al intentar eliminar el semestre.");
+      } finally {
+          setLoading(false);
+      }
+  };
+  const handleDeleteSemestreMensaje = async () => {
+    if (seleccionado === null || !malla || !proyeccionId) return;
+
+    const semActual = malla.find(s => s.numero === seleccionado);
+    if (!semActual || !semActual.editable) {
+        setMensaje("No se puede eliminar un semestre que no es editable.");
+        return;
+    }
+
+
+    setConfirmConfig({
+        isOpen: true,
+        mensaje: "¡Atención! Al eliminar este semestre, se borrarán todas sus asignaturas. Tenga en cuenta que esto puede eliminar automáticamente asignaturas de semestres futuros que ya no cumplan con los prerrequisitos. ¿Desea proseguir?",
+        onConfirm: handleDeleteSemestre 
+    });
+};
+  const semestreCredits = React.useMemo(() => {
+    return calculateSemestreCredits(malla); 
+  }, [malla]);
+
+  const handleSelectSemestre = (semestrePeriodo: number) => {
+    if (isDirty) {
+        setMensaje("Tienes cambios sin guardar en el semestre actual. Por favor, guarda antes de cambiar de semestre para actualizar la disponibilidad de materias.");
+        return; 
+    }
+    if (semestrePeriodo === seleccionado) return;
+    setSeleccionado(semestrePeriodo);
+    console.log("Semestre seleccionado:", semestrePeriodo);
+  }
+  const handleAddAsignatura = (asignatura: AsignaturaDisponible) => {
+    const semActual = malla.find(s => s.numero === seleccionado);
+
+    if (!semActual || !semActual.editable) {
+        setMensaje("No puedes añadir asignaturas a un semestre que no es editable.");
+        return;
+    }
+    if (seleccionado === null) {
+        setMensaje("Primero selecciona un semestre para agregar la asignatura.");
+        return;
+    }
+    
+    setMalla(prevMalla => {
+        const updatedMalla = prevMalla.map(sem => {
+            if (sem.numero === seleccionado) {
+
+                const nuevaAsignatura = {
+                    codigo: asignatura.codigo,
+                    nombre: asignatura.nombre,
+                    creditos: asignatura.creditos,
+                    estado: 'PENDIENTE' as const,
+                    esExcepcion: tipoBusqueda !== 'NORMAL'
+                };
+                  setIsDirty(true);
+                if (sem.asignaturas.some(a => a.codigo === nuevaAsignatura.codigo)) {
+                    console.warn(`La asignatura ${asignatura.nombre} ya está en el semestre.`);
+                    return sem;
+                }
+                return {
+                    ...sem,
+                    asignaturas: [...sem.asignaturas, nuevaAsignatura],
+                    totalCreditos: sem.totalCreditos + nuevaAsignatura.creditos,
+                };
+            }
+            return sem;
+        });
+        
+        return updatedMalla;
+    });
+    setIsDirty(true);
+};
+
+const handleRestriccionProyeccion = async (bypassRestriction: boolean = false) => {
+    if (!seleccionado || !malla) return;
+    const semActual = malla.find(s => s.numero === seleccionado);
+    if (!semActual) return;
+    const totalCreditos = semActual.totalCreditos;
+    if (totalCreditos > 35) {
+        setWarning({
+            msg: `No se permite superar los 35 créditos (${totalCreditos}).`,
+            canOverride: false
+        });
+        return;
+    }
+
+    if (!bypassRestriction) {
+        if (totalCreditos < 10) {
+            setWarning({
+                msg: `El semestre tiene ${totalCreditos} créditos. El mínimo permitido es 10.`,
+                canOverride: true
+            });
+            return;
+        }
+
+        if (totalCreditos > 30) {
+            const mayorCredito = Math.max(
+                ...semActual.asignaturas.map(a => a.creditos)
+            );
+            const creditosSinLaMayor = totalCreditos - mayorCredito;
+            if (creditosSinLaMayor > 30) {
+                setWarning({
+                    msg: "Solo se permite exceder los 30 créditos por una única asignatura.",
+                    canOverride: false
+                });
+                return;
+            }
+
+            setWarning({
+                msg: `Has excedido los 30 créditos (${totalCreditos}). ¿Deseas permitir esta asignatura extra?`,
+                canOverride: true
+            });
+            return;
+        }
+    }
+
+    setWarning(null);
+    await handleSaveProyeccion();
+};
+const handleSaveProyeccion = async () => {
+    
+    if (!access_token || indice === null || !proyeccionId || seleccionado === null) {
+        setMensaje("Faltan datos para guardar.");
+        return;
+    }
+
+    const semestreActual = malla.find(s => s.numero === seleccionado);
+
+    if (!semestreActual || !semestreActual.editable) {
+        setMensaje("Este semestre no se puede modificar.");
+        return;
+    }
+
+    setLoading(true);
+
+    try {
+        const body: AsignaturaInputDto[] = semestreActual.asignaturas.map(a => ({
+            codigo: a.codigo,
+            nombre: a.nombre,
+            creditos: a.creditos,
+            estado: a.estado || "PENDIENTE"
+        }));
+
+        const url = `http://localhost:3000/proyeccion/actualizarProyeccion/${indice}/${proyeccionId}/${semestreActual.numero}/${semestreActual.periodo}`;
+
+        const response = await fetch(url, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${access_token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(body)
+        });
+
+        if (!response.ok) throw new Error("No se pudo guardar el semestre.");
+
+        const data: FullProyeccionResponse = await response.json();
+        setMalla(data.semestres);
+        setIsDirty(false);
+
+        setMensaje("Semestre guardado. La proyección se ha actualizado con los cambios del servidor.");
+
+    } catch (err) {
+        console.error("Error al guardar:", err);
+        setMensaje("Hubo un error al sincronizar con el servidor.");
+    } finally {
+        setLoading(false);
+    }
+};
+  const handleAutocompletar = async () => {
+    setConfirmConfig(null);
+    if (!access_token || indice === null || !proyeccionId) {
+        setMensaje("Faltan datos para realizar la operación.");
+        return;
+    }
+    setLoading(true);
+
+    try {
+        const url = `http://localhost:3000/proyeccion/autocompletar/${indice}?idProyeccion=${proyeccionId}`;
+        
+        const response = await fetch(url, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${access_token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error("Error al intentar autocompletar la proyección.");
+        }
+
+        const data: FullProyeccionResponse = await response.json();
+
+        setMalla(data.semestres);
+        if (data.semestres.length > 0) {
+            setSeleccionado(data.semestres[0].numero);
+        }
+
+        setMensaje("Proyección autocompletada con éxito.");
+
+    } catch (err) {
+        console.error("Error en Autocompletar:", err);
+        setMensaje("Hubo un fallo al obtener la proyección ideal.");
+    } finally {
+        setLoading(false);
+    }
+};
+const handleAutocompletarMensaje = () => {
+    if (!access_token || indice === null || !proyeccionId) {
+        setMensaje("Faltan datos para realizar la operación.");
+        return;
+    }
+
+    setConfirmConfig({
+        isOpen: true,
+        mensaje: "¿Estás seguro? Se autocompletará tu proyección con el camino ideal y se perderán los cambios no guardados en los semestres editables.",
+        onConfirm: handleAutocompletar
+    });
+};
+  
+
+  if (indice === null || !access_token)
+    return <p role="setMensaje">No fue posible cargar la información.</p>;
+  if (malla.length === 0) {
+    return (
+      <Layout nombreProyeccion = "error">
+        <p>Error: No se recibió información de la proyección. Intente de nuevo.</p>
+      </Layout>
+    );
+  }
+  
+
+  return (
+    <Layout nombreProyeccion={proyeccionNombre}>
+      <div className="container-edit">
+        {loading && <LoadingOverlay text="Sincronizando proyección..." />}
+        {mensaje && (
+        <CompMensaje
+            titulo="Información"
+            mensaje={mensaje}
+            onClose={() => setMensaje(null)}
+        />
+        )}
+        {confirmConfig?.isOpen && (
+                <ModalConfirm 
+                    isOpen={confirmConfig.isOpen}
+                    mensaje={confirmConfig.mensaje}
+                    onConfirm={confirmConfig.onConfirm}
+                    onCancel={() => setConfirmConfig(null)}
+                />
+            )}
+        <MallaEditorDisplay 
+        malla={malla}
+        selectedSemestreId={seleccionado}
+        onSelectSemestre={handleSelectSemestre}
+        onDeleteAsignatura={handleDeleteAsignatura}
+        semestreCredits={semestreCredits}
+        />
+        <div className="container-lateral">
+        <CompBarraControlesProyeccion 
+            onAddSemestre={handleAddSemestre}
+            onSaveProyeccion={() => handleRestriccionProyeccion(false)}
+            onAutocompletar={handleAutocompletarMensaje}
+            onEliminarSemestre={handleDeleteSemestreMensaje} 
+            isDirty={isDirty}
+          />
+        <CompAsignaturasDisponibles 
+        selectedSemestreId={seleccionado} 
+        onAddAsignatura={handleAddAsignatura} 
+        access_token={access_token} 
+        indiceCarrera={indice}
+        idProyeccion={proyeccionId || 0}
+        malla ={malla}
+        tipoBusqueda={tipoBusqueda}
+        setTipoBusqueda={setTipoBusqueda}
+        />
+        {warning && (
+    <CompAdvertenciaCreditos 
+    message={warning.msg}
+        showConfirm={warning.canOverride}
+        onClose={() => setWarning(null)}
+        onConfirm={() => handleRestriccionProyeccion(true)} 
+    />)}
+        </div>
+      </div>
+    </Layout>
+    );
+};
+export default PagEditor;

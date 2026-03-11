@@ -1,0 +1,108 @@
+import React, { useState, useEffect } from "react";
+import ErrorMessage from "./compMensajeError";
+import '../style/styleMalla.css';
+import iconMore from "../assets/addIcon.png";
+
+import type { 
+  Asignatura,
+  Semestre,
+  Props 
+
+} from "../types/dataTypesSimple";
+
+const MallaCarrera: React.FC<Props> = ({ indice, access_token}) => {
+  const [semestres, setSemestres] = useState<Semestre[]>([]);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError]  = React.useState<string | null>(null);
+  const [openPrereq, setOpenPrereq] = useState<Record<string, boolean>>({});
+  const togglePrereq = (codigo: string) => {
+  setOpenPrereq(prev => ({
+    ...prev,
+    [codigo]: !prev[codigo],
+  }));
+};
+  useEffect(() => {
+    const obtenerMalla = async () => {
+      try {
+        setCargando(true);
+        setError("");
+
+        const res = await fetch(`http://localhost:3000/malla/${indice}`, {
+  headers: {
+    Authorization: `Bearer ${access_token}`,  
+  },
+});
+        if (!res.ok) throw new Error("No se pudo obtener la malla curricular.");
+        const data: Record<string, Asignatura[]> = await res.json();
+
+       
+        const semestresArray: Semestre[] = Object.entries(data).map(
+          ([num, asignaturas]) => ({
+            numero: Number(num),
+            asignaturas: asignaturas.map(a => ({
+              ...a,
+              prereq: a.prereq
+                ? Array.isArray(a.prereq)
+                  ? a.prereq
+                  : (a.prereq as string).split(",")
+                : [],
+            })),
+          })
+        );
+
+        setSemestres(semestresArray);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setCargando(false);
+      }
+    };
+
+    obtenerMalla();
+  }, [ indice, access_token ]);
+
+ 
+  if (cargando) return <p className="loading">Cargando malla...</p>;
+  if (error) return <ErrorMessage message={error} onClose={() => setError(null)}/>;
+  if (!semestres.length) return <p className="error">No se encontraron semestres.</p>;
+
+  return (
+    <div className="malla-container">
+      {semestres.map(sem => (
+        <div key={sem.numero} className="semestre-card">
+          <div className="semestre-titulo-container">{sem.numero}° Sem.</div>
+          <div className="asignaturas-grid">
+          {sem.asignaturas.map(a => (
+            <div className="asignatura-card">
+              <button
+                className="btn-prereq"
+                onClick={() => togglePrereq(a.codigo)}
+                title="Ver prerrequisitos"
+              >
+                👁
+              </button>
+
+              {openPrereq[a.codigo] && (
+                <div className="prereq-tooltip">
+                  <strong>Prerequisitos</strong>
+                  <div className="prereq-content">
+                    {a.prereq.length > 0
+                      ? a.prereq.join(", ")
+                      : "Sin prerrequisitos"}
+                  </div>
+                </div>
+  )}
+
+  <h3>{a.codigo}</h3>
+  <h4>{a.asignatura}</h4>
+  <h3>Créditos: {a.creditos}</h3>
+</div>
+          ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export default MallaCarrera;

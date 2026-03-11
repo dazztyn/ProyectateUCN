@@ -1,0 +1,223 @@
+
+.admin-page-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: #f8fafc;
+}
+
+
+.contenedor-estadisticas {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0 auto;
+    padding: 2rem;
+    width: 100%;
+    animation: fadeIn 0.5s ease-in;
+}
+
+.titulo-seccion {
+    color: #000000;
+    font-size: 2rem;
+}
+
+.descripcion-seccion {
+    color: #64748b;
+    margin-bottom: 2rem;
+}
+
+.card-filtros {
+    background-color: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.filtro-grupo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.filtro-grupo label {
+    font-weight: 600;
+    color: #475569;
+    font-size: 0.9rem;
+    padding-bottom: 0;
+}
+
+.input-admin {
+    padding: 0.6rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    transition: border-color 0.2s;
+}
+
+.input-admin:focus {
+    outline: none;
+    border-color: #000000;
+    box-shadow: 0 0 0 2px rgba(6, 93, 109, 0.1);
+}
+
+/* --- BOTONES --- */
+.grupo-botones-modo {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.boton-modo {
+    padding: 0.6rem 1.2rem;
+    background-color: #f1f5f9;
+    color: #334155;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+/* Estados activos según modo */
+.boton-modo.activo-demanda {
+    background-color: #000000;
+    color: white;
+}
+
+.boton-modo.activo-reprobacion {
+    background-color: #dc2626;
+    color: white;
+}
+
+.boton-consultar {
+    height: 42px;
+    min-width: 140px;
+    color: white;
+    background-color: #dc2626;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.boton-consultar:disabled {
+    background-color: #cbd5e1;
+    cursor: not-allowed;
+}
+
+.tabla-container {
+    overflow-x: auto;
+    background-color: white;
+    width: 100%;
+    border-radius: 10px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.tabla-admin {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.tabla-admin thead tr {
+    text-align: left;
+    color: white;
+}
+
+.thead-demanda { background-color: #000000; }
+.thead-reprobacion { background-color: #dc2626; }
+
+.tabla-admin th, .tabla-admin td {
+    padding: 1rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.fila-cebra:nth-child(even) {
+    background-color: #f8fafc;
+}
+
+/* --- ALERTAS --- */
+.mensaje-error-admin {
+    padding: 1rem;
+    background-color: #fee2e2;
+    color: #b91c1c;
+    border-radius: 6px;
+    margin-bottom: 1.5rem;
+    border: 1px solid #fca5a5;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.admin-banner {
+    width: 100%;
+    height: 70px; 
+    background-color: #000000;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    position: sticky; 
+    top: 0;
+    z-index: 1000;
+}
+
+.banner-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.banner-logo {
+    height: 40px;
+    filter:grayscale()
+}
+
+.banner-separator {
+    width: 1px;
+    height: 25px;
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.banner-welcome {
+    color: #f1f5f9;
+    font-size: 0.95rem;
+}
+
+.btn-logout-admin {
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 6px 14px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+}
+
+.btn-logout-admin:hover {
+    background-color: #000000;
+    color: green;
+    border-color: #06b125;
+}
+
+
+.admin-content-area {
+    padding: 2rem;
+    width: 100%;
+    max-width: 1200px; 
+    margin: 0 auto;
+}

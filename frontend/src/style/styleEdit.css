@@ -1,0 +1,20 @@
+.container-edit{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content:space-between;
+    height: 40vw;
+    width: 100%;
+    gap: 1rem;
+    padding: 2rem;
+    border-radius: 6px;
+    background-color: #01343E;
+    margin-top: 0;
+}
+.container-lateral {
+    display: flex;
+    width: max-content;
+    align-items: center;
+    flex-direction: column;
+    gap: 1rem;
+}

@@ -1,0 +1,230 @@
+.cuerpoLogin {
+background: #2D8191;
+background: linear-gradient(180deg, rgb(45, 137, 145) 0%, rgba(6, 93, 109, 1) 49%, rgb(1, 32, 62) 100%);
+  --s: 145px; /* control the size*/
+  --c1: #2D8191;
+  --c2: #065d6d;
+  --c3: #024A58;
+  
+  --_g: 0 120deg,#0000 0;
+  background:
+    conic-gradient(             at calc(250%/3) calc(100%/3),var(--c3) var(--_g)),
+    conic-gradient(from -120deg at calc( 50%/3) calc(100%/3),var(--c2) var(--_g)),
+    conic-gradient(from  120deg at calc(100%/3) calc(250%/3),var(--c1) var(--_g)),
+    conic-gradient(from  120deg at calc(200%/3) calc(250%/3),var(--c1) var(--_g)),
+    conic-gradient(from -180deg at calc(100%/3) 50%,var(--c2)  60deg,var(--c1) var(--_g)),
+    conic-gradient(from   60deg at calc(200%/3) 50%,var(--c1)  60deg,var(--c3) var(--_g)),
+    conic-gradient(from  -60deg at 50% calc(100%/3),var(--c1) 120deg,var(--c2) 0 240deg,var(--c3) 0);
+  background-size: calc(var(--s)*sqrt(3)) var(--s);
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    width: 100vw;
+    color: white;
+
+}
+.logo-ucn {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 2rem;
+   filter: drop-shadow(3px 5px 5px #03353e);
+    
+}
+
+
+.login-box {
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+  background-color: #e5e7eb;
+  margin-top: 1rem;
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+  min-width: 300px;
+}
+
+
+/* Fondo y texto del input normal */
+.login-box input {
+  margin: 1rem 0;
+  padding: 0.75rem;
+  display: block;
+  border-radius: 5px;
+  background-color: #263538;
+  border: 1px solid #e5e7eb;
+  color: #e5e7eb;
+}
+
+/* Sobrescribir autofill */
+.login-box input:-webkit-autofill,
+.login-box input:-webkit-autofill:hover,
+.login-box input:-webkit-autofill:focus {
+  background-color: #263538 !important;
+  -webkit-text-fill-color: #e5e7eb !important;
+  transition: background-color 9999s ease-in-out 0s;
+  caret-color: #e5e7eb;
+  border: 1px solid #e5e7eb;
+}
+
+.login-box input:autofill {
+  background-color: #263538 !important;
+  color: #e5e7eb !important;
+}
+.login-button {
+    background-color: #B17C06;
+    color: #e5e7eb;
+    font-size: 1.2rem;
+    padding: 0.75rem 1.5rem;
+    width: 100%;
+    cursor: pointer;
+}
+
+.login-button:hover {
+    background-color: #107386;
+    border-color: #024A58;
+}
+.login-button:active {
+    background-color: #024A58;
+}
+.login-box h2 {
+    margin-bottom: 1rem;
+    color: #065d6d;
+    text-align: center;
+}
+.h3 {
+    margin-bottom: 1rem;
+    color: #e5e7eb;
+    text-align: center;
+    font-size: 3rem;
+}
+.seleccion-container {
+ 
+  max-width: 400px;
+  margin: 2rem auto;
+  text-align: center;
+}
+
+.botones-seccion {
+   margin-top: 1rem;
+  display: flex;
+  background-color: #065D6D;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-radius: 8px ;
+  margin-bottom: 1rem;
+}
+
+.boton-seccion {
+  background-color: #e5e7eb;
+  border: none;
+  color: #065d6d;
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.boton-seccion.activo {
+  background-color: #065D6D;
+  border-style: solid;
+  border-width: 2px;
+  border-color: #e5e7eb;
+  color: white;
+  font-weight: bold;
+}
+.boton-seccion:hover {
+  background-color: #2D8191;
+  color: #e5e7eb;
+}
+
+.bloque-carrera {
+  background-color: #B17C06;
+  padding: 0.8rem;
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+}
+
+.lista-carreras {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+}
+
+.lista-carreras li {
+  padding: 0.5rem;
+  border-radius: 6px;
+  background-color: #024A58;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.lista-carreras li:hover {
+  background-color: #e5e7eb;
+  color:#065d6d;
+}
+
+.boton-ir {
+  margin-top: 1rem;
+  padding: 0.7rem 1.5rem;
+  background-color: #01343E;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.boton-ir:hover {
+  background-color: #024A58;
+}
+.fondo-franja {
+  position: relative;
+  width: 300%;              
+  max-width: 900px;        
+  height: 75vh;            
+  background-image: url('../assets/fondo_select.jpg');
+  background-size: cover;
+  background-position: center;
+  border-radius: 16px;
+  overflow: hidden;        
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+.fondo-franja::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.45); 
+  z-index: 1;
+}
+
+.fondo-contenido {
+  position: relative;
+  z-index: 2;
+  color: white;
+  text-align: center;
+  padding: 2rem;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+#login-title {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
